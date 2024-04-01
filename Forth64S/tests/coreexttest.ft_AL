@@ -1,0 +1,2500 @@
+//\ To test the ANS Forth Core Extension word set
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13 28 October 2015
+
+//\              Replace <FALSE> and <TRUE> with FALSE and TRUE to avoid
+
+//\              dependence on Core tests
+
+//\              Moved SAVE-INPUT and RESTORE-INPUT tests in a file to filetest.fth
+
+//\              Use of 2VARIABLE (from optional wordset) replaced with CREATE.
+
+//\              Minor lower to upper case conversions.
+
+//\              Calls to COMPARE replaced by S= (in utilities.fth) to avoid use
+
+//\              of a word from an optional word set.
+
+//\              UNUSED tests revised as UNUSED UNUSED = may return FALSE when an
+
+//\              implementation has the data stack sharing unused dataspace.
+
+//\              Double number input dependency removed from the HOLDS tests.
+
+//\              Minor case sensitivities removed in definition names.
+
+//\         0.11 25 April 2015
+
+//\              Added tests for PARSE-NAME HOLDS BUFFER:
+
+//\              S\" tests added
+
+//\              DEFER IS ACTION-OF DEFER! DEFER@ tests added
+
+//\              Empty CASE statement test added
+
+//\              [COMPILE] tests removed because it is obsolescent in Forth 2012
+
+//\         0.10 1 August 2014
+
+//\             Added tests contributed by James Bowman for:
+
+//\                <> U> 0<> 0> NIP TUCK ROLL PICK 2>R 2R@ 2R>
+
+//\                HEX WITHIN UNUSED AGAIN MARKER
+
+//\             Added tests for:
+
+//\                .R U.R ERASE PAD REFILL SOURCE-ID 
+
+//\             Removed ABORT from NeverExecuted to enable Win32
+
+//\             to continue after failure of RESTORE-INPUT.
+
+//\             Removed max-intx which is no longer used.
+
+//\         0.7 6 June 2012 Extra CASE test added
+
+//\         0.6 1 April 2012 Tests placed in the public domain.
+
+//\             SAVE-INPUT & RESTORE-INPUT tests, position
+
+//\             of T{ moved so that tests work with ttester.fs
+
+//\             CONVERT test deleted - obsolete word removed from Forth 200X
+
+//\             IMMEDIATE VALUEs tested
+
+//\             RECURSE with :NONAME tested
+
+//\             PARSE and .( tested
+
+//\             Parsing behaviour of C" added
+
+//\         0.5 14 September 2011 Removed the double [ELSE] from the
+
+//\             initial SAVE-INPUT & RESTORE-INPUT test
+
+//\         0.4 30 November 2009  max-int replaced with max-intx to
+
+//\             avoid redefinition warnings.
+
+//\         0.3  6 March 2009 { and } replaced with T{ and }T
+
+//\                           CONVERT test now independent of cell size
+
+//\         0.2  20 April 2007 ANS Forth words changed to upper case
+
+//\                            Tests qd3 to qd6 by Reinhold Straub
+
+//\         0.1  Oct 2006 First version released
+
+//\ -----------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//
+
+//\ Words tested in this file are:
+
+//\     .( .R 0<> 0> 2>R 2R> 2R@ :NONAME <> ?DO AGAIN C" CASE COMPILE, ENDCASE
+
+//\     ENDOF ERASE FALSE HEX MARKER NIP OF PAD PARSE PICK REFILL
+
+//\     RESTORE-INPUT ROLL SAVE-INPUT SOURCE-ID TO TRUE TUCK U.R U> UNUSED
+
+//\     VALUE WITHIN [COMPILE]
+
+//
+
+//\ Words not tested or partially tested:
+
+//\     \ because it has been extensively used already and is, hence, unnecessary
+
+//\     REFILL and SOURCE-ID from the user input device which are not possible
+
+//\     when testing from a file such as this one
+
+//\     UNUSED (partially tested) as the value returned is system dependent
+
+//\     Obsolescent words #TIB CONVERT EXPECT QUERY SPAN TIB as they have been
+
+//\     removed from the Forth 2012 standard
+
+//
+
+//\ Results from words that output to the user output device have to visually
+
+//\ checked for correctness. These are .R U.R .(
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//\ Assumptions & dependencies:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set available
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING Core Extension words
+
+//
+
+//DECIMAL
+
+//
+
+//TESTING TRUE FALSE
+
+//
+
+//T{ TRUE  -> 0 INVERT }T
+
+//T{ FALSE -> 0 }T
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING <> U>   (contributed by James Bowman)
+
+//
+
+//T{ 0 0 <> -> FALSE }T
+
+//T{ 1 1 <> -> FALSE }T
+
+//T{ -1 -1 <> -> FALSE }T
+
+//T{ 1 0 <> -> TRUE }T
+
+//T{ -1 0 <> -> TRUE }T
+
+//T{ 0 1 <> -> TRUE }T
+
+//T{ 0 -1 <> -> TRUE }T
+
+//
+
+//T{ 0 1 U> -> FALSE }T
+
+//T{ 1 2 U> -> FALSE }T
+
+//T{ 0 MID-UINT U> -> FALSE }T
+
+//T{ 0 MAX-UINT U> -> FALSE }T
+
+//T{ MID-UINT MAX-UINT U> -> FALSE }T
+
+//T{ 0 0 U> -> FALSE }T
+
+//T{ 1 1 U> -> FALSE }T
+
+//T{ 1 0 U> -> TRUE }T
+
+//T{ 2 1 U> -> TRUE }T
+
+//T{ MID-UINT 0 U> -> TRUE }T
+
+//T{ MAX-UINT 0 U> -> TRUE }T
+
+//T{ MAX-UINT MID-UINT U> -> TRUE }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING 0<> 0>   (contributed by James Bowman)
+
+//
+
+//T{ 0 0<> -> FALSE }T
+
+//T{ 1 0<> -> TRUE }T
+
+//T{ 2 0<> -> TRUE }T
+
+//T{ -1 0<> -> TRUE }T
+
+//T{ MAX-UINT 0<> -> TRUE }T
+
+//T{ MIN-INT 0<> -> TRUE }T
+
+//T{ MAX-INT 0<> -> TRUE }T
+
+//
+
+//T{ 0 0> -> FALSE }T
+
+//T{ -1 0> -> FALSE }T
+
+//T{ MIN-INT 0> -> FALSE }T
+
+//T{ 1 0> -> TRUE }T
+
+//T{ MAX-INT 0> -> TRUE }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING NIP TUCK ROLL PICK   (contributed by James Bowman)
+
+//
+
+//T{ 1 2 NIP -> 2 }T
+
+//T{ 1 2 3 NIP -> 1 3 }T
+
+//
+
+//T{ 1 2 TUCK -> 2 1 2 }T
+
+//T{ 1 2 3 TUCK -> 1 3 2 3 }T
+
+//
+
+//T{ : RO5 100 200 300 400 500 ; -> }T
+
+RO5:
+	mov	%rax,-0x08(%rbp)	# 434168 48 89 45 F8 
+	movq	$0x64,-0x10(%rbp)	# 43416C 48 C7 45 F0 64 0 0 0 
+	movq	$0xC8,-0x18(%rbp)	# 434174 48 C7 45 E8 C8 0 0 0 
+	movq	$0x12C,-0x20(%rbp)	# 43417C 48 C7 45 E0 2C 1 0 0 
+	movq	$0x190,-0x28(%rbp)	# 434184 48 C7 45 D8 90 1 0 0 
+	mov	$0x1F4,%eax	# 43418C B8 F4 1 0 0 
+	lea	-0x28(%rbp),%rbp	# 434191 48 8D 6D D8 
+	ret		# 434195 C3 
+//T{ RO5 3 ROLL -> 100 300 400 500 200 }T
+
+//T{ RO5 2 ROLL -> RO5 ROT }T
+
+//T{ RO5 1 ROLL -> RO5 SWAP }T
+
+//T{ RO5 0 ROLL -> RO5 }T
+
+//
+
+//T{ RO5 2 PICK -> 100 200 300 400 500 300 }T
+
+//T{ RO5 1 PICK -> RO5 OVER }T
+
+//T{ RO5 0 PICK -> RO5 DUP }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING 2>R 2R@ 2R>   (contributed by James Bowman)
+
+//
+
+//T{ : RR0 2>R 100 R> R> ; -> }T
+
+RR0:
+	call	 ( 2>R ) 	# 434196 E8 3 2 FD FF 
+	mov	%rax,-0x08(%rbp)	# 43419B 48 89 45 F8 
+	movq	$0x64,-0x10(%rbp)	# 43419F 48 C7 45 F0 64 0 0 0 
+	pop	-0x18(%rbp)	# 4341A7 8F 45 E8 
+	pop	%rax	# 4341AA 58 
+	lea	-0x18(%rbp),%rbp	# 4341AB 48 8D 6D E8 
+	ret		# 4341AF C3 
+//T{ 300 400 RR0 -> 100 400 300 }T
+
+//T{ 200 300 400 RR0 -> 200 100 400 300 }T
+
+//
+
+//T{ : RR1 2>R 100 2R@ R> R> ; -> }T
+
+RR1:
+	call	 ( 2>R ) 	# 4341B0 E8 E9 1 FD FF 
+	mov	%rax,-0x08(%rbp)	# 4341B5 48 89 45 F8 
+	mov	$0x64,%eax	# 4341B9 B8 64 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4341BE 48 8D 6D F8 
+	call	 ( 2R@ ) 	# 4341C2 E8 C0 1 FD FF 
+	mov	%rax,-0x08(%rbp)	# 4341C7 48 89 45 F8 
+	pop	-0x10(%rbp)	# 4341CB 8F 45 F0 
+	pop	%rax	# 4341CE 58 
+	lea	-0x10(%rbp),%rbp	# 4341CF 48 8D 6D F0 
+	ret		# 4341D3 C3 
+//T{ 300 400 RR1 -> 100 300 400 400 300 }T
+
+//T{ 200 300 400 RR1 -> 200 100 300 400 400 300 }T
+
+//
+
+//T{ : RR2 2>R 100 2R> ; -> }T
+
+RR2:
+	call	 ( 2>R ) 	# 4341D4 E8 C5 1 FD FF 
+	mov	%rax,-0x08(%rbp)	# 4341D9 48 89 45 F8 
+	mov	$0x64,%eax	# 4341DD B8 64 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4341E2 48 8D 6D F8 
+	call	 ( 2R> ) 	# 4341E6 E8 7B 1 FD FF 
+	ret		# 4341EB C3 
+//T{ 300 400 RR2 -> 100 300 400 }T
+
+//T{ 200 300 400 RR2 -> 200 100 300 400 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING HEX   (contributed by James Bowman)
+
+//
+
+//T{ BASE @ HEX BASE @ DECIMAL BASE @ - SWAP BASE ! -> 6 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING WITHIN   (contributed by James Bowman)
+
+//
+
+//T{ 0 0 0 WITHIN -> FALSE }T
+
+//T{ 0 0 MID-UINT WITHIN -> TRUE }T
+
+//T{ 0 0 MID-UINT+1 WITHIN -> TRUE }T
+
+//T{ 0 0 MAX-UINT WITHIN -> TRUE }T
+
+//T{ 0 MID-UINT 0 WITHIN -> FALSE }T
+
+//T{ 0 MID-UINT MID-UINT WITHIN -> FALSE }T
+
+//T{ 0 MID-UINT MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ 0 MID-UINT MAX-UINT WITHIN -> FALSE }T
+
+//T{ 0 MID-UINT+1 0 WITHIN -> FALSE }T
+
+//T{ 0 MID-UINT+1 MID-UINT WITHIN -> TRUE }T
+
+//T{ 0 MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ 0 MID-UINT+1 MAX-UINT WITHIN -> FALSE }T
+
+//T{ 0 MAX-UINT 0 WITHIN -> FALSE }T
+
+//T{ 0 MAX-UINT MID-UINT WITHIN -> TRUE }T
+
+//T{ 0 MAX-UINT MID-UINT+1 WITHIN -> TRUE }T
+
+//T{ 0 MAX-UINT MAX-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT 0 0 WITHIN -> FALSE }T
+
+//T{ MID-UINT 0 MID-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT 0 MID-UINT+1 WITHIN -> TRUE }T
+
+//T{ MID-UINT 0 MAX-UINT WITHIN -> TRUE }T
+
+//T{ MID-UINT MID-UINT 0 WITHIN -> TRUE }T
+
+//T{ MID-UINT MID-UINT MID-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT MID-UINT MID-UINT+1 WITHIN -> TRUE }T
+
+//T{ MID-UINT MID-UINT MAX-UINT WITHIN -> TRUE }T
+
+//T{ MID-UINT MID-UINT+1 0 WITHIN -> FALSE }T
+
+//T{ MID-UINT MID-UINT+1 MID-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MID-UINT MID-UINT+1 MAX-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT MAX-UINT 0 WITHIN -> FALSE }T
+
+//T{ MID-UINT MAX-UINT MID-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT MAX-UINT MID-UINT+1 WITHIN -> TRUE }T
+
+//T{ MID-UINT MAX-UINT MAX-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 0 0 WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 0 MID-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 0 MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 0 MAX-UINT WITHIN -> TRUE }T
+
+//T{ MID-UINT+1 MID-UINT 0 WITHIN -> TRUE }T
+
+//T{ MID-UINT+1 MID-UINT MID-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 MID-UINT MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 MID-UINT MAX-UINT WITHIN -> TRUE }T
+
+//T{ MID-UINT+1 MID-UINT+1 0 WITHIN -> TRUE }T
+
+//T{ MID-UINT+1 MID-UINT+1 MID-UINT WITHIN -> TRUE }T
+
+//T{ MID-UINT+1 MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 MID-UINT+1 MAX-UINT WITHIN -> TRUE }T
+
+//T{ MID-UINT+1 MAX-UINT 0 WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 MAX-UINT MID-UINT WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 MAX-UINT MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MID-UINT+1 MAX-UINT MAX-UINT WITHIN -> FALSE }T
+
+//T{ MAX-UINT 0 0 WITHIN -> FALSE }T
+
+//T{ MAX-UINT 0 MID-UINT WITHIN -> FALSE }T
+
+//T{ MAX-UINT 0 MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MAX-UINT 0 MAX-UINT WITHIN -> FALSE }T
+
+//T{ MAX-UINT MID-UINT 0 WITHIN -> TRUE }T
+
+//T{ MAX-UINT MID-UINT MID-UINT WITHIN -> FALSE }T
+
+//T{ MAX-UINT MID-UINT MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MAX-UINT MID-UINT MAX-UINT WITHIN -> FALSE }T
+
+//T{ MAX-UINT MID-UINT+1 0 WITHIN -> TRUE }T
+
+//T{ MAX-UINT MID-UINT+1 MID-UINT WITHIN -> TRUE }T
+
+//T{ MAX-UINT MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T
+
+//T{ MAX-UINT MID-UINT+1 MAX-UINT WITHIN -> FALSE }T
+
+//T{ MAX-UINT MAX-UINT 0 WITHIN -> TRUE }T
+
+//T{ MAX-UINT MAX-UINT MID-UINT WITHIN -> TRUE }T
+
+//T{ MAX-UINT MAX-UINT MID-UINT+1 WITHIN -> TRUE }T
+
+//T{ MAX-UINT MAX-UINT MAX-UINT WITHIN -> FALSE }T
+
+//
+
+//T{ MIN-INT MIN-INT MIN-INT WITHIN -> FALSE }T
+
+//T{ MIN-INT MIN-INT 0 WITHIN -> TRUE }T
+
+//T{ MIN-INT MIN-INT 1 WITHIN -> TRUE }T
+
+//T{ MIN-INT MIN-INT MAX-INT WITHIN -> TRUE }T
+
+//T{ MIN-INT 0 MIN-INT WITHIN -> FALSE }T
+
+//T{ MIN-INT 0 0 WITHIN -> FALSE }T
+
+//T{ MIN-INT 0 1 WITHIN -> FALSE }T
+
+//T{ MIN-INT 0 MAX-INT WITHIN -> FALSE }T
+
+//T{ MIN-INT 1 MIN-INT WITHIN -> FALSE }T
+
+//T{ MIN-INT 1 0 WITHIN -> TRUE }T
+
+//T{ MIN-INT 1 1 WITHIN -> FALSE }T
+
+//T{ MIN-INT 1 MAX-INT WITHIN -> FALSE }T
+
+//T{ MIN-INT MAX-INT MIN-INT WITHIN -> FALSE }T
+
+//T{ MIN-INT MAX-INT 0 WITHIN -> TRUE }T
+
+//T{ MIN-INT MAX-INT 1 WITHIN -> TRUE }T
+
+//T{ MIN-INT MAX-INT MAX-INT WITHIN -> FALSE }T
+
+//T{ 0 MIN-INT MIN-INT WITHIN -> FALSE }T
+
+//T{ 0 MIN-INT 0 WITHIN -> FALSE }T
+
+//T{ 0 MIN-INT 1 WITHIN -> TRUE }T
+
+//T{ 0 MIN-INT MAX-INT WITHIN -> TRUE }T
+
+//T{ 0 0 MIN-INT WITHIN -> TRUE }T
+
+//T{ 0 0 0 WITHIN -> FALSE }T
+
+//T{ 0 0 1 WITHIN -> TRUE }T
+
+//T{ 0 0 MAX-INT WITHIN -> TRUE }T
+
+//T{ 0 1 MIN-INT WITHIN -> FALSE }T
+
+//T{ 0 1 0 WITHIN -> FALSE }T
+
+//T{ 0 1 1 WITHIN -> FALSE }T
+
+//T{ 0 1 MAX-INT WITHIN -> FALSE }T
+
+//T{ 0 MAX-INT MIN-INT WITHIN -> FALSE }T
+
+//T{ 0 MAX-INT 0 WITHIN -> FALSE }T
+
+//T{ 0 MAX-INT 1 WITHIN -> TRUE }T
+
+//T{ 0 MAX-INT MAX-INT WITHIN -> FALSE }T
+
+//T{ 1 MIN-INT MIN-INT WITHIN -> FALSE }T
+
+//T{ 1 MIN-INT 0 WITHIN -> FALSE }T
+
+//T{ 1 MIN-INT 1 WITHIN -> FALSE }T
+
+//T{ 1 MIN-INT MAX-INT WITHIN -> TRUE }T
+
+//T{ 1 0 MIN-INT WITHIN -> TRUE }T
+
+//T{ 1 0 0 WITHIN -> FALSE }T
+
+//T{ 1 0 1 WITHIN -> FALSE }T
+
+//T{ 1 0 MAX-INT WITHIN -> TRUE }T
+
+//T{ 1 1 MIN-INT WITHIN -> TRUE }T
+
+//T{ 1 1 0 WITHIN -> TRUE }T
+
+//T{ 1 1 1 WITHIN -> FALSE }T
+
+//T{ 1 1 MAX-INT WITHIN -> TRUE }T
+
+//T{ 1 MAX-INT MIN-INT WITHIN -> FALSE }T
+
+//T{ 1 MAX-INT 0 WITHIN -> FALSE }T
+
+//T{ 1 MAX-INT 1 WITHIN -> FALSE }T
+
+//T{ 1 MAX-INT MAX-INT WITHIN -> FALSE }T
+
+//T{ MAX-INT MIN-INT MIN-INT WITHIN -> FALSE }T
+
+//T{ MAX-INT MIN-INT 0 WITHIN -> FALSE }T
+
+//T{ MAX-INT MIN-INT 1 WITHIN -> FALSE }T
+
+//T{ MAX-INT MIN-INT MAX-INT WITHIN -> FALSE }T
+
+//T{ MAX-INT 0 MIN-INT WITHIN -> TRUE }T
+
+//T{ MAX-INT 0 0 WITHIN -> FALSE }T
+
+//T{ MAX-INT 0 1 WITHIN -> FALSE }T
+
+//T{ MAX-INT 0 MAX-INT WITHIN -> FALSE }T
+
+//T{ MAX-INT 1 MIN-INT WITHIN -> TRUE }T
+
+//T{ MAX-INT 1 0 WITHIN -> TRUE }T
+
+//T{ MAX-INT 1 1 WITHIN -> FALSE }T
+
+//T{ MAX-INT 1 MAX-INT WITHIN -> FALSE }T
+
+//T{ MAX-INT MAX-INT MIN-INT WITHIN -> TRUE }T
+
+//T{ MAX-INT MAX-INT 0 WITHIN -> TRUE }T
+
+//T{ MAX-INT MAX-INT 1 WITHIN -> TRUE }T
+
+//T{ MAX-INT MAX-INT MAX-INT WITHIN -> FALSE }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING UNUSED  (contributed by James Bowman & Peter Knaggs)
+
+//
+
+//VARIABLE UNUSED0
+
+	add	%al,(%rax)	# 4341EC 0 0 
+	add	%al,(%rax)	# 4341EE 0 0 
+	add	%al,(%rax)	# 4341F0 0 0 
+	add	%ch,%al	# 4341F2 0 E8 
+	sub	%al,(%rdi)	# 4341F4 28 7 
+stD	# 4341F6 FD 
+	jmp	*0x16(%rdi)	# 4341F7 FF 67 16 
+	or	$0x00,%al	# 4341FA E 0 
+	add	%al,(%rax)	# 4341FC 0 0 
+	add	%al,(%rax)	# 4341FE 0 0 
+//T{ UNUSED DROP -> }T                  
+
+//T{ ALIGN UNUSED UNUSED0 ! 0 , UNUSED CELL+ UNUSED0 @ = -> TRUE }T
+
+	add	%al,(%rax)	# 434200 0 0 
+	add	%al,(%rax)	# 434202 0 0 
+	add	%al,(%rax)	# 434204 0 0 
+	add	%al,(%rax)	# 434206 0 0 
+//T{ UNUSED UNUSED0 ! 0 C, UNUSED CHAR+ UNUSED0 @ =
+
+	add	%al,(%rax)	# 434208 0 0 
+//         -> TRUE }T  \ aligned -> unaligned
+
+//T{ UNUSED UNUSED0 ! 0 C, UNUSED CHAR+ UNUSED0 @ = -> TRUE }T  \ unaligned -> ?
+
+//
+
+//\ : AG0_Q ;
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING AGAIN   (contributed by James Bowman)
+
+//
+
+//
+
+//T{ : AG0 701 BEGIN
+
+AG0:
+	mov	%rax,-0x08(%rbp)	# 43420A 48 89 45 F8 
+	mov	$0x2BD,%eax	# 43420E B8 BD 2 0 0 
+	lea	-0x08(%rbp),%rbp	# 434213 48 8D 6D F8 
+// DUP
+
+	mov	%rax,-0x08(%rbp)	# 434217 48 89 45 F8 
+	mov	%rax,-0x10(%rbp)	# 43421B 48 89 45 F0 
+// 7
+
+	mov	$0x7,%eax	# 43421F B8 7 0 0 0 
+	mov	%rax,%rcx	# 434224 48 89 C1 
+	mov	-0x10(%rbp),%rax	# 434227 48 8B 45 F0 
+//\ MO_TST_VAL-ON
+
+// MOD
+
+	cqto		# 43422B 48 99 
+		idivq	%rcx	# 43422D 48 F7 F9 
+	mov	%rdx,%rax	# 434230 48 89 D0 
+	sub	$0x01,%rax	# 434233 48 83 E8 1 
+//\ MO_TST_VAL-OFF
+
+// 0= IF
+
+	sbb	%rax,%rax	# 434237 48 19 C0 
+	test	%rax,%rax	# 43423A 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43423D 48 8B 45 F8 
+	jz	 ( AG0+3E  ) 	# 434241 F 84 1 0 0 0 
+//
+
+// EXIT THEN 1+ AGAIN ; -> }T
+
+	ret		# 434247 C3 
+	lea	0x01(%rax),%rax	# 434248 48 8D 40 1 
+	jmp	 ( AG0+D  ) 	# 43424C E9 C6 FF FF FF 
+	ret		# 434251 C3 
+//
+
+//
+
+//T{ AG0 -> 707 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING MARKER   (contributed by James Bowman)
+
+//
+
+//T{ : MA? BL WORD FIND NIP 0<> ; -> }T
+
+MAque:
+	mov	%rax,-0x08(%rbp)	# 434252 48 89 45 F8 
+	mov	$0x20,%eax	# 434256 B8 20 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43425B 48 8D 6D F8 
+	call	 ( WORD ) 	# 43425F E8 FE A4 FD FF 
+	call	 ( FIND ) 	# 434264 E8 7B B1 FD FF 
+		negq	%rax	# 434269 48 F7 D8 
+	sbb	%rax,%rax	# 43426C 48 19 C0 
+	lea	0x08(%rbp),%rbp	# 43426F 48 8D 6D 8 
+	ret		# 434273 C3 
+//T{ MARKER MA0 -> }T
+
+//T{ : MA1 111 ; -> }T
+
+//T{ MARKER MA2 -> }T
+
+//T{ : MA1 222 ; -> }T
+
+//T{ MA? MA0 MA? MA1 MA? MA2 -> TRUE TRUE TRUE }T
+
+//T{ MA1 MA2 MA1 -> 222 111 }T
+
+//T{ MA? MA0 MA? MA1 MA? MA2 -> TRUE TRUE FALSE }T
+
+//T{ MA0 -> }T
+
+//T{ MA? MA0 MA? MA1 MA? MA2 -> FALSE FALSE FALSE }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING ?DO
+
+//
+
+//: QD ?DO I LOOP ;
+
+QD:
+	call	 ( (?DO) ) 	# 434274 E8 6A 7 FD FF 
+	.quad  ( QD+25  ) 
+	mov	%rax,-0x08(%rbp)	# 434281 48 89 45 F8 
+	mov	%r14,%rax	# 434285 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 434288 48 8D 6D F8 
+	inc	%r14	# 43428C 49 FF C6 
+	inc	%r15	# 43428F 49 FF C7 
+	jNo	 ( QD+D  ) 	# 434292 71 ED 
+	pop	%r14	# 434294 41 5E 
+	pop	%r15	# 434296 41 5F 
+	pop	%rcx	# 434298 59 
+	ret		# 434299 C3 
+//T{ 789 789 QD -> }T
+
+//T{ -9876 -9876 QD -> }T
+
+//T{ 5 0 QD -> 0 1 2 3 4 }T
+
+//
+
+//: QD1 ?DO I 10 +LOOP ;
+
+QD1:
+	call	 ( (?DO) ) 	# 43429A E8 44 7 FD FF 
+	.quad  ( QD1+33  ) 
+	mov	%rax,-0x08(%rbp)	# 4342A7 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 4342AB 4C 89 75 F0 
+	mov	$0xA,%eax	# 4342AF B8 A 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4342B4 48 8D 6D F0 
+	add	%rax,%r14	# 4342B8 49 1 C6 
+	add	%rax,%r15	# 4342BB 49 1 C7 
+	mov	0x00(%rbp),%rax	# 4342BE 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4342C2 48 8D 6D 8 
+	jNo	 ( QD1+D  ) 	# 4342C6 71 DF 
+	pop	%r14	# 4342C8 41 5E 
+	pop	%r15	# 4342CA 41 5F 
+	pop	%rcx	# 4342CC 59 
+	ret		# 4342CD C3 
+//T{ 50 1 QD1 -> 1 11 21 31 41 }T
+
+//T{ 50 0 QD1 -> 0 10 20 30 40 }T
+
+//
+
+//: QD2 ?DO I 3 > IF LEAVE ELSE I THEN LOOP ;
+
+QD2:
+	call	 ( (?DO) ) 	# 4342CE E8 10 7 FD FF 
+	.quad  ( QD2+56  ) 
+	mov	%rax,-0x08(%rbp)	# 4342DB 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 4342DF 4C 89 75 F0 
+	mov	$0x3,%eax	# 4342E3 B8 3 0 0 0 
+	cmp	-0x10(%rbp),%rax	# 4342E8 48 3B 45 F0 
+	setl	%al	# 4342EC F 9C C0 
+		neg	%al	# 4342EF F6 D8 
+	movsbq	%al,%rax	# 4342F1 48 F BE C0 
+	test	%rax,%rax	# 4342F5 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4342F8 48 8B 45 F8 
+	jz	 ( QD2+3E  ) 	# 4342FC F 84 A 0 0 0 
+	call	 ( LEAVE ) 	# 434302 E8 16 7 FD FF 
+	jmp	 ( QD2+49  ) 	# 434307 E9 B 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 43430C 48 89 45 F8 
+	mov	%r14,%rax	# 434310 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 434313 48 8D 6D F8 
+	inc	%r14	# 434317 49 FF C6 
+	inc	%r15	# 43431A 49 FF C7 
+	jNo	 ( QD2+D  ) 	# 43431D 71 BC 
+	pop	%r14	# 43431F 41 5E 
+	pop	%r15	# 434321 41 5F 
+	pop	%rcx	# 434323 59 
+	ret		# 434324 C3 
+//T{ 5 -1 QD2 -> -1 0 1 2 3 }T
+
+//
+
+//: QD3 ?DO I 1 +LOOP ;
+
+QD3:
+	call	 ( (?DO) ) 	# 434325 E8 B9 6 FD FF 
+	.quad  ( QD3+33  ) 
+	mov	%rax,-0x08(%rbp)	# 434332 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 434336 4C 89 75 F0 
+	mov	$0x1,%eax	# 43433A B8 1 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 43433F 48 8D 6D F0 
+	add	%rax,%r14	# 434343 49 1 C6 
+	add	%rax,%r15	# 434346 49 1 C7 
+	mov	0x00(%rbp),%rax	# 434349 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43434D 48 8D 6D 8 
+	jNo	 ( QD3+D  ) 	# 434351 71 DF 
+	pop	%r14	# 434353 41 5E 
+	pop	%r15	# 434355 41 5F 
+	pop	%rcx	# 434357 59 
+	ret		# 434358 C3 
+//T{ 4  4 QD3 -> }T
+
+//T{ 4  1 QD3 -> 1 2 3 }T
+
+//T{ 2 -1 QD3 -> -1 0 1 }T
+
+//
+
+//: QD4 ?DO I -1 +LOOP ;
+
+QD4:
+	call	 ( (?DO) ) 	# 434359 E8 85 6 FD FF 
+	.quad  ( QD4+35  ) 
+	mov	%rax,-0x08(%rbp)	# 434366 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 43436A 4C 89 75 F0 
+	movq	$-0x1,%rax	# 43436E 48 C7 C0 FF FF FF FF 
+	lea	-0x10(%rbp),%rbp	# 434375 48 8D 6D F0 
+	add	%rax,%r14	# 434379 49 1 C6 
+	add	%rax,%r15	# 43437C 49 1 C7 
+	mov	0x00(%rbp),%rax	# 43437F 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 434383 48 8D 6D 8 
+	jNo	 ( QD4+D  ) 	# 434387 71 DD 
+	pop	%r14	# 434389 41 5E 
+	pop	%r15	# 43438B 41 5F 
+	pop	%rcx	# 43438D 59 
+	ret		# 43438E C3 
+//T{  4 4 QD4 -> }T
+
+//T{  1 4 QD4 -> 4 3 2 1 }T
+
+//T{ -1 2 QD4 -> 2 1 0 -1 }T
+
+//
+
+//: QD5 ?DO I -10 +LOOP ;
+
+QD5:
+	call	 ( (?DO) ) 	# 43438F E8 4F 6 FD FF 
+	.quad  ( QD5+35  ) 
+	mov	%rax,-0x08(%rbp)	# 43439C 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 4343A0 4C 89 75 F0 
+	movq	$-0xA,%rax	# 4343A4 48 C7 C0 F6 FF FF FF 
+	lea	-0x10(%rbp),%rbp	# 4343AB 48 8D 6D F0 
+	add	%rax,%r14	# 4343AF 49 1 C6 
+	add	%rax,%r15	# 4343B2 49 1 C7 
+	mov	0x00(%rbp),%rax	# 4343B5 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4343B9 48 8D 6D 8 
+	jNo	 ( QD5+D  ) 	# 4343BD 71 DD 
+	pop	%r14	# 4343BF 41 5E 
+	pop	%r15	# 4343C1 41 5F 
+	pop	%rcx	# 4343C3 59 
+	ret		# 4343C4 C3 
+//T{   1 50 QD5 -> 50 40 30 20 10 }T
+
+//T{   0 50 QD5 -> 50 40 30 20 10 0 }T
+
+//T{ -25 10 QD5 -> 10 0 -10 -20 }T
+
+//
+
+//VARIABLE ITERS
+
+	add	%al,(%rax)	# 4343C5 0 0 
+	add	%al,(%rax)	# 4343C7 0 0 
+	add	%al,(%rax)	# 4343C9 0 0 
+ITERS:
+	call	 ( DOCREATE ) 	# 4343CB E8 50 5 FD FF 
+	add	(%rax),%eax	# 4343D0 3 0 
+	add	%al,(%rax)	# 4343D2 0 0 
+	add	%al,(%rax)	# 4343D4 0 0 
+	add	%al,(%rax)	# 4343D6 0 0 
+//VARIABLE INCRMNT
+
+	add	%al,(%rax)	# 4343D8 0 0 
+	add	%ch,%al	# 4343DA 0 E8 
+	add	$0x1FFFD,%eax	# 4343DC 40 5 FD FF 1 0 
+	add	%al,(%rax)	# 4343E2 0 0 
+	add	%al,(%rax)	# 4343E4 0 0 
+	add	%al,(%rax)	# 4343E6 0 0 
+//
+
+//: QD6 ( limit start increment -- )
+
+//   INCRMNT !
+
+QD6:
+	mov	%rax, ( INCRMNT+5  ) (%rip)	# 4343E8 48 89 5 F1 FF FF FF 
+	movq	$0x0, ( ITERS+5  ) (%rip)	# 4343EF 48 C7 5 D6 FF FF FF 0 0 0 0 
+//   0 ITERS !
+
+	mov	0x00(%rbp),%rax	# 4343FA 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4343FE 48 8D 6D 8 
+//   ?DO
+
+	call	 ( (?DO) ) 	# 434402 E8 DC 5 FD FF 
+	.quad  ( QD6+8E  ) 
+//      1 ITERS +!
+
+	mov	%rax,-0x08(%rbp)	# 43440F 48 89 45 F8 
+	lea	 ( ITERS+5  ) (%rip),%rax	# 434413 48 8D 5 B6 FF FF FF 
+	movq	$0x1,%rdx	# 43441A 48 C7 C2 1 0 0 0 
+	add	%rdx,(%rax)	# 434421 48 1 10 
+	mov	%r14,-0x10(%rbp)	# 434424 4C 89 75 F0 
+//      I
+
+	mov	 ( ITERS+5  ) (%rip),%rax	# 434428 48 8B 5 A1 FF FF FF 
+//      ITERS @  6 = IF LEAVE THEN
+
+	xor	$0x6,%rax	# 43442F 48 35 6 0 0 0 
+	sub	$0x01,%rax	# 434435 48 83 E8 1 
+	sbb	%rax,%rax	# 434439 48 19 C0 
+	test	%rax,%rax	# 43443C 48 85 C0 
+	mov	-0x10(%rbp),%rax	# 43443F 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 434443 48 8D 6D F8 
+	jz	 ( QD6+6A  ) 	# 434447 F 84 5 0 0 0 
+	call	 ( LEAVE ) 	# 43444D E8 CB 5 FD FF 
+//      INCRMNT @
+
+	mov	%rax,-0x08(%rbp)	# 434452 48 89 45 F8 
+	mov	 ( INCRMNT+5  ) (%rip),%rax	# 434456 48 8B 5 83 FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 43445D 48 8D 6D F8 
+//   +LOOP ITERS @
+
+	add	%rax,%r14	# 434461 49 1 C6 
+	add	%rax,%r15	# 434464 49 1 C7 
+	mov	0x00(%rbp),%rax	# 434467 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43446B 48 8D 6D 8 
+	jNo	 ( QD6+27  ) 	# 43446F 71 9E 
+	pop	%r14	# 434471 41 5E 
+	pop	%r15	# 434473 41 5F 
+	pop	%rcx	# 434475 59 
+	mov	%rax,-0x08(%rbp)	# 434476 48 89 45 F8 
+	mov	 ( ITERS+5  ) (%rip),%rax	# 43447A 48 8B 5 4F FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 434481 48 8D 6D F8 
+//;
+
+	ret		# 434485 C3 
+//
+
+//T{  4  4 -1 QD6 -> 0 }T
+
+//T{  1  4 -1 QD6 -> 4 3 2 1 4 }T
+
+//T{  4  1 -1 QD6 -> 1 0 -1 -2 -3 -4 6 }T
+
+//T{  4  1  0 QD6 -> 1 1 1 1 1 1 6 }T
+
+//T{  0  0  0 QD6 -> 0 }T
+
+//T{  1  4  0 QD6 -> 4 4 4 4 4 4 6 }T
+
+//T{  1  4  1 QD6 -> 4 5 6 7 8 9 6 }T
+
+//T{  4  1  1 QD6 -> 1 2 3 3 }T
+
+//T{  4  4  1 QD6 -> 0 }T
+
+//T{  2 -1 -1 QD6 -> -1 -2 -3 -4 -5 -6 6 }T
+
+//T{ -1  2 -1 QD6 -> 2 1 0 -1 4 }T
+
+//T{  2 -1  0 QD6 -> -1 -1 -1 -1 -1 -1 6 }T
+
+//T{ -1  2  0 QD6 -> 2 2 2 2 2 2 6 }T
+
+//T{ -1  2  1 QD6 -> 2 3 4 5 6 7 6 }T
+
+//T{  2 -1  1 QD6 -> -1 0 1 3 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING BUFFER:
+
+//
+
+//T{ 8 BUFFER: BUF:TEST -> }T
+
+	add	%al,(%rax)	# 434486 0 0 
+	add	%al,(%rax)	# 434488 0 0 
+	add	%ch,%al	# 43448A 0 E8 
+	nop		# 43448C 90 
+	add	$-0x03,%al	# 43448D 4 FD 
+	jmpf	*0x00(%rdi)	# 43448F FF 6F 0 
+	add	%al,(%rax)	# 434492 0 0 
+	add	%al,(%rax)	# 434494 0 0 
+	add	%al,(%rax)	# 434496 0 0 
+//T{ BUF:TEST DUP ALIGNED = -> TRUE }T
+
+//T{ 111 BUF:TEST ! 222 BUF:TEST CELL+ ! -> }T
+
+//T{ BUF:TEST @ BUF:TEST CELL+ @ -> 111 222 }T
+
+// 1 ALLOT
+
+	.byte	0xDE	# 434498 DE 
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING VALUE TO
+
+//
+
+//T{ 111 VALUE VAL1 -999 VALUE VAL2 -> }T
+
+VAL1:
+	call	 ( DOVALUE ) 	# 434499 E8 74 4 FD FF 
+	.byte	0xDE	# 43449E DE 
+	add	%al,(%rax)	# 43449F 0 0 
+	add	%al,(%rax)	# 4344A1 0 0 
+	add	%al,(%rax)	# 4344A3 0 0 
+	add	%ch,%al	# 4344A5 0 E8 
+	add	$-0x03,%al	# 4344A7 67 4 FD 
+	push	-0x2(%rbx)	# 4344AA FF B3 FE FF FF FF 
+	g4??	%edi	# 4344B0 FF FF 
+	dec	-0x77(%rax)	# 4344B2 FF 48 89 
+//T{ VAL1 -> 111 }T
+
+//T{ VAL2 -> -999 }T
+
+//T{ 222 TO VAL1 -> }T
+
+//T{ VAL1 -> 222 }T
+
+//T{ : VD1 VAL1 ; -> }T
+
+clC	# 4344B5 45 F8 
+	mov	 ( VAL1+5  ) (%rip),%rax	# 4344B7 48 8B 5 E0 FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 4344BE 48 8D 6D F8 
+	ret		# 4344C2 C3 
+//T{ VD1 -> 222 }T
+
+//T{ : VD2 TO VAL2 ; -> }T
+
+VD2:
+	mov	%rax, ( VAL2+5  ) (%rip)	# 4344C3 48 89 5 E1 FF FF FF 
+	mov	0x00(%rbp),%rax	# 4344CA 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4344CE 48 8D 6D 8 
+	ret		# 4344D2 C3 
+//T{ VAL2 -> -999 }T
+
+//T{ -333 VD2 -> }T
+
+//T{ VAL2 -> -333 }T
+
+//T{ VAL1 -> 222 }T
+
+//T{ 123 VALUE VAL3 IMMEDIATE VAL3 -> 123 }T
+
+VAL3:
+	call	 ( DOVALUE ) 	# 4344D3 E8 3A 4 FD FF 
+	jNp	 ( VAL3+7  ) 	# 4344D8 7B 0 
+	add	%al,(%rax)	# 4344DA 0 0 
+	add	%al,(%rax)	# 4344DC 0 0 
+	add	%al,(%rax)	# 4344DE 0 0 
+//T{ : VD3 VAL3 LITERAL ; VD3 -> 123 }T
+
+VD3:
+	mov	%rax,-0x08(%rbp)	# 4344E0 48 89 45 F8 
+	mov	$0x7B,%eax	# 4344E4 B8 7B 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4344E9 48 8D 6D F8 
+	ret		# 4344ED C3 
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING CASE OF ENDOF ENDCASE
+
+//
+
+//: CS1 CASE 1 OF 111 ENDOF
+
+CS1:
+	mov	%rax,-0x08(%rbp)	# 4344EE 48 89 45 F8 
+	xor	$0x1,%rax	# 4344F2 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 4344F8 48 83 E8 1 
+	sbb	%rax,%rax	# 4344FC 48 19 C0 
+	test	%rax,%rax	# 4344FF 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 434502 48 8B 45 F8 
+	jz	 ( CS1+28  ) 	# 434506 F 84 A 0 0 0 
+	mov	$0x6F,%eax	# 43450C B8 6F 0 0 0 
+	jmp	 ( CS1+86  ) 	# 434511 E9 5E 0 0 0 
+//           2 OF 222 ENDOF
+
+	mov	%rax,-0x08(%rbp)	# 434516 48 89 45 F8 
+	xor	$0x2,%rax	# 43451A 48 35 2 0 0 0 
+	sub	$0x01,%rax	# 434520 48 83 E8 1 
+	sbb	%rax,%rax	# 434524 48 19 C0 
+	test	%rax,%rax	# 434527 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43452A 48 8B 45 F8 
+	jz	 ( CS1+50  ) 	# 43452E F 84 A 0 0 0 
+	mov	$0xDE,%eax	# 434534 B8 DE 0 0 0 
+	jmp	 ( CS1+86  ) 	# 434539 E9 36 0 0 0 
+//           3 OF 333 ENDOF
+
+	mov	%rax,-0x08(%rbp)	# 43453E 48 89 45 F8 
+	xor	$0x3,%rax	# 434542 48 35 3 0 0 0 
+	sub	$0x01,%rax	# 434548 48 83 E8 1 
+	sbb	%rax,%rax	# 43454C 48 19 C0 
+	test	%rax,%rax	# 43454F 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 434552 48 8B 45 F8 
+	jz	 ( CS1+78  ) 	# 434556 F 84 A 0 0 0 
+	mov	$0x14D,%eax	# 43455C B8 4D 1 0 0 
+	jmp	 ( CS1+86  ) 	# 434561 E9 E 0 0 0 
+//           >R 999 R>
+
+	Push	%rax	# 434566 50 
+	movq	$0x3E7,-0x08(%rbp)	# 434567 48 C7 45 F8 E7 3 0 0 
+	pop	%rax	# 43456F 58 
+	mov	-0x08(%rbp),%rax	# 434570 48 8B 45 F8 
+//      ENDCASE
+
+//;
+
+	ret		# 434574 C3 
+//
+
+//T{ 1 CS1 -> 111 }T
+
+//T{ 2 CS1 -> 222 }T
+
+//T{ 3 CS1 -> 333 }T
+
+//T{ 4 CS1 -> 999 }T
+
+//
+
+//\ Nested CASE's
+
+//
+
+//: CS2 >R CASE -1 OF CASE R@ 1 OF 100 ENDOF
+
+CS2:
+	Push	%rax	# 434575 50 
+	movq	$-0x1,-0x08(%rbp)	# 434576 48 C7 45 F8 FF FF FF FF 
+	mov	0x00(%rbp),%rax	# 43457E 48 8B 45 0 
+	xor	-0x08(%rbp),%rax	# 434582 48 33 45 F8 
+	sub	$0x01,%rax	# 434586 48 83 E8 1 
+	sbb	%rax,%rax	# 43458A 48 19 C0 
+	test	%rax,%rax	# 43458D 48 85 C0 
+	mov	0x00(%rbp),%rax	# 434590 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 434594 48 8D 6D 8 
+	jz	 ( CS2+94  ) 	# 434598 F 84 6B 0 0 0 
+	mov	0x00(%rbp),%rax	# 43459E 48 8B 45 0 
+	mov	(%rsp),%rax	# 4345A2 48 8B 4 24 
+	mov	%rax,-0x08(%rbp)	# 4345A6 48 89 45 F8 
+	xor	$0x1,%rax	# 4345AA 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 4345B0 48 83 E8 1 
+	sbb	%rax,%rax	# 4345B4 48 19 C0 
+	test	%rax,%rax	# 4345B7 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4345BA 48 8B 45 F8 
+	jz	 ( CS2+59  ) 	# 4345BE F 84 A 0 0 0 
+	mov	$0x64,%eax	# 4345C4 B8 64 0 0 0 
+	jmp	 ( CS2+8F  ) 	# 4345C9 E9 36 0 0 0 
+//                            2 OF 200 ENDOF
+
+	mov	%rax,-0x08(%rbp)	# 4345CE 48 89 45 F8 
+	xor	$0x2,%rax	# 4345D2 48 35 2 0 0 0 
+	sub	$0x01,%rax	# 4345D8 48 83 E8 1 
+	sbb	%rax,%rax	# 4345DC 48 19 C0 
+	test	%rax,%rax	# 4345DF 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4345E2 48 8B 45 F8 
+	jz	 ( CS2+81  ) 	# 4345E6 F 84 A 0 0 0 
+	mov	$0xC8,%eax	# 4345EC B8 C8 0 0 0 
+	jmp	 ( CS2+8F  ) 	# 4345F1 E9 E 0 0 0 
+//                           >R -300 R>
+
+	Push	%rax	# 4345F6 50 
+	movq	$-0x12C,-0x08(%rbp)	# 4345F7 48 C7 45 F8 D4 FE FF FF 
+	pop	%rax	# 4345FF 58 
+	mov	-0x08(%rbp),%rax	# 434600 48 8B 45 F8 
+//                    ENDCASE
+
+//                 ENDOF
+
+	jmp	 ( CS2+105  ) 	# 434604 E9 71 0 0 0 
+//              -2 OF CASE R@ 1 OF -99  ENDOF
+
+	mov	%rax,-0x08(%rbp)	# 434609 48 89 45 F8 
+	xor	$-0x2,%rax	# 43460D 48 35 FE FF FF FF 
+	sub	$0x01,%rax	# 434613 48 83 E8 1 
+	sbb	%rax,%rax	# 434617 48 19 C0 
+	test	%rax,%rax	# 43461A 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43461D 48 8B 45 F8 
+	jz	 ( CS2+F7  ) 	# 434621 F 84 45 0 0 0 
+	mov	0x00(%rbp),%rax	# 434627 48 8B 45 0 
+	mov	(%rsp),%rax	# 43462B 48 8B 4 24 
+	mov	%rax,-0x08(%rbp)	# 43462F 48 89 45 F8 
+	xor	$0x1,%rax	# 434633 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 434639 48 83 E8 1 
+	sbb	%rax,%rax	# 43463D 48 19 C0 
+	test	%rax,%rax	# 434640 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 434643 48 8B 45 F8 
+	jz	 ( CS2+E4  ) 	# 434647 F 84 C 0 0 0 
+	movq	$-0x63,%rax	# 43464D 48 C7 C0 9D FF FF FF 
+	jmp	 ( CS2+F2  ) 	# 434654 E9 E 0 0 0 
+//                            >R -199 R>
+
+	Push	%rax	# 434659 50 
+	movq	$-0xC7,-0x08(%rbp)	# 43465A 48 C7 45 F8 39 FF FF FF 
+	pop	%rax	# 434662 58 
+	mov	-0x08(%rbp),%rax	# 434663 48 8B 45 F8 
+//                    ENDCASE
+
+//                 ENDOF
+
+	jmp	 ( CS2+105  ) 	# 434667 E9 E 0 0 0 
+//                 >R 299 R>
+
+	Push	%rax	# 43466C 50 
+	movq	$0x12B,-0x08(%rbp)	# 43466D 48 C7 45 F8 2B 1 0 0 
+	pop	%rax	# 434675 58 
+	mov	-0x08(%rbp),%rax	# 434676 48 8B 45 F8 
+//         ENDCASE R> DROP
+
+	mov	%rax,-0x08(%rbp)	# 43467A 48 89 45 F8 
+	pop	%rax	# 43467E 58 
+	mov	-0x08(%rbp),%rax	# 43467F 48 8B 45 F8 
+//;
+
+	ret		# 434683 C3 
+//
+
+//T{ -1 1 CS2 ->  100 }T
+
+//T{ -1 2 CS2 ->  200 }T
+
+//T{ -1 3 CS2 -> -300 }T
+
+//T{ -2 1 CS2 -> -99  }T
+
+//T{ -2 2 CS2 -> -199 }T
+
+//T{  0 2 CS2 ->  299 }T
+
+//
+
+//\ Boolean short circuiting using CASE
+
+//
+
+//: CS3  ( N1 -- N2 )
+
+//   CASE 1- FALSE OF 11 ENDOF
+
+CS3:
+	lea	-0x01(%rax),%rax	# 434684 48 8D 40 FF 
+	mov	%rax,-0x08(%rbp)	# 434688 48 89 45 F8 
+	xor	$0x0,%rax	# 43468C 48 35 0 0 0 0 
+	sub	$0x01,%rax	# 434692 48 83 E8 1 
+	sbb	%rax,%rax	# 434696 48 19 C0 
+	test	%rax,%rax	# 434699 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43469C 48 8B 45 F8 
+	jz	 ( CS3+2C  ) 	# 4346A0 F 84 A 0 0 0 
+	mov	$0xB,%eax	# 4346A6 B8 B 0 0 0 
+	jmp	 ( CS3+90  ) 	# 4346AB E9 64 0 0 0 
+//        1- FALSE OF 22 ENDOF
+
+	lea	-0x01(%rax),%rax	# 4346B0 48 8D 40 FF 
+	mov	%rax,-0x08(%rbp)	# 4346B4 48 89 45 F8 
+	xor	$0x0,%rax	# 4346B8 48 35 0 0 0 0 
+	sub	$0x01,%rax	# 4346BE 48 83 E8 1 
+	sbb	%rax,%rax	# 4346C2 48 19 C0 
+	test	%rax,%rax	# 4346C5 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4346C8 48 8B 45 F8 
+	jz	 ( CS3+58  ) 	# 4346CC F 84 A 0 0 0 
+	mov	$0x16,%eax	# 4346D2 B8 16 0 0 0 
+	jmp	 ( CS3+90  ) 	# 4346D7 E9 38 0 0 0 
+//        1- FALSE OF 33 ENDOF
+
+	lea	-0x01(%rax),%rax	# 4346DC 48 8D 40 FF 
+	mov	%rax,-0x08(%rbp)	# 4346E0 48 89 45 F8 
+	xor	$0x0,%rax	# 4346E4 48 35 0 0 0 0 
+	sub	$0x01,%rax	# 4346EA 48 83 E8 1 
+	sbb	%rax,%rax	# 4346EE 48 19 C0 
+	test	%rax,%rax	# 4346F1 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4346F4 48 8B 45 F8 
+	jz	 ( CS3+84  ) 	# 4346F8 F 84 A 0 0 0 
+	mov	$0x21,%eax	# 4346FE B8 21 0 0 0 
+	jmp	 ( CS3+90  ) 	# 434703 E9 C 0 0 0 
+//        44 SWAP
+
+	movq	$0x2C,-0x08(%rbp)	# 434708 48 C7 45 F8 2C 0 0 0 
+	mov	-0x08(%rbp),%rax	# 434710 48 8B 45 F8 
+//   ENDCASE
+
+//;
+
+	ret		# 434714 C3 
+//
+
+//T{ 1 CS3 -> 11 }T
+
+//T{ 2 CS3 -> 22 }T
+
+//T{ 3 CS3 -> 33 }T
+
+//T{ 9 CS3 -> 44 }T
+
+//
+
+//\ Empty CASE statements with/without default
+
+//
+
+//T{ : CS4 CASE ENDCASE ; 1 CS4 -> }T
+
+CS4:
+	mov	0x00(%rbp),%rax	# 434715 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 434719 48 8D 6D 8 
+	ret		# 43471D C3 
+//T{ : CS5 CASE 2 SWAP ENDCASE ; 1 CS5 -> 2 }T
+
+CS5:
+	movq	$0x2,-0x08(%rbp)	# 43471E 48 C7 45 F8 2 0 0 0 
+	mov	-0x08(%rbp),%rax	# 434726 48 8B 45 F8 
+	ret		# 43472A C3 
+//T{ : CS6 CASE 1 OF ENDOF 2 ENDCASE ; 1 CS6 -> }T
+
+CS6:
+	mov	%rax,-0x08(%rbp)	# 43472B 48 89 45 F8 
+	xor	$0x1,%rax	# 43472F 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 434735 48 83 E8 1 
+	sbb	%rax,%rax	# 434739 48 19 C0 
+	test	%rax,%rax	# 43473C 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43473F 48 8B 45 F8 
+	jz	 ( CS6+2B  ) 	# 434743 F 84 D 0 0 0 
+	mov	0x00(%rbp),%rax	# 434749 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43474D 48 8D 6D 8 
+	jmp	 ( CS6+2F  ) 	# 434751 E9 4 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 434756 48 89 45 F8 
+	ret		# 43475A C3 
+//T{ : CS7 CASE 3 OF ENDOF 2 ENDCASE ; 1 CS7 -> 1 }T
+
+CS7:
+	mov	%rax,-0x08(%rbp)	# 43475B 48 89 45 F8 
+	xor	$0x3,%rax	# 43475F 48 35 3 0 0 0 
+	sub	$0x01,%rax	# 434765 48 83 E8 1 
+	sbb	%rax,%rax	# 434769 48 19 C0 
+	test	%rax,%rax	# 43476C 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43476F 48 8B 45 F8 
+	jz	 ( CS7+2B  ) 	# 434773 F 84 D 0 0 0 
+	mov	0x00(%rbp),%rax	# 434779 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43477D 48 8D 6D 8 
+	jmp	 ( CS7+2F  ) 	# 434781 E9 4 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 434786 48 89 45 F8 
+	ret		# 43478A C3 
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING :NONAME RECURSE
+
+//
+
+//VARIABLE NN1
+
+NN1:
+	call	 ( DOCREATE ) 	# 43478B E8 90 1 FD FF 
+	test	$0x47,%al	# 434790 A8 47 
+	add	%al,(%r8)	# 434792 43 0 0 
+	add	%al,(%rax)	# 434795 0 0 
+	add	%al,(%rax)	# 434797 0 0 
+//VARIABLE NN2
+
+	add	%al,(%rax)	# 434799 0 0 
+NN2:
+	call	 ( DOCREATE ) 	# 43479B E8 80 1 FD FF 
+	mov	$0x47,%dh	# 4347A0 B6 47 
+	add	%al,(%r8)	# 4347A2 43 0 0 
+	add	%al,(%rax)	# 4347A5 0 0 
+	add	%cl,-0x77(%rax)	# 4347A7 0 48 89 
+//:NONAME 1234 ; NN1 !
+
+clC	# 4347AA 45 F8 
+	mov	$0x4D2,%eax	# 4347AC B8 D2 4 0 0 
+	lea	-0x08(%rbp),%rbp	# 4347B1 48 8D 6D F8 
+	ret		# 4347B5 C3 
+//:NONAME 9876 ; NN2 !
+
+	mov	%rax,-0x08(%rbp)	# 4347B6 48 89 45 F8 
+	mov	$0x2694,%eax	# 4347BA B8 94 26 0 0 
+	lea	-0x08(%rbp),%rbp	# 4347BF 48 8D 6D F8 
+	ret		# 4347C3 C3 
+//T{ NN1 @ EXECUTE -> 1234 }T
+
+//T{ NN2 @ EXECUTE -> 9876 }T
+
+//
+
+//T{ :NONAME ( n -- 0,1,..n ) DUP IF DUP >R 1- RECURSE R> THEN ;
+
+	mov	%rax,-0x08(%rbp)	# 4347C4 48 89 45 F8 
+	test	%rax,%rax	# 4347C8 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4347CB 48 8B 45 F8 
+	jz	 ( NN2+55  ) 	# 4347CF F 84 1B 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4347D5 48 89 45 F8 
+	Push	%rax	# 4347D9 50 
+	mov	-0x08(%rbp),%rax	# 4347DA 48 8B 45 F8 
+	lea	-0x01(%rax),%rax	# 4347DE 48 8D 40 FF 
+	call	 ( NN2+29  ) 	# 4347E2 E8 DD FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 4347E7 48 89 45 F8 
+	pop	%rax	# 4347EB 58 
+	lea	-0x08(%rbp),%rbp	# 4347EC 48 8D 6D F8 
+	ret		# 4347F0 C3 
+//   CONSTANT RN1 -> }T
+
+RN1:
+	call	 ( DOCONSTANT ) 	# 4347F1 E8 1D 1 FD FF 
+	.byte	0xC4	# 4347F6 C4 
+	add	%al,(%r8)	# 4347F7 47 43 0 0 
+	add	%al,(%rax)	# 4347FB 0 0 
+	add	%cl,-0x73(%rax)	# 4347FD 0 48 8D 
+//T{ 0 RN1 EXECUTE -> 0 }T
+
+//T{ 4 RN1 EXECUTE -> 0 1 2 3 4 }T
+
+//
+
+//:NONAME  ( n -- n1 )    \ Multiple RECURSEs in one definition
+
+//   1- DUP
+
+	dec	-0x77(%rax)	# 434800 40 FF 48 89 
+clC	# 434804 45 F8 
+	mov	%rax,-0x10(%rbp)	# 434806 48 89 45 F0 
+//   CASE 0 OF EXIT ENDOF
+
+	xor	$0x0,%rax	# 43480A 48 35 0 0 0 0 
+	sub	$0x01,%rax	# 434810 48 83 E8 1 
+	sbb	%rax,%rax	# 434814 48 19 C0 
+	test	%rax,%rax	# 434817 48 85 C0 
+	mov	-0x10(%rbp),%rax	# 43481A 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 43481E 48 8D 6D F8 
+	jz	 ( RN1+45  ) 	# 434822 F 84 E 0 0 0 
+	mov	0x00(%rbp),%rax	# 434828 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43482C 48 8D 6D 8 
+	ret		# 434830 C3 
+	jmp	 ( RN1+10B  ) 	# 434831 E9 C6 0 0 0 
+//        1 OF 11 SWAP RECURSE ENDOF
+
+	mov	%rax,-0x08(%rbp)	# 434836 48 89 45 F8 
+	xor	$0x1,%rax	# 43483A 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 434840 48 83 E8 1 
+	sbb	%rax,%rax	# 434844 48 19 C0 
+	test	%rax,%rax	# 434847 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43484A 48 8B 45 F8 
+	jz	 ( RN1+7D  ) 	# 43484E F 84 1A 0 0 0 
+	mov	$0xB,%eax	# 434854 B8 B 0 0 0 
+	mov	0x00(%rbp),%rdx	# 434859 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 43485D 48 89 45 0 
+	mov	%rdx,%rax	# 434861 48 89 D0 
+	call	 ( RN1+D  ) 	# 434864 E8 95 FF FF FF 
+	jmp	 ( RN1+10B  ) 	# 434869 E9 8E 0 0 0 
+//        2 OF 22 SWAP RECURSE ENDOF
+
+	mov	%rax,-0x08(%rbp)	# 43486E 48 89 45 F8 
+	xor	$0x2,%rax	# 434872 48 35 2 0 0 0 
+	sub	$0x01,%rax	# 434878 48 83 E8 1 
+	sbb	%rax,%rax	# 43487C 48 19 C0 
+	test	%rax,%rax	# 43487F 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 434882 48 8B 45 F8 
+	jz	 ( RN1+B5  ) 	# 434886 F 84 1A 0 0 0 
+	mov	$0x16,%eax	# 43488C B8 16 0 0 0 
+	mov	0x00(%rbp),%rdx	# 434891 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 434895 48 89 45 0 
+	mov	%rdx,%rax	# 434899 48 89 D0 
+	call	 ( RN1+D  ) 	# 43489C E8 5D FF FF FF 
+	jmp	 ( RN1+10B  ) 	# 4348A1 E9 56 0 0 0 
+//        3 OF 33 SWAP RECURSE ENDOF
+
+	mov	%rax,-0x08(%rbp)	# 4348A6 48 89 45 F8 
+	xor	$0x3,%rax	# 4348AA 48 35 3 0 0 0 
+	sub	$0x01,%rax	# 4348B0 48 83 E8 1 
+	sbb	%rax,%rax	# 4348B4 48 19 C0 
+	test	%rax,%rax	# 4348B7 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4348BA 48 8B 45 F8 
+	jz	 ( RN1+ED  ) 	# 4348BE F 84 1A 0 0 0 
+	mov	$0x21,%eax	# 4348C4 B8 21 0 0 0 
+	mov	0x00(%rbp),%rdx	# 4348C9 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 4348CD 48 89 45 0 
+	mov	%rdx,%rax	# 4348D1 48 89 D0 
+	call	 ( RN1+D  ) 	# 4348D4 E8 25 FF FF FF 
+	jmp	 ( RN1+10B  ) 	# 4348D9 E9 1E 0 0 0 
+//        DROP ABS RECURSE EXIT
+
+	mov	0x00(%rbp),%rax	# 4348DE 48 8B 45 0 
+	cqto		# 4348E2 48 99 
+	xor	%rdx,%rax	# 4348E4 48 31 D0 
+	sub	%rdx,%rax	# 4348E7 48 29 D0 
+	lea	0x08(%rbp),%rbp	# 4348EA 48 8D 6D 8 
+	call	 ( RN1+D  ) 	# 4348EE E8 B FF FF FF 
+	ret		# 4348F3 C3 
+//   ENDCASE
+
+	mov	0x00(%rbp),%rax	# 4348F4 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4348F8 48 8D 6D 8 
+//; CONSTANT RN2
+
+	ret		# 4348FC C3 
+RN2:
+	call	 ( DOCONSTANT ) 	# 4348FD E8 11 0 FD FF 
+	inc	0x43(%rdi)	# 434902 FE 47 43 
+	add	%al,(%rax)	# 434905 0 0 
+	add	%al,(%rax)	# 434907 0 0 
+	add	%ch,%al	# 434909 0 E8 
+//
+
+//T{  1 RN2 EXECUTE -> 0 }T
+
+//T{  2 RN2 EXECUTE -> 11 0 }T
+
+//T{  4 RN2 EXECUTE -> 33 22 11 0 }T
+
+//T{ 25 RN2 EXECUTE -> 33 22 11 0 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING C"
+
+//
+
+//T{ : CQ1 C" 123" ; -> }T
+
+	Push	%rbp	# 43490B 55 
+	add	$0x3103FFFD,%eax	# 43490C 7 FD FF 3 31 
+	xor	(%rbx),%dh	# 434911 32 33 
+	ret		# 434913 C3 
+//T{ CQ1 COUNT EVALUATE -> 123 }T
+
+//T{ : CQ2 C" " ; -> }T
+
+CQ2:
+	call	 ( (C") ) 	# 434914 E8 4B 7 FD FF 
+	add	%al,%bl	# 434919 0 C3 
+//T{ CQ2 COUNT EVALUATE -> }T
+
+//T{ : CQ3 C" 2345"COUNT EVALUATE ; CQ3 -> 2345 }T
+
+CQ3:
+	call	 ( (C") ) 	# 43491B E8 44 7 FD FF 
+	add	$0x32,%al	# 434920 4 32 
+	xor	0x1508D48(,%rsi,1),%esi	# 434922 33 34 35 48 8D 50 1 
+	movzbq	(%rax),%rax	# 434929 48 F B6 0 
+	mov	%rdx,-0x08(%rbp)	# 43492D 48 89 55 F8 
+	lea	-0x08(%rbp),%rbp	# 434931 48 8D 6D F8 
+	call	 ( EVALUATE ) 	# 434935 E8 F4 96 FD FF 
+	ret		# 43493A C3 
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING COMPILE,
+
+//
+
+//:NONAME DUP + ; CONSTANT DUP+
+
+	mov	%rax,-0x08(%rbp)	# 43493B 48 89 45 F8 
+	add	-0x08(%rbp),%rax	# 43493F 48 3 45 F8 
+	ret		# 434943 C3 
+DUPadd:
+	call	 ( DOCONSTANT ) 	# 434944 E8 CA FF FC FF 
+	cmp	0x43(%rcx),%ecx	# 434949 3B 49 43 
+	add	%al,(%rax)	# 43494C 0 0 
+	add	%al,(%rax)	# 43494E 0 0 
+	add	%cl,-0x77(%rax)	# 434950 0 48 89 
+//T{ : Q DUP+ COMPILE, ; -> }T
+
+clC	# 434953 45 F8 
+	mov	$0x43493B,%eax	# 434955 B8 3B 49 43 0 
+	lea	-0x08(%rbp),%rbp	# 43495A 48 8D 6D F8 
+	call	 ( COMPILE, ) 	# 43495E E8 56 81 FD FF 
+	ret		# 434963 C3 
+//T{ : AS1 [ Q ] ; -> }T
+
+AS1:
+	mov	%rax,-0x08(%rbp)	# 434964 48 89 45 F8 
+	add	-0x08(%rbp),%rax	# 434968 48 3 45 F8 
+	ret		# 43496C C3 
+//T{ 123 AS1 -> 246 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//\ Cannot automatically test SAVE-INPUT and RESTORE-INPUT from a console source
+
+//
+
+//TESTING SAVE-INPUT and RESTORE-INPUT with a string source
+
+//
+
+//VARIABLE SI_INC 0 SI_INC !
+
+	add	%al,(%rax)	# 43496D 0 0 
+	add	%al,(%rax)	# 43496F 0 0 
+	add	%al,(%rax)	# 434971 0 0 
+SI_INC:
+	call	 ( DOCREATE ) 	# 434973 E8 A8 FF FC FF 
+	sldt	(%rax)	# 434978 F 0 0 
+	add	%al,(%rax)	# 43497B 0 0 
+	add	%al,(%rax)	# 43497D 0 0 
+	add	%cl,-0x77(%rax)	# 43497F 0 48 89 
+//
+
+//: SI1
+
+//   SI_INC @ >IN +!
+
+clC	# 434982 45 F8 
+	mov	 ( SI_INC+5  ) (%rip),%rax	# 434984 48 8B 5 ED FF FF FF 
+	mov	%rax,%rdx	# 43498B 48 89 C2 
+	mov	$0x404C49,%eax	# 43498E B8 49 4C 40 0 
+	add	%rdx,(%rax)	# 434993 48 1 10 
+	movq	$0xF, ( SI_INC+5  ) (%rip)	# 434996 48 C7 5 D7 FF FF FF F 0 0 0 
+//   15 SI_INC !
+
+	mov	-0x08(%rbp),%rax	# 4349A1 48 8B 45 F8 
+//;
+
+	ret		# 4349A5 C3 
+//
+
+//: S$ S" SAVE-INPUT SI1 RESTORE-INPUT 12345" ;
+
+Sdol:
+	call	 ( (S") ) 	# 4349A6 E8 97 6 FD FF 
+	.byte 0x22,0x53,0x41,0x56,0x45,0x2D,0x49,0x4E,0x50,0x55,0x54,0x20,0x53,0x49,0x31,0x20,0x52,0x45,0x53,0x54,0x4F,0x52,0x45,0x2D,0x49,0x4E,0x50,0x55,0x54,0x20,0x31,0x32,0x33,0x34,0x35
+	ret		# 4349CE C3 
+//
+
+//T{ S$ EVALUATE SI_INC @ -> 0 2345 15 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING .(
+
+//
+
+//CR CR .( Output from .() 
+
+//T{ CR .( You should see -9876: ) -9876 . -> }T
+
+//T{ CR .( and again: ).( -9876)CR -> }T
+
+//
+
+//CR CR .( On the next 2 lines you should see First then Second messages:)
+
+//T{ : DOTP  CR ." Second message via ." [CHAR] " EMIT    \ Check .( is immediate
+
+DOTP:
+	call	 ( CR ) 	# 4349CF E8 2F 6 FD FF 
+	call	 ( (S") ) 	# 4349D4 E8 69 6 FD FF 
+	.byte 0x14,0x53,0x65,0x63,0x6F,0x6E,0x64,0x20,0x6D,0x65,0x73,0x73,0x61,0x67,0x65,0x20,0x76,0x69,0x61,0x20,0x2E
+	call	 ( TYPE ) 	# 4349EE E8 C3 5 FD FF 
+	mov	%rax,-0x08(%rbp)	# 4349F3 48 89 45 F8 
+	mov	$0x22,%eax	# 4349F7 B8 22 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4349FC 48 8D 6D F8 
+	call	 ( EMIT ) 	# 434A00 E8 DE 5 FD FF 
+//     [ CR ] .( First message via .( ) ; DOTP -> }T
+
+	ret		# 434A05 C3 
+//CR CR
+
+//T{ : IMM? BL WORD FIND NIP ; IMM? .( -> 1 }T
+
+IMMque:
+	mov	%rax,-0x08(%rbp)	# 434A06 48 89 45 F8 
+	mov	$0x20,%eax	# 434A0A B8 20 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 434A0F 48 8D 6D F8 
+	call	 ( WORD ) 	# 434A13 E8 4A 9D FD FF 
+	call	 ( FIND ) 	# 434A18 E8 C7 A9 FD FF 
+	lea	0x08(%rbp),%rbp	# 434A1D 48 8D 6D 8 
+	ret		# 434A21 C3 
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING .R and U.R - has to handle different cell sizes
+
+//
+
+//\ Create some large integers just below/above MAX and Min INTs
+
+//MAX-INT 73 79 */ CONSTANT LI1
+
+LI1:
+	call	 ( DOCONSTANT ) 	# 434A22 E8 EC FE FC FF 
+	xchg	%esp,%eax	# 434A27 94 
+	mov	%esp,%GS	# 434A28 8E EC 
+	sbb	%ecx,-0x1789B8B6(%rax)	# 434A2A 19 88 4A 47 76 E8 
+//MIN-INT 71 73 */ CONSTANT LI2
+
+	.byte	0xDF	# 434A30 DF 
+	g4??	%ah	# 434A31 FE FC 
+	dec	(%rdi)	# 434A33 FF F 
+	sbb	$0x38,%al	# 434A35 1C 38 
+	jo	 ( IMM?+13  ) 	# 434A37 70 E0 
+	rol	$-0x04,-0x12D177D(%rcx)	# 434A39 C0 81 83 E8 D2 FE FC 
+//
+
+//LI1 0 <# #S #> NIP CONSTANT LENLI1
+
+	call	*(%rbx)	# 434A40 FF 13 
+	add	%al,(%rax)	# 434A42 0 0 
+	add	%al,(%rax)	# 434A44 0 0 
+	add	%al,(%rax)	# 434A46 0 0 
+	add	%cl,-0x75(%rax)	# 434A48 0 48 8B 
+//
+
+//: (.R&U.R)  ( u1 u2 -- )  \ u1 <= string length, u2 is required indentation
+
+//   TUCK + >R
+
+	Push	%rbp	# 434A4B 55 
+	add	%cl,-0x77(%rax)	# 434A4C 0 48 89 
+	add	%r9lB,0x01(%r8)	# 434A4F 45 0 48 1 
+	rcl	$1,0x48(%rax)	# 434A53 D0 50 48 
+	mov	$0x19EC8E94,%eax	# 434A56 B8 94 8E EC 19 
+	mov	%cl,0x47(%rdx)	# 434A5B 88 4A 47 
+//   LI1 OVER SPACES  . CR R@    LI1 SWAP  .R CR
+
+	jbe	 ( (.R&U.R)+5F  ) 	# 434A5E 76 48 
+	mov	%eax,-0x08(%rbp)	# 434A60 89 45 F8 
+	mov	0x00(%rbp),%rax	# 434A63 48 8B 45 0 
+	lea	-0x08(%rbp),%rbp	# 434A67 48 8D 6D F8 
+	call	 ( SPACES ) 	# 434A6B E8 D8 28 FE FF 
+	call	 ( . ) 	# 434A70 E8 BE 74 FD FF 
+	call	 ( CR ) 	# 434A75 E8 89 5 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434A7A 48 89 45 F8 
+	mov	(%rsp),%rax	# 434A7E 48 8B 4 24 
+	mov	%rax,%rdx	# 434A82 48 89 C2 
+	movabs	$0x76474A8819EC8E94,%rax	# 434A85 48 B8 94 8E EC 19 88 4A 47 76 
+	mov	%rax,-0x10(%rbp)	# 434A8F 48 89 45 F0 
+	mov	%rdx,%rax	# 434A93 48 89 D0 
+	lea	-0x10(%rbp),%rbp	# 434A96 48 8D 6D F0 
+	call	 ( .R ) 	# 434A9A E8 E5 74 FD FF 
+	call	 ( CR ) 	# 434A9F E8 5F 5 FD FF 
+//   LI2 OVER SPACES  . CR R@ 1+ LI2 SWAP  .R CR
+
+	mov	%rax,-0x08(%rbp)	# 434AA4 48 89 45 F8 
+	movabs	$-0x7C7E3F1F8FC7E3F1,%rax	# 434AA8 48 B8 F 1C 38 70 E0 C0 81 83 
+	mov	%rax,-0x10(%rbp)	# 434AB2 48 89 45 F0 
+	mov	-0x08(%rbp),%rax	# 434AB6 48 8B 45 F8 
+	lea	-0x10(%rbp),%rbp	# 434ABA 48 8D 6D F0 
+	call	 ( SPACES ) 	# 434ABE E8 85 28 FE FF 
+	call	 ( . ) 	# 434AC3 E8 6B 74 FD FF 
+	call	 ( CR ) 	# 434AC8 E8 36 5 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434ACD 48 89 45 F8 
+	mov	(%rsp),%rax	# 434AD1 48 8B 4 24 
+	lea	0x01(%rax),%rax	# 434AD5 48 8D 40 1 
+	mov	%rax,%rdx	# 434AD9 48 89 C2 
+	movabs	$-0x7C7E3F1F8FC7E3F1,%rax	# 434ADC 48 B8 F 1C 38 70 E0 C0 81 83 
+	mov	%rax,-0x10(%rbp)	# 434AE6 48 89 45 F0 
+	mov	%rdx,%rax	# 434AEA 48 89 D0 
+	lea	-0x10(%rbp),%rbp	# 434AED 48 8D 6D F0 
+	call	 ( .R ) 	# 434AF1 E8 8E 74 FD FF 
+	call	 ( CR ) 	# 434AF6 E8 8 5 FD FF 
+//   LI1 OVER SPACES U. CR R@    LI1 SWAP U.R CR
+
+	mov	%rax,-0x08(%rbp)	# 434AFB 48 89 45 F8 
+	movabs	$0x76474A8819EC8E94,%rax	# 434AFF 48 B8 94 8E EC 19 88 4A 47 76 
+	mov	%rax,-0x10(%rbp)	# 434B09 48 89 45 F0 
+	mov	-0x08(%rbp),%rax	# 434B0D 48 8B 45 F8 
+	lea	-0x10(%rbp),%rbp	# 434B11 48 8D 6D F0 
+	call	 ( SPACES ) 	# 434B15 E8 2E 28 FE FF 
+	call	 ( U. ) 	# 434B1A E8 26 74 FD FF 
+	call	 ( CR ) 	# 434B1F E8 DF 4 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434B24 48 89 45 F8 
+	mov	(%rsp),%rax	# 434B28 48 8B 4 24 
+	mov	%rax,%rdx	# 434B2C 48 89 C2 
+	movabs	$0x76474A8819EC8E94,%rax	# 434B2F 48 B8 94 8E EC 19 88 4A 47 76 
+	mov	%rax,-0x10(%rbp)	# 434B39 48 89 45 F0 
+	mov	%rdx,%rax	# 434B3D 48 89 D0 
+	lea	-0x10(%rbp),%rbp	# 434B40 48 8D 6D F0 
+	call	 ( U.R ) 	# 434B44 E8 F 74 FD FF 
+	call	 ( CR ) 	# 434B49 E8 B5 4 FD FF 
+//   LI2 SWAP SPACES U. CR R>    LI2 SWAP U.R CR
+
+	mov	%rax,%rdx	# 434B4E 48 89 C2 
+	movabs	$-0x7C7E3F1F8FC7E3F1,%rax	# 434B51 48 B8 F 1C 38 70 E0 C0 81 83 
+	mov	%rax,-0x08(%rbp)	# 434B5B 48 89 45 F8 
+	mov	%rdx,%rax	# 434B5F 48 89 D0 
+	lea	-0x08(%rbp),%rbp	# 434B62 48 8D 6D F8 
+	call	 ( SPACES ) 	# 434B66 E8 DD 27 FE FF 
+	call	 ( U. ) 	# 434B6B E8 D5 73 FD FF 
+	call	 ( CR ) 	# 434B70 E8 8E 4 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434B75 48 89 45 F8 
+	pop	-0x10(%rbp)	# 434B79 8F 45 F0 
+	movabs	$-0x7C7E3F1F8FC7E3F1,%rax	# 434B7C 48 B8 F 1C 38 70 E0 C0 81 83 
+	mov	-0x10(%rbp),%rdx	# 434B86 48 8B 55 F0 
+	mov	%rax,-0x10(%rbp)	# 434B8A 48 89 45 F0 
+	mov	%rdx,%rax	# 434B8E 48 89 D0 
+	lea	-0x10(%rbp),%rbp	# 434B91 48 8D 6D F0 
+	call	 ( U.R ) 	# 434B95 E8 BE 73 FD FF 
+	call	 ( CR ) 	# 434B9A E8 64 4 FD FF 
+//;
+
+	ret		# 434B9F C3 
+//
+
+//: .R&U.R  ( -- )
+
+//   CR ." You should see lines duplicated:" CR
+
+dotRandUdotR:
+	call	 ( CR ) 	# 434BA0 E8 5E 4 FD FF 
+	call	 ( (S") ) 	# 434BA5 E8 98 4 FD FF 
+	.byte 0x20,0x59,0x6F,0x75,0x20,0x73,0x68,0x6F,0x75,0x6C,0x64,0x20,0x73,0x65,0x65,0x20,0x6C,0x69,0x6E,0x65,0x73,0x20,0x64,0x75,0x70,0x6C,0x69,0x63,0x61,0x74,0x65,0x64,0x3A
+	call	 ( TYPE ) 	# 434BCB E8 E6 3 FD FF 
+	call	 ( CR ) 	# 434BD0 E8 2E 4 FD FF 
+//   ." indented by 0 spaces" CR 0      0 (.R&U.R) CR
+
+	call	 ( (S") ) 	# 434BD5 E8 68 4 FD FF 
+	.byte 0x14,0x69,0x6E,0x64,0x65,0x6E,0x74,0x65,0x64,0x20,0x62,0x79,0x20,0x30,0x20,0x73,0x70,0x61,0x63,0x65,0x73
+	call	 ( TYPE ) 	# 434BEF E8 C2 3 FD FF 
+	call	 ( CR ) 	# 434BF4 E8 A 4 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434BF9 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 434BFD 48 C7 45 F0 0 0 0 0 
+	mov	$0x0,%eax	# 434C05 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 434C0A 48 8D 6D F0 
+	call	 ( (.R&U.R) ) 	# 434C0E E8 36 FE FF FF 
+	call	 ( CR ) 	# 434C13 E8 EB 3 FD FF 
+//   ." indented by 0 spaces" CR LENLI1 0 (.R&U.R) CR \ Just fits required width
+
+	call	 ( (S") ) 	# 434C18 E8 25 4 FD FF 
+	.byte 0x14,0x69,0x6E,0x64,0x65,0x6E,0x74,0x65,0x64,0x20,0x62,0x79,0x20,0x30,0x20,0x73,0x70,0x61,0x63,0x65,0x73
+	call	 ( TYPE ) 	# 434C32 E8 7F 3 FD FF 
+	call	 ( CR ) 	# 434C37 E8 C7 3 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434C3C 48 89 45 F8 
+	movq	$0x13,-0x10(%rbp)	# 434C40 48 C7 45 F0 13 0 0 0 
+	mov	$0x0,%eax	# 434C48 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 434C4D 48 8D 6D F0 
+	call	 ( (.R&U.R) ) 	# 434C51 E8 F3 FD FF FF 
+	call	 ( CR ) 	# 434C56 E8 A8 3 FD FF 
+//   ." indented by 5 spaces" CR LENLI1 5 (.R&U.R) CR
+
+	call	 ( (S") ) 	# 434C5B E8 E2 3 FD FF 
+	.byte 0x14,0x69,0x6E,0x64,0x65,0x6E,0x74,0x65,0x64,0x20,0x62,0x79,0x20,0x35,0x20,0x73,0x70,0x61,0x63,0x65,0x73
+	call	 ( TYPE ) 	# 434C75 E8 3C 3 FD FF 
+	call	 ( CR ) 	# 434C7A E8 84 3 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434C7F 48 89 45 F8 
+	movq	$0x13,-0x10(%rbp)	# 434C83 48 C7 45 F0 13 0 0 0 
+	mov	$0x5,%eax	# 434C8B B8 5 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 434C90 48 8D 6D F0 
+	call	 ( (.R&U.R) ) 	# 434C94 E8 B0 FD FF FF 
+	call	 ( CR ) 	# 434C99 E8 65 3 FD FF 
+//;
+
+	ret		# 434C9E C3 
+//
+
+//CR CR .( Output from .R and U.R)
+
+//T{ .R&U.R -> }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING PAD ERASE
+
+//\ Must handle different size characters i.e. 1 CHARS >= 1 
+
+//
+
+//84 CONSTANT CHARS/PAD      \ Minimum size of PAD in chars
+
+CHARSrslPAD:
+	call	 ( DOCONSTANT ) 	# 434C9F E8 6F FC FC FF 
+	Push	%rsp	# 434CA4 54 
+	add	%al,(%rax)	# 434CA5 0 0 
+	add	%al,(%rax)	# 434CA7 0 0 
+	add	%al,(%rax)	# 434CA9 0 0 
+	add	%ch,%al	# 434CAB 0 E8 
+//CHARS/PAD CHARS CONSTANT AUS/PAD
+
+	.byte	0x62	# 434CAD 62 
+clD	# 434CAE FC 
+clD	# 434CAF FC 
+	call	*0x00(%rax,%rax,1)	# 434CB0 FF 54 0 0 
+	add	%al,(%rax)	# 434CB4 0 0 
+	add	%al,(%rax)	# 434CB6 0 0 
+	add	%cl,-0x75(%rax)	# 434CB8 0 48 8B 
+//: CHECKPAD  ( caddr u ch -- f )  \ f = TRUE if u chars = ch
+
+//   SWAP 0
+
+	Push	%rbp	# 434CBB 55 
+	add	%cl,-0x77(%rax)	# 434CBC 0 48 89 
+	add	%r9lB,-0x77(%r8)	# 434CBF 45 0 48 89 
+	Push	%rbp	# 434CC3 55 
+clC	# 434CC4 F8 
+	mov	$0x0,%eax	# 434CC5 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 434CCA 48 8D 6D F8 
+//   ?DO
+
+	call	 ( (?DO) ) 	# 434CCE E8 10 FD FC FF 
+	.quad  ( CHECKPAD+77  ) 
+//      OVER I CHARS + C@ OVER <>
+
+	mov	%rax,-0x08(%rbp)	# 434CDB 48 89 45 F8 
+	mov	0x00(%rbp),%rax	# 434CDF 48 8B 45 0 
+	mov	%rax,-0x10(%rbp)	# 434CE3 48 89 45 F0 
+	mov	%r14,%rax	# 434CE7 4C 89 F0 
+	add	-0x10(%rbp),%rax	# 434CEA 48 3 45 F0 
+	movzb	(%rax),%eax	# 434CEE F B6 0 
+	xor	-0x08(%rbp),%rax	# 434CF1 48 33 45 F8 
+		negq	%rax	# 434CF5 48 F7 D8 
+	sbb	%rax,%rax	# 434CF8 48 19 C0 
+	test	%rax,%rax	# 434CFB 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 434CFE 48 8B 45 F8 
+//      IF 2DROP UNLOOP FALSE EXIT THEN
+
+	jz	 ( CHECKPAD+6A  ) 	# 434D02 F 84 1B 0 0 0 
+	mov	0x08(%rbp),%rax	# 434D08 48 8B 45 8 
+	lea	0x10(%rbp),%rbp	# 434D0C 48 8D 6D 10 
+	call	 ( UNLOOP ) 	# 434D10 E8 E FD FC FF 
+	mov	%rax,-0x08(%rbp)	# 434D15 48 89 45 F8 
+	mov	$0x0,%eax	# 434D19 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 434D1E 48 8D 6D F8 
+	ret		# 434D22 C3 
+//   LOOP  
+
+	inc	%r14	# 434D23 49 FF C6 
+	inc	%r15	# 434D26 49 FF C7 
+	jNo	 ( CHECKPAD+22  ) 	# 434D29 71 B0 
+	pop	%r14	# 434D2B 41 5E 
+	pop	%r15	# 434D2D 41 5F 
+	pop	%rcx	# 434D2F 59 
+//   2DROP TRUE
+
+	movq	$-0x1,%rax	# 434D30 48 C7 C0 FF FF FF FF 
+	lea	0x08(%rbp),%rbp	# 434D37 48 8D 6D 8 
+//;
+
+	ret		# 434D3B C3 
+//
+
+//T{ PAD DROP -> }T
+
+//T{ 0 INVERT PAD C! -> }T
+
+//T{ PAD C@ CONSTANT MAXCHAR -> }T
+
+MAXCHAR:
+	call	 ( DOCONSTANT ) 	# 434D3C E8 D2 FB FC FF 
+	inc	(%rax)	# 434D41 FF 0 
+	add	%al,(%rax)	# 434D43 0 0 
+	add	%al,(%rax)	# 434D45 0 0 
+	add	%al,(%rax)	# 434D47 0 0 
+//T{ PAD CHARS/PAD 2DUP MAXCHAR FILL MAXCHAR CHECKPAD -> TRUE }T
+
+//T{ PAD CHARS/PAD 2DUP CHARS ERASE 0 CHECKPAD -> TRUE }T
+
+//T{ PAD CHARS/PAD 2DUP MAXCHAR FILL PAD 0 ERASE MAXCHAR CHECKPAD -> TRUE }T
+
+//T{ PAD 43 CHARS + 9 CHARS ERASE -> }T
+
+//T{ PAD 43 MAXCHAR CHECKPAD -> TRUE }T
+
+//T{ PAD 43 CHARS + 9 0 CHECKPAD -> TRUE }T
+
+//T{ PAD 52 CHARS + CHARS/PAD 52 - MAXCHAR CHECKPAD -> TRUE }T
+
+//
+
+//\ Check that use of WORD and pictured numeric output do not corrupt PAD
+
+//\ Minimum size of buffers for these are 33 chars and (2*n)+2 chars respectively
+
+//\ where n is number of bits per cell
+
+//
+
+//PAD CHARS/PAD ERASE
+
+//2 BASE !
+
+//MAX-UINT MAX-UINT <# #S CHAR 1 DUP HOLD HOLD #> 2DROP
+
+//DECIMAL
+
+//BL WORD 12345678123456781234567812345678 DROP
+
+//T{ PAD CHARS/PAD 0 CHECKPAD -> TRUE }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING PARSE
+
+//
+
+//T{ CHAR | PARSE 1234| DUP ROT ROT EVALUATE -> 4 1234 }T
+
+//T{ CHAR ^ PARSE  23 45 ^ DUP ROT ROT EVALUATE -> 7 23 45 }T
+
+//: PA1 [CHAR] $ PARSE DUP >R PAD SWAP CHARS MOVE PAD R> ;
+
+PA1:
+	mov	%rax,-0x08(%rbp)	# 434D49 48 89 45 F8 
+	mov	$0x24,%eax	# 434D4D B8 24 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 434D52 48 8D 6D F8 
+	call	 ( PARSE ) 	# 434D56 E8 D9 86 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434D5B 48 89 45 F8 
+	Push	%rax	# 434D5F 50 
+	mov	$0x404D89,%eax	# 434D60 B8 89 4D 40 0 
+	mov	-0x08(%rbp),%rdx	# 434D65 48 8B 55 F8 
+	mov	%rax,-0x08(%rbp)	# 434D69 48 89 45 F8 
+	mov	%rdx,%rax	# 434D6D 48 89 D0 
+	lea	-0x08(%rbp),%rbp	# 434D70 48 8D 6D F8 
+	call	 ( MOVE ) 	# 434D74 E8 E1 3 FD FF 
+	mov	%rax,-0x08(%rbp)	# 434D79 48 89 45 F8 
+	movq	$0x404D89,-0x10(%rbp)	# 434D7D 48 C7 45 F0 89 4D 40 0 
+	pop	%rax	# 434D85 58 
+	lea	-0x10(%rbp),%rbp	# 434D86 48 8D 6D F0 
+	ret		# 434D8A C3 
+//T{ PA1 3456
+
+//   DUP ROT ROT EVALUATE -> 4 3456 }T
+
+//T{ CHAR A PARSE A SWAP DROP -> 0 }T
+
+//T{ CHAR Z PARSE
+
+//   SWAP DROP -> 0 }T
+
+//T{ CHAR " PARSE 4567 "DUP ROT ROT EVALUATE -> 5 4567 }T
+
+// 
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING PARSE-NAME  (Forth 2012)
+
+//\ Adapted from the PARSE-NAME RfD tests
+
+//
+
+//T{ PARSE-NAME abcd  STR1  S= -> TRUE }T        \ No leading spaces
+
+//T{ PARSE-NAME      abcde STR2 S= -> TRUE }T    \ Leading spaces
+
+//
+
+//\ Test empty parse area, new lines are necessary
+
+//T{ PARSE-NAME
+
+//  NIP -> 0 }T
+
+//\ Empty parse area with spaces after PARSE-NAME
+
+//T{ PARSE-NAME         
+
+//  NIP -> 0 }T
+
+//
+
+//T{ : PARSE-NAME-TEST ( "name1" "name2" -- n )
+
+//    PARSE-NAME PARSE-NAME S= ; -> }T
+
+PARSEsubNAMEsubTEST:
+	call	 ( PARSE-NAME ) 	# 434D8B E8 15 86 FD FF 
+	call	 ( PARSE-NAME ) 	# 434D90 E8 10 86 FD FF 
+	call	 ( S= ) 	# 434D95 E8 C1 D5 FF FF 
+	ret		# 434D9A C3 
+//T{ PARSE-NAME-TEST abcd abcd  -> TRUE }T
+
+//T{ PARSE-NAME-TEST abcd   abcd  -> TRUE }T  \ Leading spaces
+
+//T{ PARSE-NAME-TEST abcde abcdf -> FALSE }T
+
+//T{ PARSE-NAME-TEST abcdf abcde -> FALSE }T
+
+//T{ PARSE-NAME-TEST abcde abcde
+
+//   -> TRUE }T         \ Parse to end of line
+
+//T{ PARSE-NAME-TEST abcde           abcde         
+
+//   -> TRUE }T         \ Leading and trailing spaces
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING DEFER DEFER@ DEFER! IS ACTION-OF (Forth 2012)
+
+//\ Adapted from the Forth 200X RfD tests
+
+//
+
+//T{ DEFER DEFER1 -> }T
+
+DEFER1:
+	call	 ( DOVECT ) 	# 434D9B E8 8A FB FC FF 
+	.quad  ( - ) 
+//T{ : MY-DEFER DEFER ; -> }T
+
+MYsubDEFER:
+	call	 ( DEFER ) 	# 434DA8 E8 35 A4 FD FF 
+	ret		# 434DAD C3 
+//T{ : IS-DEFER1 IS DEFER1 ; -> }T
+
+ISsubDEFER1:
+	mov	%rax, ( DEFER1+5  ) (%rip)	# 434DAE 48 89 5 EB FF FF FF 
+	mov	0x00(%rbp),%rax	# 434DB5 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 434DB9 48 8D 6D 8 
+	ret		# 434DBD C3 
+//T{ : ACTION-DEFER1 ACTION-OF DEFER1 ; -> }T
+
+ACTIONsubDEFER1:
+	mov	%rax,-0x08(%rbp)	# 434DBE 48 89 45 F8 
+	mov	$0x434D9B,%eax	# 434DC2 B8 9B 4D 43 0 
+	mov	0x05(%rax),%rax	# 434DC7 48 8B 40 5 
+	lea	-0x08(%rbp),%rbp	# 434DCB 48 8D 6D F8 
+	ret		# 434DCF C3 
+//T{ : DEF! DEFER! ; -> }T
+
+DEFsave:
+	lea	0x05(%rax),%rax	# 434DD0 48 8D 40 5 
+	mov	0x00(%rbp),%rdx	# 434DD4 48 8B 55 0 
+	mov	%rdx,(%rax)	# 434DD8 48 89 10 
+	mov	0x08(%rbp),%rax	# 434DDB 48 8B 45 8 
+	lea	0x10(%rbp),%rbp	# 434DDF 48 8D 6D 10 
+	ret		# 434DE3 C3 
+//T{ : DEF@ DEFER@ ; -> }T
+
+DEFload:
+	mov	0x05(%rax),%rax	# 434DE4 48 8B 40 5 
+	ret		# 434DE8 C3 
+//
+
+//T{ ' * ' DEFER1 DEFER! -> }T
+
+//T{ 2 3 DEFER1 -> 6 }T
+
+//T{ ' DEFER1 DEFER@ -> ' * }T
+
+//T{ ' DEFER1 DEF@ -> ' * }T
+
+//T{ ACTION-OF DEFER1 -> ' * }T
+
+//T{ ACTION-DEFER1 -> ' * }T
+
+//T{ ' + IS DEFER1 -> }T
+
+//T{ 1 2 DEFER1 -> 3 }T
+
+//T{ ' DEFER1 DEFER@ -> ' + }T
+
+//T{ ' DEFER1 DEF@ -> ' + }T
+
+//T{ ACTION-OF DEFER1 -> ' + }T
+
+//T{ ACTION-DEFER1 -> ' + }T
+
+//T{ ' - IS-DEFER1 -> }T
+
+//T{ 1 2 DEFER1 -> -1 }T
+
+//T{ ' DEFER1 DEFER@ -> ' - }T
+
+//T{ ' DEFER1 DEF@ -> ' - }T
+
+//T{ ACTION-OF DEFER1 -> ' - }T
+
+//T{ ACTION-DEFER1 -> ' - }T
+
+//
+
+//T{ MY-DEFER DEFER2 -> }T
+
+DEFER2:
+	call	 ( DOVECT ) 	# 434DE9 E8 3C FB FC FF 
+	.quad  ( DUP ) 
+//T{ ' DUP IS DEFER2 -> }T
+
+//T{ 1 DEFER2 -> 1 1 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING HOLDS  (Forth 2012)
+
+//
+
+//: HTEST S" Testing HOLDS" ;
+
+HTEST:
+	call	 ( (S") ) 	# 434DF6 E8 47 2 FD FF 
+	.byte 0xD,0x54,0x65,0x73,0x74,0x69,0x6E,0x67,0x20,0x48,0x4F,0x4C,0x44,0x53
+	ret		# 434E09 C3 
+//: HTEST2 S" works" ;
+
+HTEST2:
+	call	 ( (S") ) 	# 434E0A E8 33 2 FD FF 
+	.byte 0x5,0x77,0x6F,0x72,0x6B,0x73
+	ret		# 434E15 C3 
+//: HTEST3 S" Testing HOLDS works 123" ;
+
+HTEST3:
+	call	 ( (S") ) 	# 434E16 E8 27 2 FD FF 
+	.byte 0x17,0x54,0x65,0x73,0x74,0x69,0x6E,0x67,0x20,0x48,0x4F,0x4C,0x44,0x53,0x20,0x77,0x6F,0x72,0x6B,0x73,0x20,0x31,0x32,0x33
+	ret		# 434E33 C3 
+//T{ 0 0 <#  HTEST HOLDS #> HTEST S= -> TRUE }T
+
+//T{ 123 0 <# #S BL HOLD HTEST2 HOLDS BL HOLD HTEST HOLDS #>
+
+//   HTEST3 S= -> TRUE }T
+
+//T{ : HLD HOLDS ; -> }T
+
+HLD:
+	call	 ( HOLDS ) 	# 434E34 E8 87 24 FE FF 
+	ret		# 434E39 C3 
+//T{ 0 0 <#  HTEST HLD #> HTEST S= -> TRUE }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING REFILL SOURCE-ID
+
+//\ REFILL and SOURCE-ID from the user input device can't be tested from a file,
+
+//\ can only be tested from a string via EVALUATE
+
+//
+
+//\ MMO T{ : RF1  S" REFILL" EVALUATE ; RF1 -> FALSE }T
+
+//T{ : SID1  S" SOURCE-ID" EVALUATE ; SID1 -> -1 }T
+
+SID1:
+	call	 ( (S") ) 	# 434E3A E8 3 2 FD FF 
+	.byte 0x9,0x53,0x4F,0x55,0x52,0x43,0x45,0x2D,0x49,0x44
+	call	 ( EVALUATE ) 	# 434E49 E8 E0 91 FD FF 
+	ret		# 434E4E C3 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING S\"  (Forth 2012 compilation mode)
+
+//\ Extended the Forth 200X RfD tests
+
+//\ Note this tests the Core Ext definition of S\" which has unedfined
+
+//\ interpretation semantics. S\" in interpretation mode is tested in the tests on
+
+//\ the File-Access word set
+
+//
+
+//T{ : SSQ1 S\" abc" S" abc" S= ; -> }T  \ No escapes
+
+SSQ1:
+	call	 ( (S") ) 	# 434E4F E8 EE 1 FD FF 
+	.byte 0x3,0x61,0x62,0x63
+	call	 ( (S") ) 	# 434E58 E8 E5 1 FD FF 
+	.byte 0x3,0x61,0x62,0x63
+	call	 ( S= ) 	# 434E61 E8 F5 D4 FF FF 
+	ret		# 434E66 C3 
+//T{ SSQ1 -> TRUE }T
+
+//T{ : SSQ2 S\" " ; SSQ2 SWAP DROP -> 0 }T    \ Empty string
+
+SSQ2:
+	call	 ( (S") ) 	# 434E67 E8 D6 1 FD FF 
+	.byte 0x0
+	ret		# 434E6D C3 
+//
+
+//T{ : SSQ3 S\" \a\b\e\f\l\m\q\r\t\v\x0F0\x1Fa\xaBx\z\"\\" ; -> }T
+
+SSQ3:
+	call	 ( (S") ) 	# 434E6E E8 CF 1 FD FF 
+	.byte 0x14,0x7,0x8,0x1B,0xC,0xA,0xD,0xA,0x22,0xD,0x9,0xB,0xF,0x30,0x1F,0x61,0xAB,0x78,0x0,0x22,0x5C
+	ret		# 434E88 C3 
+//T{ SSQ3 SWAP DROP          ->  20 }T    \ String length
+
+//T{ SSQ3 DROP            C@ ->   7 }T    \ \a   BEL  Bell
+
+//T{ SSQ3 DROP  1 CHARS + C@ ->   8 }T    \ \b   BS   Backspace
+
+//T{ SSQ3 DROP  2 CHARS + C@ ->  27 }T    \ \e   ESC  Escape
+
+//T{ SSQ3 DROP  3 CHARS + C@ ->  12 }T    \ \f   FF   Form feed
+
+//T{ SSQ3 DROP  4 CHARS + C@ ->  10 }T    \ \l   LF   Line feed
+
+//T{ SSQ3 DROP  5 CHARS + C@ ->  13 }T    \ \m        CR of CR/LF pair
+
+//T{ SSQ3 DROP  6 CHARS + C@ ->  10 }T    \           LF of CR/LF pair
+
+//T{ SSQ3 DROP  7 CHARS + C@ ->  34 }T    \ \q   "    Double Quote
+
+//T{ SSQ3 DROP  8 CHARS + C@ ->  13 }T    \ \r   CR   Carriage Return
+
+//T{ SSQ3 DROP  9 CHARS + C@ ->   9 }T    \ \t   TAB  Horizontal Tab
+
+//T{ SSQ3 DROP 10 CHARS + C@ ->  11 }T    \ \v   VT   Vertical Tab
+
+//T{ SSQ3 DROP 11 CHARS + C@ ->  15 }T    \ \x0F      Given Char
+
+//T{ SSQ3 DROP 12 CHARS + C@ ->  48 }T    \ 0    0    Digit follow on
+
+//T{ SSQ3 DROP 13 CHARS + C@ ->  31 }T    \ \x1F      Given Char
+
+//T{ SSQ3 DROP 14 CHARS + C@ ->  97 }T    \ a    a    Hex follow on
+
+//T{ SSQ3 DROP 15 CHARS + C@ -> 171 }T    \ \xaB      Insensitive Given Char
+
+//T{ SSQ3 DROP 16 CHARS + C@ -> 120 }T    \ x    x    Non hex follow on
+
+//T{ SSQ3 DROP 17 CHARS + C@ ->   0 }T    \ \z   NUL  No Character
+
+//T{ SSQ3 DROP 18 CHARS + C@ ->  34 }T    \ \"   "    Double Quote
+
+//T{ SSQ3 DROP 19 CHARS + C@ ->  92 }T    \ \\   \    Back Slash
+
+//
+
+//\ The above does not test \n as this is a system dependent value.
+
+//\ Check it displays a new line
+
+//CR .( The next test should display:)
+
+//CR .( One line...)
+
+//CR .( another line)
+
+//T{ : SSQ4 S\" \nOne line...\nanotherLine\n" TYPE ; SSQ4 -> }T
+
+SSQ4:
+	call	 ( (S") ) 	# 434E89 E8 B4 1 FD FF 
+	.byte 0x19,0xA,0x4F,0x6E,0x65,0x20,0x6C,0x69,0x6E,0x65,0x2E,0x2E,0x2E,0xA,0x61,0x6E,0x6F,0x74,0x68,0x65,0x72,0x4C,0x69,0x6E,0x65,0xA
+	call	 ( TYPE ) 	# 434EA8 E8 9 1 FD FF 
+	ret		# 434EAD C3 
+//
+
+//\ Test bare escapable characters appear as themselves
+
+//T{ : SSQ5 S\" abeflmnqrtvxz" S" abeflmnqrtvxz" S= ; SSQ5 -> TRUE }T
+
+SSQ5:
+	call	 ( (S") ) 	# 434EAE E8 8F 1 FD FF 
+	.byte 0xD,0x61,0x62,0x65,0x66,0x6C,0x6D,0x6E,0x71,0x72,0x74,0x76,0x78,0x7A
+	call	 ( (S") ) 	# 434EC1 E8 7C 1 FD FF 
+	.byte 0xD,0x61,0x62,0x65,0x66,0x6C,0x6D,0x6E,0x71,0x72,0x74,0x76,0x78,0x7A
+	call	 ( S= ) 	# 434ED4 E8 82 D4 FF FF 
+	ret		# 434ED9 C3 
+//
+
+//T{ : SSQ6 S\" a\""2DROP 1111 ; SSQ6 -> 1111 }T \ Parsing behaviour
+
+SSQ6:
+	call	 ( (S") ) 	# 434EDA E8 63 1 FD FF 
+	.byte 0x2,0x61,0x22
+	mov	$0x457,%eax	# 434EE2 B8 57 4 0 0 
+	lea	0x08(%rbp),%rbp	# 434EE7 48 8D 6D 8 
+	ret		# 434EEB C3 
+//
+
+//T{ : SSQ7  S\" 111 : SSQ8 S\\\" 222\" EVALUATE ; SSQ8 333" EVALUATE ; -> }T
+
+SSQ7:
+	call	 ( (S") ) 	# 434EEC E8 51 1 FD FF 
+	.byte 0x27,0x31,0x31,0x31,0x20,0x3A,0x20,0x53,0x53,0x51,0x38,0x20,0x53,0x5C,0x22,0x20,0x32,0x32,0x32,0x22,0x20,0x45,0x56,0x41,0x4C,0x55,0x41,0x54,0x45,0x20,0x3B,0x20,0x53,0x53,0x51,0x38,0x20,0x33,0x33,0x33
+	call	 ( EVALUATE ) 	# 434F19 E8 10 91 FD FF 
+	ret		# 434F1E C3 
+//T{ SSQ7 -> 111 222 333 }T
+
+SSQ8:
+	call	 ( (S") ) 	# 434F1F E8 1E 1 FD FF 
+	.byte 0x3,0x32,0x32,0x32
+	call	 ( EVALUATE ) 	# 434F28 E8 1 91 FD FF 
+	ret		# 434F2D C3 
+//T{ : SSQ9  S\" 11 : SSQ10 S\\\" \\x32\\x32\" EVALUATE ; SSQ10 33" EVALUATE ; -> }T
+
+SSQ9:
+	call	 ( (S") ) 	# 434F2E E8 F 1 FD FF 
+	.byte 0x2C,0x31,0x31,0x20,0x3A,0x20,0x53,0x53,0x51,0x31,0x30,0x20,0x53,0x5C,0x22,0x20,0x5C,0x78,0x33,0x32,0x5C,0x78,0x33,0x32,0x22,0x20,0x45,0x56,0x41,0x4C,0x55,0x41,0x54,0x45,0x20,0x3B,0x20,0x53,0x53,0x51,0x31,0x30,0x20,0x33,0x33
+	call	 ( EVALUATE ) 	# 434F60 E8 C9 90 FD FF 
+	ret		# 434F65 C3 
+//T{ SSQ9 -> 11 22 33 }T
+
+SSQ10:
+	call	 ( (S") ) 	# 434F66 E8 D7 0 FD FF 
+	.byte 0x2,0x32,0x32
+	call	 ( EVALUATE ) 	# 434F6E E8 BB 90 FD FF 
+	ret		# 434F73 C3 
+//
+
+//\ -----------------------------------------------------------------------------
+
+//CORE-EXT-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of Core Extension word tests) CR
+
+//
+

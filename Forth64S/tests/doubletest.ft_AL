@@ -1,0 +1,1294 @@
+//\ To test the ANS Forth Double-Number word set and double number extensions
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13  Assumptions and dependencies changed
+
+//\         0.12  1 August 2015 test D< acts on MS cells of double word
+
+//\         0.11  7 April 2015 2VALUE tested
+
+//\         0.6   1 April 2012 Tests placed in the public domain.
+
+//\               Immediate 2CONSTANTs and 2VARIABLEs tested
+
+//\         0.5   20 November 2009 Various constants renamed to avoid
+
+//\               redefinition warnings. <TRUE> and <FALSE> replaced
+
+//\               with TRUE and FALSE
+
+//\         0.4   6 March 2009 { and } replaced with T{ and }T
+
+//\               Tests rewritten to be independent of word size and
+
+//\               tests re-ordered
+
+//\         0.3   20 April 2007 ANS Forth words changed to upper case
+
+//\         0.2   30 Oct 2006 Updated following GForth test to include
+
+//\               various constants from core.fr
+
+//\         0.1   Oct 2006 First version released
+
+//\ ------------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//
+
+//\ Words tested in this file are:
+
+//\     2CONSTANT 2LITERAL 2VARIABLE D+ D- D. D.R D0< D0= D2* D2/
+
+//\     D< D= D>S DABS DMAX DMIN DNEGATE M*/ M+ 2ROT DU<
+
+//\ Also tests the interpreter and compiler reading a double number
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions and dependencies:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set is available and tested
+
+//\ ------------------------------------------------------------------------------
+
+//\ Constant definitions
+
+//
+
+//DECIMAL
+
+//0 INVERT        CONSTANT 1SD
+
+_1SD:
+	call	 ( DOCONSTANT ) 	# 434F74 E8 9A F9 FC FF 
+	g4??	%edi	# 434F79 FF FF 
+	g4??	%edi	# 434F7B FF FF 
+	g4??	%edi	# 434F7D FF FF 
+	g4??	%edi	# 434F7F FF FF 
+//1SD 1 RSHIFT    CONSTANT MAX-INTD   \ 01...1
+
+MAXsubINTD:
+	call	 ( DOCONSTANT ) 	# 434F81 E8 8D F9 FC FF 
+	g4??	%edi	# 434F86 FF FF 
+	g4??	%edi	# 434F88 FF FF 
+	g4??	%edi	# 434F8A FF FF 
+	g4??	-0x18(%rdi)	# 434F8C FF 7F E8 
+//MAX-INTD INVERT CONSTANT MIN-INTD   \ 10...0
+
+	cmp	$-0x04,%cl	# 434F8F 80 F9 FC 
+	inc	(%rax)	# 434F92 FF 0 
+	add	%al,(%rax)	# 434F94 0 0 
+	add	%al,(%rax)	# 434F96 0 0 
+	add	%al,(%rax)	# 434F98 0 0 
+	sub	$0x73,%al	# 434F9A 80 E8 73 
+//MAX-INTD 2/     CONSTANT HI-INT     \ 001...1
+
+stC	# 434F9D F9 
+clD	# 434F9E FC 
+	g4??	%edi	# 434F9F FF FF 
+	g4??	%edi	# 434FA1 FF FF 
+	g4??	%edi	# 434FA3 FF FF 
+	g4??	%edi	# 434FA5 FF FF 
+	cmp	$-0x3069918,%eax	# 434FA7 3F E8 66 F9 FC 
+//MIN-INTD 2/     CONSTANT LO-INT     \ 110...1
+
+	inc	(%rax)	# 434FAC FF 0 
+	add	%al,(%rax)	# 434FAE 0 0 
+	add	%al,(%rax)	# 434FB0 0 0 
+	add	%al,(%rax)	# 434FB2 0 0 
+	ror	$0x45,-0x77(%rax)	# 434FB4 C0 48 89 45 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING interpreter and compiler reading double numbers, with/without prefixes
+
+//
+
+//T{ 1. -> 1 0 }T
+
+//T{ -2. -> -2 -1 }T
+
+//T{ : RDL1 3. ; RDL1 -> 3 0 }T
+
+clC	# 434FB8 F8 
+	movq	$0x3,-0x10(%rbp)	# 434FB9 48 C7 45 F0 3 0 0 0 
+	mov	$0x0,%eax	# 434FC1 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 434FC6 48 8D 6D F0 
+	ret		# 434FCA C3 
+//T{ : RDL2 -4. ; RDL2 -> -4 -1 }T
+
+RDL2:
+	mov	%rax,-0x08(%rbp)	# 434FCB 48 89 45 F8 
+	movq	$-0x4,-0x10(%rbp)	# 434FCF 48 C7 45 F0 FC FF FF FF 
+	movq	$-0x1,%rax	# 434FD7 48 C7 C0 FF FF FF FF 
+	lea	-0x10(%rbp),%rbp	# 434FDE 48 8D 6D F0 
+	ret		# 434FE2 C3 
+//
+
+//VARIABLE OLD-DBASE
+
+OLDsubDBASE:
+	call	 ( DOCREATE ) 	# 434FE3 E8 38 F9 FC FF 
+	adc	%al,(%rax)	# 434FE8 10 0 
+	add	%al,(%rax)	# 434FEA 0 0 
+	add	%al,(%rax)	# 434FEC 0 0 
+	add	%al,(%rax)	# 434FEE 0 0 
+//DECIMAL BASE @ OLD-DBASE !
+
+//T{ #12346789. -> 12346789. }T
+
+//T{ #-12346789. -> -12346789. }T
+
+//T{ $12aBcDeF. -> 313249263. }T
+
+//T{ $-12AbCdEf. -> -313249263. }T
+
+//T{ %10010110. -> 150. }T
+
+//T{ %-10010110. -> -150. }T
+
+//\ Check BASE is unchanged
+
+//T{ BASE @ OLD-DBASE @ = -> <TRUE> }T
+
+//
+
+//\ Repeat in Hex mode
+
+//16 OLD-DBASE ! 16 BASE !
+
+//T{ #12346789. -> BC65A5. }T
+
+//T{ #-12346789. -> -BC65A5. }T
+
+//T{ $12aBcDeF. -> 12AbCdeF. }T
+
+//T{ $-12AbCdEf. -> -12ABCDef. }T
+
+//T{ %10010110. -> 96. }T
+
+//T{ %-10010110. -> -96. }T
+
+//\ Check BASE is unchanged
+
+//T{ BASE @ OLD-DBASE @ = -> <TRUE> }T   \ 2
+
+//
+
+//DECIMAL
+
+//\ Check number prefixes in compile mode
+
+//T{ : dnmp  #8327. $-2cbe. %011010111. ; dnmp -> 8327. -11454. 215. }T
+
+dnmp:
+	mov	%rax,-0x08(%rbp)	# 434FF0 48 89 45 F8 
+	movq	$0x2087,-0x10(%rbp)	# 434FF4 48 C7 45 F0 87 20 0 0 
+	movq	$0x0,-0x18(%rbp)	# 434FFC 48 C7 45 E8 0 0 0 0 
+	movq	$-0x2CBE,-0x20(%rbp)	# 435004 48 C7 45 E0 42 D3 FF FF 
+	movq	$-0x1,-0x28(%rbp)	# 43500C 48 C7 45 D8 FF FF FF FF 
+	movq	$0xD7,-0x30(%rbp)	# 435014 48 C7 45 D0 D7 0 0 0 
+	mov	$0x0,%eax	# 43501C B8 0 0 0 0 
+	lea	-0x30(%rbp),%rbp	# 435021 48 8D 6D D0 
+	ret		# 435025 C3 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING 2CONSTANT
+
+//
+
+//T{ 1 2 2CONSTANT 2C1 -> }T
+
+	add	%al,(%rax)	# 435026 0 0 
+	add	%al,(%rax)	# 435028 0 0 
+	add	%ch,%al	# 43502A 0 E8 
+	repz		# 43502C F3 
+	jmp	 ( 2C1+3  ) 	# 43502D EB FF 
+	inc	(%rdx)	# 43502F FF 2 
+	add	%al,(%rax)	# 435031 0 0 
+	add	%al,(%rax)	# 435033 0 0 
+	add	%al,(%rax)	# 435035 0 0 
+	add	%al,(%rcx)	# 435037 0 1 
+	add	%al,(%rax)	# 435039 0 0 
+	add	%al,(%rax)	# 43503B 0 0 
+	add	%al,(%rax)	# 43503D 0 0 
+	add	%ch,%al	# 43503F 0 E8 
+//T{ 2C1 -> 1 2 }T
+
+//T{ : CD1 2C1 ; -> }T
+
+out	%al,$0xFF	# 435041 E6 FF 
+	g4??	%edi	# 435043 FF FF 
+	ret		# 435045 C3 
+//T{ CD1 -> 1 2 }T
+
+//T{ : CD2 2CONSTANT ; -> }T
+
+CD2:
+	call	 ( 2CONSTANT ) 	# 435046 E8 C4 EB FF FF 
+	ret		# 43504B C3 
+//T{ -1 -2 CD2 2C2 -> }T
+
+	add	%al,(%rax)	# 43504C 0 0 
+	add	%al,(%rax)	# 43504E 0 0 
+	add	%al,(%rax)	# 435050 0 0 
+	add	%ch,%al	# 435052 0 E8 
+	lret		# 435054 CB 
+	jmp	 ( 2C2+3  ) 	# 435055 EB FF 
+	g4??	%esi	# 435057 FF FE 
+	g4??	%edi	# 435059 FF FF 
+	g4??	%edi	# 43505B FF FF 
+	g4??	%edi	# 43505D FF FF 
+	g4??	%edi	# 43505F FF FF 
+	g4??	%edi	# 435061 FF FF 
+	g4??	%edi	# 435063 FF FF 
+	g4??	%edi	# 435065 FF FF 
+	inc	(%rax)	# 435067 FF 0 
+//T{ 2C2 -> -1 -2 }T
+
+//T{ 4 5 2CONSTANT 2C3 IMMEDIATE 2C3 -> 4 5 }T
+
+	add	%al,(%rax)	# 435069 0 0 
+_2C3:
+	call	 ( 2CONSTANT+14  ) 	# 43506B E8 B3 EB FF FF 
+	add	$0x0,%eax	# 435070 5 0 0 0 0 
+	add	%al,(%rax)	# 435075 0 0 
+	add	%al,(%rax,%rax,1)	# 435077 0 4 0 
+	add	%al,(%rax)	# 43507A 0 0 
+	add	%al,(%rax)	# 43507C 0 0 
+	add	%al,(%rax)	# 43507E 0 0 
+//T{ : CD6 2C3 2LITERAL ; CD6 -> 4 5 }T
+
+CD6:
+	mov	%rax,-0x08(%rbp)	# 435080 48 89 45 F8 
+	movq	$0x4,-0x10(%rbp)	# 435084 48 C7 45 F0 4 0 0 0 
+	mov	$0x5,%eax	# 43508C B8 5 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 435091 48 8D 6D F0 
+	ret		# 435095 C3 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Some 2CONSTANTs for the following tests
+
+//
+
+//1SD MAX-INTD 2CONSTANT MAX-2INT  \ 01...1
+
+	add	%al,(%rax)	# 435096 0 0 
+	add	%al,(%rax)	# 435098 0 0 
+	add	%ch,%al	# 43509A 0 E8 
+	sub	$-0x01,%ebx	# 43509C 83 EB FF 
+	g4??	%edi	# 43509F FF FF 
+	g4??	%edi	# 4350A1 FF FF 
+	g4??	%edi	# 4350A3 FF FF 
+	g4??	%edi	# 4350A5 FF FF 
+	jNle	 ( MAX-2INT+D  ) 	# 4350A7 7F FF 
+	g4??	%edi	# 4350A9 FF FF 
+	g4??	%edi	# 4350AB FF FF 
+	g4??	%edi	# 4350AD FF FF 
+	inc	(%rax)	# 4350AF FF 0 
+//0   MIN-INTD 2CONSTANT MIN-2INT  \ 10...0
+
+	add	%al,(%rax)	# 4350B1 0 0 
+MINsub2INT:
+	call	 ( 2CONSTANT+14  ) 	# 4350B3 E8 6B EB FF FF 
+	add	%al,(%rax)	# 4350B8 0 0 
+	add	%al,(%rax)	# 4350BA 0 0 
+	add	%al,(%rax)	# 4350BC 0 0 
+	add	%al,0x0(%rax)	# 4350BE 0 80 0 0 0 0 
+	add	%al,(%rax)	# 4350C4 0 0 
+	add	%al,(%rax)	# 4350C6 0 0 
+//MAX-2INT 2/  2CONSTANT HI-2INT   \ 001...1
+
+	add	%al,(%rax)	# 4350C8 0 0 
+	add	%ch,%al	# 4350CA 0 E8 
+	Push	%rbx	# 4350CC 53 
+	jmp	 ( HI-2INT+3  ) 	# 4350CD EB FF 
+	g4??	%edi	# 4350CF FF FF 
+	g4??	%edi	# 4350D1 FF FF 
+	g4??	%edi	# 4350D3 FF FF 
+	g4??	%edi	# 4350D5 FF FF 
+	cmp	$-0x1,%eax	# 4350D7 3F FF FF FF FF 
+	g4??	%edi	# 4350DC FF FF 
+	g4??	%edi	# 4350DE FF FF 
+//MIN-2INT 2/  2CONSTANT LO-2INT   \ 110...0
+
+	add	%al,(%rax)	# 4350E0 0 0 
+	add	%ch,%al	# 4350E2 0 E8 
+	cmp	%ebx,%ebp	# 4350E4 3B EB 
+	g4??	%edi	# 4350E6 FF FF 
+	add	%al,(%rax)	# 4350E8 0 0 
+	add	%al,(%rax)	# 4350EA 0 0 
+	add	%al,(%rax)	# 4350EC 0 0 
+	add	%al,%al	# 4350EE 0 C0 
+	add	%al,(%rax)	# 4350F0 0 0 
+	add	%al,(%rax)	# 4350F2 0 0 
+	add	%al,(%rax)	# 4350F4 0 0 
+	add	%al,(%rax)	# 4350F6 0 0 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING DNEGATE
+
+//
+
+//T{ 0. DNEGATE -> 0. }T
+
+//T{ 1. DNEGATE -> -1. }T
+
+//T{ -1. DNEGATE -> 1. }T
+
+//T{ MAX-2INT DNEGATE -> MIN-2INT SWAP 1+ SWAP }T
+
+//T{ MIN-2INT SWAP 1+ SWAP DNEGATE -> MAX-2INT }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING D+ with small integers
+
+//
+
+//T{  0.  5. D+ ->  5. }T
+
+//T{ -5.  0. D+ -> -5. }T
+
+//T{  1.  2. D+ ->  3. }T
+
+//T{  1. -2. D+ -> -1. }T
+
+//T{ -1.  2. D+ ->  1. }T
+
+//T{ -1. -2. D+ -> -3. }T
+
+//T{ -1.  1. D+ ->  0. }T
+
+//
+
+//TESTING D+ with mid range integers
+
+//
+
+//T{  0  0  0  5 D+ ->  0  5 }T
+
+//T{ -1  5  0  0 D+ -> -1  5 }T
+
+//T{  0  0  0 -5 D+ ->  0 -5 }T
+
+//T{  0 -5 -1  0 D+ -> -1 -5 }T
+
+//T{  0  1  0  2 D+ ->  0  3 }T
+
+//T{ -1  1  0 -2 D+ -> -1 -1 }T
+
+//T{  0 -1  0  2 D+ ->  0  1 }T
+
+//T{  0 -1 -1 -2 D+ -> -1 -3 }T
+
+//T{ -1 -1  0  1 D+ -> -1  0 }T
+
+//T{ MIN-INTD 0 2DUP D+ -> 0 1 }T
+
+//T{ MIN-INTD S>D MIN-INTD 0 D+ -> 0 0 }T
+
+//
+
+//TESTING D+ with large double integers
+
+//
+
+//T{ HI-2INT 1. D+ -> 0 HI-INT 1+ }T
+
+//T{ HI-2INT 2DUP D+ -> 1SD 1- MAX-INTD }T
+
+//T{ MAX-2INT MIN-2INT D+ -> -1. }T
+
+//T{ MAX-2INT LO-2INT D+ -> HI-2INT }T
+
+//T{ HI-2INT MIN-2INT D+ 1. D+ -> LO-2INT }T
+
+//T{ LO-2INT 2DUP D+ -> MIN-2INT }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING D- with small integers
+
+//
+
+//T{  0.  5. D- -> -5. }T
+
+//T{  5.  0. D- ->  5. }T
+
+//T{  0. -5. D- ->  5. }T
+
+//T{  1.  2. D- -> -1. }T
+
+//T{  1. -2. D- ->  3. }T
+
+//T{ -1.  2. D- -> -3. }T
+
+//T{ -1. -2. D- ->  1. }T
+
+//T{ -1. -1. D- ->  0. }T
+
+//
+
+//TESTING D- with mid-range integers
+
+//
+
+//T{  0  0  0  5 D- ->  0 -5 }T
+
+//T{ -1  5  0  0 D- -> -1  5 }T
+
+//T{  0  0 -1 -5 D- ->  1  4 }T
+
+//T{  0 -5  0  0 D- ->  0 -5 }T
+
+//T{ -1  1  0  2 D- -> -1 -1 }T
+
+//T{  0  1 -1 -2 D- ->  1  2 }T
+
+//T{  0 -1  0  2 D- ->  0 -3 }T
+
+//T{  0 -1  0 -2 D- ->  0  1 }T
+
+//T{  0  0  0  1 D- ->  0 -1 }T
+
+//T{ MIN-INTD 0 2DUP D- -> 0. }T
+
+//T{ MIN-INTD S>D MAX-INTD 0 D- -> 1 1SD }T
+
+//
+
+//TESTING D- with large integers
+
+//
+
+//T{ MAX-2INT MAX-2INT D- -> 0. }T
+
+//T{ MIN-2INT MIN-2INT D- -> 0. }T
+
+//T{ MAX-2INT HI-2INT  D- -> LO-2INT DNEGATE }T
+
+//T{ HI-2INT  LO-2INT  D- -> MAX-2INT }T
+
+//T{ LO-2INT  HI-2INT  D- -> MIN-2INT 1. D+ }T
+
+//T{ MIN-2INT MIN-2INT D- -> 0. }T
+
+//T{ MIN-2INT LO-2INT  D- -> LO-2INT }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING D0< D0=
+
+//
+
+//T{ 0. D0< -> FALSE }T
+
+//T{ 1. D0< -> FALSE }T
+
+//T{ MIN-INTD 0 D0< -> FALSE }T
+
+//T{ 0 MAX-INTD D0< -> FALSE }T
+
+//T{ MAX-2INT  D0< -> FALSE }T
+
+//T{ -1. D0< -> TRUE }T
+
+//T{ MIN-2INT D0< -> TRUE }T
+
+//
+
+//T{ 1. D0= -> FALSE }T
+
+//T{ MIN-INTD 0 D0= -> FALSE }T
+
+//T{ MAX-2INT  D0= -> FALSE }T
+
+//T{ -1 MAX-INTD D0= -> FALSE }T
+
+//T{ 0. D0= -> TRUE }T
+
+//T{ -1. D0= -> FALSE }T
+
+//T{ 0 MIN-INTD D0= -> FALSE }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING D2* D2/
+
+//
+
+//T{ 0. D2* -> 0. D2* }T
+
+//T{ MIN-INTD 0 D2* -> 0 1 }T
+
+//T{ HI-2INT D2* -> MAX-2INT 1. D- }T
+
+//T{ LO-2INT D2* -> MIN-2INT }T
+
+//
+
+//T{ 0. D2/ -> 0. }T
+
+//T{ 1. D2/ -> 0. }T
+
+//T{ 0 1 D2/ -> MIN-INTD 0 }T
+
+//T{ MAX-2INT D2/ -> HI-2INT }T
+
+//T{ -1. D2/ -> -1. }T
+
+//T{ MIN-2INT D2/ -> LO-2INT }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING D< D=
+
+//
+
+//T{  0.  1. D< -> TRUE  }T
+
+//T{  0.  0. D< -> FALSE }T
+
+//T{  1.  0. D< -> FALSE }T
+
+//T{ -1.  1. D< -> TRUE  }T
+
+//T{ -1.  0. D< -> TRUE  }T
+
+//T{ -2. -1. D< -> TRUE  }T
+
+//T{ -1. -2. D< -> FALSE }T
+
+//T{ 0 1   1. D< -> FALSE }T  \ Suggested by Helmut Eller
+
+//T{ 1.  0 1  D< -> TRUE  }T
+
+//T{ 0 -1 1 -2 D< -> FALSE }T
+
+//T{ 1 -2 0 -1 D< -> TRUE  }T
+
+//T{ -1. MAX-2INT D< -> TRUE }T
+
+//T{ MIN-2INT MAX-2INT D< -> TRUE }T
+
+//T{ MAX-2INT -1. D< -> FALSE }T
+
+//T{ MAX-2INT MIN-2INT D< -> FALSE }T
+
+//T{ MAX-2INT 2DUP -1. D+ D< -> FALSE }T
+
+//T{ MIN-2INT 2DUP  1. D+ D< -> TRUE  }T
+
+//T{ MAX-INTD S>D 2DUP 1. D+ D< -> TRUE }T \ Ensure D< acts on MS cells 
+
+//
+
+//T{ -1. -1. D= -> TRUE  }T
+
+//T{ -1.  0. D= -> FALSE }T
+
+//T{ -1.  1. D= -> FALSE }T
+
+//T{  0. -1. D= -> FALSE }T
+
+//T{  0.  0. D= -> TRUE  }T
+
+//T{  0.  1. D= -> FALSE }T
+
+//T{  1. -1. D= -> FALSE }T
+
+//T{  1.  0. D= -> FALSE }T
+
+//T{  1.  1. D= -> TRUE  }T
+
+//
+
+//T{ 0 -1 0 -1 D= -> TRUE  }T
+
+//T{ 0 -1 0  0 D= -> FALSE }T
+
+//T{ 0 -1 0  1 D= -> FALSE }T
+
+//T{ 0  0 0 -1 D= -> FALSE }T
+
+//T{ 0  0 0  0 D= -> TRUE  }T
+
+//T{ 0  0 0  1 D= -> FALSE }T
+
+//T{ 0  1 0 -1 D= -> FALSE }T
+
+//T{ 0  1 0  0 D= -> FALSE }T
+
+//T{ 0  1 0  1 D= -> TRUE  }T
+
+//
+
+//T{ MAX-2INT MIN-2INT D= -> FALSE }T
+
+//T{ MAX-2INT 0. D= -> FALSE }T
+
+//T{ MAX-2INT MAX-2INT D= -> TRUE }T
+
+//T{ MAX-2INT HI-2INT  D= -> FALSE }T
+
+//T{ MAX-2INT MIN-2INT D= -> FALSE }T
+
+//T{ MIN-2INT MIN-2INT D= -> TRUE }T
+
+//T{ MIN-2INT LO-2INT  D=  -> FALSE }T
+
+//T{ MIN-2INT MAX-2INT D= -> FALSE }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING 2LITERAL 2VARIABLE
+
+//
+
+//T{ : CD3 [ MAX-2INT ] 2LITERAL ; -> }T
+
+CD3:
+	mov	%rax,-0x08(%rbp)	# 4350F8 48 89 45 F8 
+	movq	$-0x1,-0x10(%rbp)	# 4350FC 48 C7 45 F0 FF FF FF FF 
+	movabs	$0x7FFFFFFFFFFFFFFF,%rax	# 435104 48 B8 FF FF FF FF FF FF FF 7F 
+	lea	-0x10(%rbp),%rbp	# 43510E 48 8D 6D F0 
+	ret		# 435112 C3 
+//T{ CD3 -> MAX-2INT }T
+
+//T{ 2VARIABLE 2V1 -> }T
+
+_2V1:
+	call	 ( DOCREATE ) 	# 435113 E8 8 F8 FC FF 
+	g4??	%bh	# 435118 FE FF 
+	g4??	%edi	# 43511A FF FF 
+	g4??	%edi	# 43511C FF FF 
+	g4??	%edi	# 43511E FF FF 
+	g4??	%edi	# 435120 FF FF 
+	g4??	%edi	# 435122 FF FF 
+	g4??	%edi	# 435124 FF FF 
+	g4??	%edi	# 435126 FF FF 
+//T{ 0. 2V1 2! -> }T
+
+//T{ 2V1 2@ -> 0. }T
+
+//T{ -1 -2 2V1 2! -> }T
+
+//T{ 2V1 2@ -> -1 -2 }T
+
+//T{ : CD4 2VARIABLE ; -> }T
+
+CD4:
+	call	 ( 2VARIABLE ) 	# 435128 E8 16 BA FF FF 
+	ret		# 43512D C3 
+//T{ CD4 2V2 -> }T
+
+	add	%al,(%rax)	# 43512E 0 0 
+	add	%al,(%rax)	# 435130 0 0 
+	add	%ch,%al	# 435132 0 E8 
+	call	 ( HTEST3+1A  ) 	# 435134 E8 F7 FC FF FF 
+	g4??	%edi	# 435139 FF FF 
+	g4??	%edi	# 43513B FF FF 
+	g4??	%edi	# 43513D FF FF 
+	g4??	%esi	# 43513F FF FE 
+	g4??	%edi	# 435141 FF FF 
+	g4??	%edi	# 435143 FF FF 
+	g4??	%edi	# 435145 FF FF 
+	dec	-0x77(%rax)	# 435147 FF 48 89 
+//T{ : CD5 2V2 2! ; -> }T
+
+clC	# 43514A 45 F8 
+	lea	 ( 2V2+5  ) (%rip),%rax	# 43514C 48 8D 5 E5 FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 435153 48 8D 6D F8 
+	call	 ( 2! ) 	# 435157 E8 5E F3 FC FF 
+	ret		# 43515C C3 
+//T{ -2 -1 CD5 -> }T
+
+//T{ 2V2 2@ -> -2 -1 }T
+
+//T{ 2VARIABLE 2V3 IMMEDIATE 5 6 2V3 2! -> }T
+
+	add	%al,(%rax)	# 43515D 0 0 
+	add	%al,(%rax)	# 43515F 0 0 
+	add	%al,(%rax)	# 435161 0 0 
+_2V3:
+	call	 ( DOCREATE ) 	# 435163 E8 B8 F7 FC FF 
+	add	$0x0,%eax	# 435168 7 0 0 0 0 
+	add	%al,(%rax)	# 43516D 0 0 
+	add	%al,(%rsi)	# 43516F 0 6 
+	add	%al,(%rax)	# 435171 0 0 
+	add	%al,(%rax)	# 435173 0 0 
+	add	%al,(%rax)	# 435175 0 0 
+	add	%cl,-0x77(%rax)	# 435177 0 48 89 
+//T{ 2V3 2@ -> 5 6 }T
+
+//T{ : CD7 2V3 [ 2@ ] 2LITERAL ; CD7 -> 5 6 }T
+
+clC	# 43517A 45 F8 
+	movq	$0x5,-0x10(%rbp)	# 43517C 48 C7 45 F0 5 0 0 0 
+	mov	$0x6,%eax	# 435184 B8 6 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 435189 48 8D 6D F0 
+	ret		# 43518D C3 
+//T{ : CD8 [ 6 7 ] 2V3 [ 2! ] ; 2V3 2@ -> 6 7 }T
+
+CD8:
+	ret		# 43518E C3 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING DMAX DMIN
+
+//
+
+//T{  1.  2. DMAX -> 2. }T
+
+//T{  1.  0. DMAX -> 1. }T
+
+//T{  1. -1. DMAX -> 1. }T
+
+//T{  1.  1. DMAX -> 1. }T
+
+//T{  0.  1. DMAX -> 1. }T
+
+//T{  0. -1. DMAX -> 0. }T
+
+//T{ -1.  1. DMAX -> 1. }T
+
+//T{ -1. -2. DMAX -> -1. }T
+
+//
+
+//T{ MAX-2INT HI-2INT  DMAX -> MAX-2INT }T
+
+//T{ MAX-2INT MIN-2INT DMAX -> MAX-2INT }T
+
+//T{ MIN-2INT MAX-2INT DMAX -> MAX-2INT }T
+
+//T{ MIN-2INT LO-2INT  DMAX -> LO-2INT  }T
+
+//
+
+//T{ MAX-2INT  1. DMAX -> MAX-2INT }T
+
+//T{ MAX-2INT -1. DMAX -> MAX-2INT }T
+
+//T{ MIN-2INT  1. DMAX ->  1. }T
+
+//T{ MIN-2INT -1. DMAX -> -1. }T
+
+//
+
+//
+
+//T{  1.  2. DMIN ->  1. }T
+
+//T{  1.  0. DMIN ->  0. }T
+
+//T{  1. -1. DMIN -> -1. }T
+
+//T{  1.  1. DMIN ->  1. }T
+
+//T{  0.  1. DMIN ->  0. }T
+
+//T{  0. -1. DMIN -> -1. }T
+
+//T{ -1.  1. DMIN -> -1. }T
+
+//T{ -1. -2. DMIN -> -2. }T
+
+//
+
+//T{ MAX-2INT HI-2INT  DMIN -> HI-2INT  }T
+
+//T{ MAX-2INT MIN-2INT DMIN -> MIN-2INT }T
+
+//T{ MIN-2INT MAX-2INT DMIN -> MIN-2INT }T
+
+//T{ MIN-2INT LO-2INT  DMIN -> MIN-2INT }T
+
+//
+
+//T{ MAX-2INT  1. DMIN ->  1. }T
+
+//T{ MAX-2INT -1. DMIN -> -1. }T
+
+//T{ MIN-2INT  1. DMIN -> MIN-2INT }T
+
+//T{ MIN-2INT -1. DMIN -> MIN-2INT }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING D>S DABS
+
+//
+
+//T{  1234  0 D>S ->  1234 }T
+
+//T{ -1234 -1 D>S -> -1234 }T
+
+//T{ MAX-INTD  0 D>S -> MAX-INTD }T
+
+//T{ MIN-INTD -1 D>S -> MIN-INTD }T
+
+//
+
+//T{  1. DABS -> 1. }T
+
+//T{ -1. DABS -> 1. }T
+
+//T{ MAX-2INT DABS -> MAX-2INT }T
+
+//T{ MIN-2INT 1. D+ DABS -> MAX-2INT }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING M+ M*/
+
+//
+
+//T{ HI-2INT   1 M+ -> HI-2INT   1. D+ }T
+
+//T{ MAX-2INT -1 M+ -> MAX-2INT -1. D+ }T
+
+//T{ MIN-2INT  1 M+ -> MIN-2INT  1. D+ }T
+
+//T{ LO-2INT  -1 M+ -> LO-2INT  -1. D+ }T
+
+//
+
+//\ To correct the result if the division is floored, only used when
+
+//\ necessary i.e. negative quotient and remainder <> 0
+
+//
+
+//: ?FLOORED [ -3 2 / -2 = ] LITERAL IF 1. D- THEN ;
+
+queFLOORED:
+	mov	%rax,-0x08(%rbp)	# 43518F 48 89 45 F8 
+	mov	$0x0,%eax	# 435193 B8 0 0 0 0 
+	test	%rax,%rax	# 435198 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43519B 48 8B 45 F8 
+	jz	 ( ?FLOORED+30  ) 	# 43519F F 84 1A 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4351A5 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 4351A9 48 C7 45 F0 1 0 0 0 
+	mov	$0x0,%eax	# 4351B1 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4351B6 48 8D 6D F0 
+	call	 ( D- ) 	# 4351BA E8 87 F4 FC FF 
+	ret		# 4351BF C3 
+//
+
+//T{  5.  7 11 M*/ ->  3. }T
+
+//T{  5. -7 11 M*/ -> -3. ?FLOORED }T    \ FLOORED -4.
+
+//T{ -5.  7 11 M*/ -> -3. ?FLOORED }T    \ FLOORED -4.
+
+//T{ -5. -7 11 M*/ ->  3. }T
+
+//T{ MAX-2INT  8 16 M*/ -> HI-2INT }T
+
+//T{ MAX-2INT -8 16 M*/ -> HI-2INT DNEGATE ?FLOORED }T  \ FLOORED SUBTRACT 1
+
+//T{ MIN-2INT  8 16 M*/ -> LO-2INT }T
+
+//T{ MIN-2INT -8 16 M*/ -> LO-2INT DNEGATE }T
+
+//T{ MAX-2INT MAX-INTD MAX-INTD M*/ -> MAX-2INT }T
+
+//T{ MAX-2INT MAX-INTD 2/ MAX-INTD M*/ -> MAX-INTD 1- HI-2INT NIP }T
+
+//T{ MIN-2INT LO-2INT NIP 1+ DUP 1- NEGATE M*/ -> 0 MAX-INTD 1- }T
+
+//T{ MIN-2INT LO-2INT NIP 1- MAX-INTD M*/ -> MIN-INTD 3 + HI-2INT NIP 2 + }T
+
+//T{ MAX-2INT LO-2INT NIP DUP NEGATE M*/ -> MAX-2INT DNEGATE }T
+
+//T{ MIN-2INT MAX-INTD DUP M*/ -> MIN-2INT }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING D. D.R
+
+//
+
+//\ Create some large double numbers
+
+//MAX-2INT 71 73 M*/ 2CONSTANT DBL1
+
+	add	%al,(%rax)	# 4351C0 0 0 
+	add	%ch,%al	# 4351C2 0 E8 
+	pop	%rbx	# 4351C4 5B 
+	.byte	0xEA	# 4351C5 EA 
+	g4??	%edi	# 4351C6 FF FF 
+	.byte	0xF1	# 4351C8 F1 
+	.byte	0xE3	# 4351C9 E3 
+	mov	$0x1F8FC7E2,0x7C7E3F1F(%rdi)	# 4351CA C7 8F 1F 3F 7E 7C E2 C7 8F 1F 
+	cmp	$0xF8FC7E,%eax	# 4351D4 3F 7E FC F8 0 
+//MIN-2INT 73 79 M*/ 2CONSTANT DBL2
+
+	add	%al,(%rax)	# 4351D9 0 0 
+DBL2:
+	call	 ( 2CONSTANT+14  ) 	# 4351DB E8 43 EA FF FF 
+	push	$0x71	# 4351E0 6A 71 
+	adc	%esi,%esp	# 4351E2 13 E6 
+	jNbe	 ( ?FLOORED+C  ) 	# 4351E4 77 B5 
+	mov	$0xDF984E89,%eax	# 4351E6 B8 89 4E 98 DF 
+	.byte	0xD5	# 4351EB D5 
+	loop	 ( D>ASCII+24  ) 	# 4351EC E2 26 
+	int3		# 4351EE CC 
+	out	%eax,(%dx)		# 4351EF EF 
+//
+
+//: D>ASCII  ( D -- CADDR U )
+
+//   DUP >R <# DABS #S R> SIGN #>    ( -- CADDR1 U )
+
+DgreatASCII:
+	mov	%rax,-0x08(%rbp)	# 4351F0 48 89 45 F8 
+	Push	%rax	# 4351F4 50 
+	mov	-0x08(%rbp),%rax	# 4351F5 48 8B 45 F8 
+	call	 ( <# ) 	# 4351F9 E8 D2 1E FE FF 
+	call	 ( DABS ) 	# 4351FE E8 36 FF FC FF 
+	call	 ( #S ) 	# 435203 E8 A0 1F FE FF 
+	mov	%rax,-0x08(%rbp)	# 435208 48 89 45 F8 
+	pop	%rax	# 43520C 58 
+	lea	-0x08(%rbp),%rbp	# 43520D 48 8D 6D F8 
+	call	 ( SIGN ) 	# 435211 E8 12 20 FE FF 
+	call	 ( #> ) 	# 435216 E8 CD 1F FE FF 
+//   HERE SWAP 2DUP 2>R CHARS DUP ALLOT MOVE 2R>
+
+	mov	%rax,-0x08(%rbp)	# 43521B 48 89 45 F8 
+	mov	 ( H-STDOUT+15  ) (%rip),%rax	# 43521F 48 8B 5 AC FC FC FF 
+	mov	%rax, ( :-SET+5  ) (%rip)	# 435226 48 89 5 97 6 FD FF 
+	mov	-0x08(%rbp),%rdx	# 43522D 48 8B 55 F8 
+	mov	%rax,-0x08(%rbp)	# 435231 48 89 45 F8 
+	mov	%rdx,-0x10(%rbp)	# 435235 48 89 55 F0 
+	xchg	%rdx,%rax	# 435239 48 92 
+	mov	%rdx,-0x18(%rbp)	# 43523B 48 89 55 E8 
+	lea	-0x18(%rbp),%rbp	# 43523F 48 8D 6D E8 
+	call	 ( 2>R ) 	# 435243 E8 56 F1 FC FF 
+	mov	%rax,-0x08(%rbp)	# 435248 48 89 45 F8 
+	add	%rax, ( H-STDOUT+15  ) (%rip)	# 43524C 48 1 5 7F FC FC FF 
+	mov	-0x08(%rbp),%rax	# 435253 48 8B 45 F8 
+	call	 ( MOVE ) 	# 435257 E8 FE FE FC FF 
+	call	 ( 2R> ) 	# 43525C E8 5 F1 FC FF 
+//;
+
+	ret		# 435261 C3 
+//
+
+//DBL1 D>ASCII 2CONSTANT "DBL1"
+
+	xor	%esi,(%rsi)	# 435262 31 36 
+	xor	$0x37393734,%eax	# 435264 35 34 37 39 37 
+	cmp	%dh,(%rcx)	# 435269 38 31 
+	xor	%esi,(%rdi)	# 43526B 31 37 
+	xor	(%rax),%edi	# 43526D 33 38 
+	cmp	%dh,(%rcx)	# 43526F 38 31 
+	xor	%dh,(%rbx)	# 435271 30 33 
+	xor	(%rsi),%esi	# 435273 33 36 
+	xor	%dh,(%rdx)	# 435275 30 32 
+	xor	%dh, ( _STEKC+35252A3F  ) (%rip)	# 435277 30 35 32 30 33 35 
+	xor	%esi,(%rdx)	# 43527D 31 32 
+	xor	%bh,(%rcx)	# 43527F 30 39 
+	xor	(%rax),%bh	# 435281 32 38 
+	xor	(%rdi),%esi	# 435283 33 37 
+	xor	$0x38,%al	# 435285 36 38 
+	xor	%dh,(%rdx)	# 435287 30 32 
+	add	%al,(%rax)	# 435289 0 0 
+dticDBL1dtic:
+	call	 ( 2CONSTANT+14  ) 	# 43528B E8 93 E9 FF FF 
+	and	$0x0,%eax	# 435290 27 0 0 0 0 
+	add	%al,(%rax)	# 435295 0 0 
+	add	%ah,0x52(%rdx)	# 435297 0 62 52 
+	add	%al,(%r8)	# 43529A 43 0 0 
+	add	%al,(%rax)	# 43529D 0 0 
+	add	%ch, ( _STEKC+32292F66  ) (%rip)	# 43529F 0 2D 31 35 37 32 
+//DBL2 D>ASCII 2CONSTANT "DBL2"
+
+	xor	%edi,(%rcx)	# 4352A5 31 39 
+	xor	%dh,(%rsi)	# 4352A7 30 36 
+	cmp	%dh,(%rdx)	# 4352A9 38 32 
+	xor	$0x30,%al	# 4352AB 36 30 
+	cmp	%esi,(%rbx)	# 4352AD 39 33 
+	cmp	%edi,(%rcx)	# 4352AF 39 39 
+	xor	(%rdx),%dh	# 4352B1 32 32 
+	cmp	%edi,(%rcx)	# 4352B3 39 39 
+	xor	 ( _STEKC+312A2B82  ) (%rip),%dh	# 4352B5 32 35 37 31 38 31 
+	xor	(%rdx),%dh	# 4352BB 32 32 
+	cmp	%esi,(%rsp,%rsi,1)	# 4352BD 39 34 34 
+	xor	0x39333335(,%rsi,1),%dh	# 4352C0 32 34 35 35 33 33 39 
+	xor	$0x00,%al	# 4352C7 34 0 
+	add	%al,(%rax)	# 4352C9 0 0 
+dticDBL2dtic:
+	call	 ( 2CONSTANT+14  ) 	# 4352CB E8 53 E9 FF FF 
+	sub	%al,(%rax)	# 4352D0 28 0 
+	add	%al,(%rax)	# 4352D2 0 0 
+	add	%al,(%rax)	# 4352D4 0 0 
+	add	%al,(%rax)	# 4352D6 0 0 
+	movabs	 ( CLOSE+E7FF8E42546EF402  ) ,%al	# 4352D8 A0 52 43 0 0 0 0 0 E8 
+//
+
+//: DOUBLEOUTPUT
+
+//   CR ." You should see lines duplicated:" CR
+
+	sbb	$-0x03,%al	# 4352E1 1E FD 
+clD	# 4352E3 FC 
+	jmpf	*%rax	# 4352E4 FF E8 
+	pop	%rax	# 4352E6 58 
+stD	# 4352E7 FD 
+clD	# 4352E8 FC 
+	jmp	*(%rax)	# 4352E9 FF 20 
+	pop	%rcx	# 4352EB 59 
+	outsl	%ds:(%rsi),(%dx)		# 4352EC 6F 
+	jNz	 ( DOUBLEOUTPUT+2F  ) 	# 4352ED 75 20 
+	jNb	 ( DOUBLEOUTPUT+79  ) 	# 4352EF 73 68 
+	outsl	%ds:(%rsi),(%dx)		# 4352F1 6F 
+	jNz	 ( DOUBLEOUTPUT+80  ) 	# 4352F2 75 6C 
+	and	%dh,FS:0x65(%rbx)	# 4352F4 64 20 73 65 
+	.byte	0x65	# 4352F8 65 
+	and	%ch,0x6E(%rcx,%rbp,2)	# 4352F9 20 6C 69 6E 
+	.byte	0x65	# 4352FD 65 
+	jNb	 ( DOUBLEOUTPUT+40  ) 	# 4352FE 73 20 
+	jNz	 ( DOUBLEOUTPUT+93  ) 	# 435300 64 75 70 
+	insb	(%dx),%es:(%rdi)		# 435303 6C 
+	imul	$0x64657461,0x61(%rbx),%esp	# 435304 69 63 61 74 65 64 
+	cmp	%al,%ch	# 43530A 3A E8 
+	cmpsb	%es:(%rdi),%ds:(%rsi)		# 43530C A6 
+clD	# 43530D FC 
+clD	# 43530E FC 
+	jmpf	*%rax	# 43530F FF E8 
+	out	%al,(%dx)		# 435311 EE 
+clD	# 435312 FC 
+clD	# 435313 FC 
+	dec	-0x77(%rax)	# 435314 FF 48 89 
+//   5 SPACES "DBL1" TYPE CR
+
+clC	# 435317 45 F8 
+	mov	$0x5,%eax	# 435319 B8 5 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43531E 48 8D 6D F8 
+	call	 ( SPACES ) 	# 435322 E8 21 20 FE FF 
+	call	 ( "DBL1" ) 	# 435327 E8 5F FF FF FF 
+	call	 ( TYPE ) 	# 43532C E8 85 FC FC FF 
+	call	 ( CR ) 	# 435331 E8 CD FC FC FF 
+//   5 SPACES DBL1 D. CR
+
+	mov	%rax,-0x08(%rbp)	# 435336 48 89 45 F8 
+	mov	$0x5,%eax	# 43533A B8 5 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43533F 48 8D 6D F8 
+	call	 ( SPACES ) 	# 435343 E8 0 20 FE FF 
+	call	 ( DBL1 ) 	# 435348 E8 76 FE FF FF 
+	call	 ( D. ) 	# 43534D E8 7E 20 FE FF 
+	call	 ( CR ) 	# 435352 E8 AC FC FC FF 
+//   8 SPACES "DBL1" DUP >R TYPE CR
+
+	mov	%rax,-0x08(%rbp)	# 435357 48 89 45 F8 
+	mov	$0x8,%eax	# 43535B B8 8 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435360 48 8D 6D F8 
+	call	 ( SPACES ) 	# 435364 E8 DF 1F FE FF 
+	call	 ( "DBL1" ) 	# 435369 E8 1D FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 43536E 48 89 45 F8 
+	Push	%rax	# 435372 50 
+	mov	-0x08(%rbp),%rax	# 435373 48 8B 45 F8 
+	call	 ( TYPE ) 	# 435377 E8 3A FC FC FF 
+	call	 ( CR ) 	# 43537C E8 82 FC FC FF 
+//   5 SPACES DBL1 R> 3 + D.R CR
+
+	mov	%rax,-0x08(%rbp)	# 435381 48 89 45 F8 
+	mov	$0x5,%eax	# 435385 B8 5 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43538A 48 8D 6D F8 
+	call	 ( SPACES ) 	# 43538E E8 B5 1F FE FF 
+	call	 ( DBL1 ) 	# 435393 E8 2B FE FF FF 
+	mov	%rax,-0x08(%rbp)	# 435398 48 89 45 F8 
+	pop	-0x10(%rbp)	# 43539C 8F 45 F0 
+	mov	$0x3,%eax	# 43539F B8 3 0 0 0 
+	add	-0x10(%rbp),%rax	# 4353A4 48 3 45 F0 
+	lea	-0x08(%rbp),%rbp	# 4353A8 48 8D 6D F8 
+	call	 ( D.R ) 	# 4353AC E8 AA B7 FF FF 
+	call	 ( CR ) 	# 4353B1 E8 4D FC FC FF 
+//   5 SPACES "DBL2" TYPE CR
+
+	mov	%rax,-0x08(%rbp)	# 4353B6 48 89 45 F8 
+	mov	$0x5,%eax	# 4353BA B8 5 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4353BF 48 8D 6D F8 
+	call	 ( SPACES ) 	# 4353C3 E8 80 1F FE FF 
+	call	 ( "DBL2" ) 	# 4353C8 E8 FE FE FF FF 
+	call	 ( TYPE ) 	# 4353CD E8 E4 FB FC FF 
+	call	 ( CR ) 	# 4353D2 E8 2C FC FC FF 
+//   5 SPACES DBL2 D. CR
+
+	mov	%rax,-0x08(%rbp)	# 4353D7 48 89 45 F8 
+	mov	$0x5,%eax	# 4353DB B8 5 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4353E0 48 8D 6D F8 
+	call	 ( SPACES ) 	# 4353E4 E8 5F 1F FE FF 
+	call	 ( DBL2 ) 	# 4353E9 E8 ED FD FF FF 
+	call	 ( D. ) 	# 4353EE E8 DD 1F FE FF 
+	call	 ( CR ) 	# 4353F3 E8 B FC FC FF 
+//   10 SPACES "DBL2" DUP >R TYPE CR
+
+	mov	%rax,-0x08(%rbp)	# 4353F8 48 89 45 F8 
+	mov	$0xA,%eax	# 4353FC B8 A 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435401 48 8D 6D F8 
+	call	 ( SPACES ) 	# 435405 E8 3E 1F FE FF 
+	call	 ( "DBL2" ) 	# 43540A E8 BC FE FF FF 
+	mov	%rax,-0x08(%rbp)	# 43540F 48 89 45 F8 
+	Push	%rax	# 435413 50 
+	mov	-0x08(%rbp),%rax	# 435414 48 8B 45 F8 
+	call	 ( TYPE ) 	# 435418 E8 99 FB FC FF 
+	call	 ( CR ) 	# 43541D E8 E1 FB FC FF 
+//   5 SPACES DBL2 R> 5 + D.R CR
+
+	mov	%rax,-0x08(%rbp)	# 435422 48 89 45 F8 
+	mov	$0x5,%eax	# 435426 B8 5 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43542B 48 8D 6D F8 
+	call	 ( SPACES ) 	# 43542F E8 14 1F FE FF 
+	call	 ( DBL2 ) 	# 435434 E8 A2 FD FF FF 
+	mov	%rax,-0x08(%rbp)	# 435439 48 89 45 F8 
+	pop	-0x10(%rbp)	# 43543D 8F 45 F0 
+	mov	$0x5,%eax	# 435440 B8 5 0 0 0 
+	add	-0x10(%rbp),%rax	# 435445 48 3 45 F0 
+	lea	-0x08(%rbp),%rbp	# 435449 48 8D 6D F8 
+	call	 ( D.R ) 	# 43544D E8 9 B7 FF FF 
+	call	 ( CR ) 	# 435452 E8 AC FB FC FF 
+//;
+
+	ret		# 435457 C3 
+//
+
+//T{ DOUBLEOUTPUT -> }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING 2ROT DU< (Double Number extension words)
+
+//
+
+//T{ 1. 2. 3. 2ROT -> 2. 3. 1. }T
+
+//T{ MAX-2INT MIN-2INT 1. 2ROT -> MIN-2INT 1. MAX-2INT }T
+
+//
+
+//T{  1.  1. DU< -> FALSE }T
+
+//T{  1. -1. DU< -> TRUE  }T
+
+//T{ -1.  1. DU< -> FALSE }T
+
+//T{ -1. -2. DU< -> FALSE }T
+
+//T{ 0 1   1. DU< -> FALSE }T
+
+//T{ 1.  0 1  DU< -> TRUE  }T
+
+//T{ 0 -1 1 -2 DU< -> FALSE }T
+
+//T{ 1 -2 0 -1 DU< -> TRUE  }T
+
+//
+
+//T{ MAX-2INT HI-2INT  DU< -> FALSE }T
+
+//T{ HI-2INT  MAX-2INT DU< -> TRUE  }T
+
+//T{ MAX-2INT MIN-2INT DU< -> TRUE }T
+
+//T{ MIN-2INT MAX-2INT DU< -> FALSE }T
+
+//T{ MIN-2INT LO-2INT  DU< -> TRUE }T
+
+//
+
+//[IFDEF] 2VALUE
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING 2VALUE
+
+//
+
+//T{ 1111 2222 2VALUE 2VAL -> }T
+
+//T{ 2VAL -> 1111 2222 }T
+
+//T{ 3333 4444 TO 2VAL -> }T
+
+//T{ 2VAL -> 3333 4444 }T
+
+//T{ : TO-2VAL TO 2VAL ; 5555 6666 TO-2VAL -> }T
+
+//T{ 2VAL -> 5555 6666 }T
+
+//[ELSE] CR .( 2VALUE is undefined word)
+
+//[THEN]
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//DOUBLE-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of Double-Number word tests) CR
+
+//
+

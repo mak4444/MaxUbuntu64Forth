@@ -1,0 +1,751 @@
+//CR CR SOURCE TYPE ( Preliminary test ) CR
+
+//SOURCE ( These lines test SOURCE, TYPE, CR and parenthetic comments ) TYPE CR
+
+//( The next line of output should be blank to test CR ) SOURCE TYPE CR CR
+
+//
+
+//( It is now assumed that SOURCE, TYPE, CR and comments work. SOURCE and      )
+
+//( TYPE will be used to report test passes until something better can be      )
+
+//( defined to report errors. Until then reporting failures will depend on the )
+
+//( system under test and will usually be via reporting an unrecognised word   )
+
+//( or possibly the system crashing. Tests will be numbered by #n from now on  )
+
+//( to assist fault finding. Test successes will be indicated by               )
+
+//( 'Pass: #n ...' and failures by 'Error: #n ...'                             )
+
+//
+
+//( Initial tests of >IN +! and 1+ )
+
+//( Check that n >IN +! acts as an interpretive IF, where n >= 0 )
+
+//( Pass #1: testing 0 >IN +! ) 0 >IN +! SOURCE TYPE CR
+
+//( Pass #2: testing 1 >IN +! ) 1 >IN +! xSOURCE TYPE CR
+
+//( Pass #3: testing 1+ ) 1 1+ >IN +! xxSOURCE TYPE CR
+
+//
+
+//( Test results can now be reported using the >IN +! trick to skip )
+
+//( 1 or more characters )
+
+//
+
+//( The value of BASE is unknown so it is not safe to use digits > 1, therefore )
+
+//( it will be set it to binary and then decimal, this also tests @ and ! )
+
+//
+
+//( Pass #4: testing @ ! BASE ) 0 1+ 1+ BASE ! BASE @ >IN +! xxSOURCE TYPE CR
+
+//( Set BASE to decimal ) 1010 BASE !
+
+//( Pass #5: testing decimal BASE ) BASE @ >IN +! xxxxxxxxxxSOURCE TYPE CR
+
+//
+
+//( Now in decimal mode and digits >1 can be used )
+
+//
+
+//( A better error reporting word is needed, much like .( which can't  )
+
+//( be used as it is in the Core Extension word set, similarly PARSE can't be )
+
+//( used either, only WORD is available to parse a message and must be used   )
+
+//( in a colon definition. Therefore a simple colon definition is tested next )
+
+//
+
+//( Pass #6: testing : ; ) : .SRC SOURCE TYPE CR ; 6 >IN +! xxxxxx.SRC
+
+dotSRC:
+	mov	%rax,-0x08(%rbp)	# 430E9C 48 89 45 F8 
+	mov	 ( TIB+5  ) (%rip),%rax	# 430EA0 48 8B 5 97 C2 FD FF 
+	mov	%rax,-0x10(%rbp)	# 430EA7 48 89 45 F0 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 430EAB 48 8B 5 C7 3D FD FF 
+	lea	-0x10(%rbp),%rbp	# 430EB2 48 8D 6D F0 
+	call	 ( TYPE ) 	# 430EB6 E8 FB 40 FD FF 
+	call	 ( CR ) 	# 430EBB E8 43 41 FD FF 
+	ret		# 430EC0 C3 
+//( Pass #7: testing number input ) 19 >IN +! xxxxxxxxxxxxxxxxxxx.SRC
+
+//
+
+//( VARIABLE is now tested as one will be used instead of DROP e.g. Y ! )
+
+//
+
+//( Pass #8: testing VARIABLE ) VARIABLE Y 2 Y ! Y @ >IN +! xx.SRC
+
+	add	%al,(%rax)	# 430EC1 0 0 
+Y:
+	call	 ( DOCREATE ) 	# 430EC3 E8 58 3A FD FF 
+	add	%al,(%rax)	# 430EC8 4B 4A 40 0 0 
+	add	%al,(%rax)	# 430ECD 0 0 
+	add	%cl,-0x77(%rax)	# 430ECF 0 48 89 
+//
+
+//: MSG 41 WORD COUNT ;  ( 41 is the ASCII code for right parenthesis )
+
+clC	# 430ED2 45 F8 
+	mov	$0x29,%eax	# 430ED4 B8 29 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 430ED9 48 8D 6D F8 
+	call	 ( WORD ) 	# 430EDD E8 80 D8 FD FF 
+	lea	0x01(%rax),%rdx	# 430EE2 48 8D 50 1 
+	movzbq	(%rax),%rax	# 430EE6 48 F B6 0 
+	mov	%rdx,-0x08(%rbp)	# 430EEA 48 89 55 F8 
+	lea	-0x08(%rbp),%rbp	# 430EEE 48 8D 6D F8 
+	ret		# 430EF2 C3 
+//( The next tests MSG leaves 2 items on the data stack )
+
+//( Pass #9: testing WORD COUNT ) 5 MSG abcdef) Y ! Y ! >IN +! xxxxx.SRC
+
+//( Pass #10: testing WORD COUNT ) MSG ab) >IN +! xxY ! .SRC
+
+//
+
+//( For reporting success .MSG( is now defined )
+
+//: .MSG( MSG TYPE ; .MSG( Pass #11: testing WORD COUNT .MSG) CR
+
+dotMSGcbig:
+	call	 ( MSG ) 	# 430EF3 E8 D8 FF FF FF 
+	call	 ( TYPE ) 	# 430EF8 E8 B9 40 FD FF 
+	ret		# 430EFD C3 
+//
+
+//( To define an error reporting word, = 2* AND will be needed, test them first )
+
+//( This assumes 2's complement arithmetic )
+
+//1 1 = 1+ 1+ >IN +! x.MSG( Pass #12: testing = returns all 1's for true) CR
+
+//1 0 = 1+ >IN +! x.MSG( Pass #13: testing = returns 0 for false) CR
+
+//1 1 = -1 = 1+ 1+ >IN +! x.MSG( Pass #14: testing -1 interpreted correctly) CR
+
+//
+
+//1 2* >IN +! xx.MSG( Pass #15: testing 2*) CR
+
+//-1 2* 1+ 1+ 1+ >IN +! x.MSG( Pass #16: testing 2*) CR
+
+//
+
+//-1 -1 AND 1+ 1+ >IN +! x.MSG( Pass #17: testing AND) CR
+
+//-1  0 AND 1+ >IN +! x.MSG( Pass #18: testing AND) CR
+
+//6  -1 AND >IN +! xxxxxx.MSG( Pass #19: testing AND) CR
+
+//
+
+//( Define ~ to use as a 'to end of line' comment. \ cannot be used as it a )
+
+//( Core Extension word )
+
+//: ~  ( -- )  SOURCE >IN ! Y ! ;
+
+til:
+	mov	%rax,-0x08(%rbp)	# 430EFE 48 89 45 F8 
+	mov	 ( TIB+5  ) (%rip),%rax	# 430F02 48 8B 5 35 C2 FD FF 
+	mov	%rax,-0x10(%rbp)	# 430F09 48 89 45 F0 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 430F0D 48 8B 5 65 3D FD FF 
+	mov	%rax,%rdx	# 430F14 48 89 C2 
+	mov	$0x404C49,%eax	# 430F17 B8 49 4C 40 0 
+	mov	%rdx,(%rax)	# 430F1C 48 89 10 
+	lea	 ( Y+5  ) (%rip),%rax	# 430F1F 48 8D 5 A2 FF FF FF 
+	mov	-0x10(%rbp),%rdx	# 430F26 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 430F2A 48 89 10 
+	mov	-0x08(%rbp),%rax	# 430F2D 48 8B 45 F8 
+	ret		# 430F31 C3 
+//
+
+//( Rather than relying on a pass message test words can now be defined to )
+
+//( report errors in the event of a failure. For convenience words ?T~ and )
+
+//( ?F~ are defined together with a helper ?~~ to test for TRUE and FALSE  )
+
+//( Usage is: <test> ?T~ Error #n: <message>                               )
+
+//( Success makes >IN index the ~ in ?T~ or ?F~ to skip the error message. )
+
+//( Hence it is essential there is only 1 space between ?T~ and Error      )
+
+//
+
+//: ?~~  ( -1 | 0 -- )  2* >IN +! ;
+
+quetiltil:
+	lea	(%rax,%rax,1),%rax	# 430F32 48 8D 4 0 
+	mov	%rax,%rdx	# 430F36 48 89 C2 
+	mov	$0x404C49,%eax	# 430F39 B8 49 4C 40 0 
+	add	%rdx,(%rax)	# 430F3E 48 1 10 
+	mov	0x00(%rbp),%rax	# 430F41 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 430F45 48 8D 6D 8 
+	ret		# 430F49 C3 
+//: ?F~ ( f -- )   0 = ?~~ ;
+
+queFtil:
+	xor	$0x0,%rax	# 430F4A 48 35 0 0 0 0 
+	sub	$0x01,%rax	# 430F50 48 83 E8 1 
+	sbb	%rax,%rax	# 430F54 48 19 C0 
+	lea	(%rax,%rax,1),%rax	# 430F57 48 8D 4 0 
+	mov	%rax,%rdx	# 430F5B 48 89 C2 
+	mov	$0x404C49,%eax	# 430F5E B8 49 4C 40 0 
+	add	%rdx,(%rax)	# 430F63 48 1 10 
+	mov	0x00(%rbp),%rax	# 430F66 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 430F6A 48 8D 6D 8 
+	ret		# 430F6E C3 
+//: ?T~ ( f -- )  -1 = ?~~ ;
+
+queTtil:
+	xor	$-0x01,%rax	# 430F6F 48 83 F0 FF 
+	sub	$0x01,%rax	# 430F73 48 83 E8 1 
+	sbb	%rax,%rax	# 430F77 48 19 C0 
+	lea	(%rax,%rax,1),%rax	# 430F7A 48 8D 4 0 
+	mov	%rax,%rdx	# 430F7E 48 89 C2 
+	mov	$0x404C49,%eax	# 430F81 B8 49 4C 40 0 
+	add	%rdx,(%rax)	# 430F86 48 1 10 
+	mov	0x00(%rbp),%rax	# 430F89 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 430F8D 48 8D 6D 8 
+	ret		# 430F91 C3 
+//
+
+//( Errors will be counted )
+
+//VARIABLE #ERRS 0 #ERRS !
+
+	add	%ch,%al	# 430F92 0 E8 
+	mov	%bh,(%rcx)	# 430F94 88 39 
+stD	# 430F96 FD 
+	inc	(%rax)	# 430F97 FF 0 
+	add	%al,(%rax)	# 430F99 0 0 
+	add	%al,(%rax)	# 430F9B 0 0 
+	add	%al,(%rax)	# 430F9D 0 0 
+	add	%cl,-0x77(%rax)	# 430F9F 0 48 89 
+//: Error  1 #ERRS +! -6 >IN +! .MSG( CR ;
+
+clC	# 430FA2 45 F8 
+	lea	 ( #ERRS+5  ) (%rip),%rax	# 430FA4 48 8D 5 ED FF FF FF 
+	movq	$0x1,%rdx	# 430FAB 48 C7 C2 1 0 0 0 
+	add	%rdx,(%rax)	# 430FB2 48 1 10 
+	movq	$-0x6,-0x10(%rbp)	# 430FB5 48 C7 45 F0 FA FF FF FF 
+	mov	$0x404C49,%eax	# 430FBD B8 49 4C 40 0 
+	mov	-0x10(%rbp),%rdx	# 430FC2 48 8B 55 F0 
+	add	%rdx,(%rax)	# 430FC6 48 1 10 
+	mov	-0x08(%rbp),%rax	# 430FC9 48 8B 45 F8 
+	call	 ( .MSG( ) 	# 430FCD E8 21 FF FF FF 
+	call	 ( CR ) 	# 430FD2 E8 2C 40 FD FF 
+	ret		# 430FD7 C3 
+//: Pass  -1 #ERRS +! 1 >IN +! Error ;  ~ Pass is defined solely to test Error
+
+Pass:
+	mov	%rax,-0x08(%rbp)	# 430FD8 48 89 45 F8 
+	lea	 ( #ERRS+5  ) (%rip),%rax	# 430FDC 48 8D 5 B5 FF FF FF 
+	movq	$-0x1,%rdx	# 430FE3 48 C7 C2 FF FF FF FF 
+	add	%rdx,(%rax)	# 430FEA 48 1 10 
+	movq	$0x1,-0x10(%rbp)	# 430FED 48 C7 45 F0 1 0 0 0 
+	mov	$0x404C49,%eax	# 430FF5 B8 49 4C 40 0 
+	mov	-0x10(%rbp),%rdx	# 430FFA 48 8B 55 F0 
+	add	%rdx,(%rax)	# 430FFE 48 1 10 
+	mov	-0x08(%rbp),%rax	# 431001 48 8B 45 F8 
+	call	 ( Error ) 	# 431005 E8 96 FF FF FF 
+	ret		# 43100A C3 
+//
+
+//-1 ?F~ Pass #20: testing ?F~ ?~~ Pass Error
+
+//-1 ?T~ Error #1: testing ?T~ ?~~ ~
+
+//
+
+//0  0 = 0= ?F~ Error #2: testing 0=
+
+//1  0 = 0= ?T~ Error #3: testing 0=
+
+//-1 0 = 0= ?T~ Error #4: testing 0=
+
+//
+
+//0  0 = ?T~ Error #5: testing =
+
+//0  1 = ?F~ Error #6: testing =
+
+//1  0 = ?F~ Error #7: testing =
+
+//-1 1 = ?F~ Error #8: testing =
+
+//1 -1 = ?F~ Error #9: testing =
+
+//
+
+//-1 0< ?T~ Error #10: testing 0<
+
+//0  0< ?F~ Error #11: testing 0<
+
+//1  0< ?F~ Error #12: testing 0<
+
+//
+
+// DEPTH 1+ DEPTH = ?~~ Error #13: testing DEPTH
+
+// ~ Up to now whether the data stack was empty or not hasn't mattered as
+
+// ~ long as it didn't overflow. Now it will be emptied - also
+
+// ~ removing any unreported underflow
+
+// DEPTH 0< 0= 1+ >IN +! ~ 0 0 >IN ! Remove any underflow
+
+// DEPTH 0= 1+ >IN +! ~ Y !  0 >IN ! Empty the stack
+
+// DEPTH 0= ?T~ Error #14: data stack not emptied 
+
+//
+
+// 4 -5 SWAP 4 = SWAP -5 = = ?T~ Error #15: testing SWAP
+
+// 111 222 333 444
+
+// DEPTH 4 = ?T~ Error #16: testing DEPTH
+
+// 444 = SWAP 333 = = DEPTH 3 = = ?T~ Error #17: testing SWAP DEPTH
+
+// 222 = SWAP 111 = = DEPTH 1 = = ?T~ Error #18: testing SWAP DEPTH
+
+// DEPTH 0= ?T~ Error #19: testing DEPTH = 0
+
+//
+
+//~ From now on the stack is expected to be empty after a test so
+
+//~ ?~ will be defined to include a check on the stack depth. Note
+
+//~ that ?~~ was defined and used earlier instead of ?~ to avoid
+
+//~ (irritating) redefinition messages that many systems display had
+
+//~ ?~ simply been redefined
+
+//
+
+//: ?~  ( -1 | 0 -- )  DEPTH 1 = AND ?~~ ; ~ -1 test success, 0 test failure
+
+quetil:
+	call	 ( DEPTH ) 	# 43100B E8 96 40 FD FF 
+	xor	$0x1,%rax	# 431010 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 431016 48 83 E8 1 
+	sbb	%rax,%rax	# 43101A 48 19 C0 
+	and	0x00(%rbp),%rax	# 43101D 48 23 45 0 
+	lea	(%rax,%rax,1),%rax	# 431021 48 8D 4 0 
+	mov	%rax,%rdx	# 431025 48 89 C2 
+	mov	$0x404C49,%eax	# 431028 B8 49 4C 40 0 
+	add	%rdx,(%rax)	# 43102D 48 1 10 
+	mov	0x08(%rbp),%rax	# 431030 48 8B 45 8 
+	lea	0x10(%rbp),%rbp	# 431034 48 8D 6D 10 
+	ret		# 431038 C3 
+//
+
+//123 -1 ?~ Pass #21: testing ?~
+
+//Y !   ~ equivalent to DROP
+
+//
+
+//~ Testing the remaining Core words used in the Hayes tester, with the above
+
+//~ definitions these are straightforward
+
+//
+
+//1 DROP DEPTH 0= ?~ Error #20: testing DROP
+
+//123 DUP  = ?~ Error #21: testing DUP
+
+//123 ?DUP = ?~ Error #22: testing ?DUP
+
+//0  ?DUP 0= ?~ Error #23: testing ?DUP
+
+//123  111  + 234  = ?~ Error #24: testing +
+
+//123  -111 + 12   = ?~ Error #25: testing +
+
+//-123 111  + -12  = ?~ Error #26: testing +
+
+//-123 -111 + -234 = ?~ Error #27: testing +
+
+//-1 NEGATE 1 = ?~ Error #28: testing NEGATE
+
+//0  NEGATE 0=  ?~ Error #29: testing NEGATE
+
+//987 NEGATE -987 = ?~ Error #30: testing NEGATE
+
+//HERE DEPTH SWAP DROP 1 = ?~ Error #31: testing HERE
+
+//CREATE TST1 HERE TST1 = ?~ Error #32: testing CREATE HERE
+
+	add	%al,(%rax)	# 431039 0 0 
+TST1:
+	call	 ( DOCREATE ) 	# 43103B E8 E0 38 FD FF 
+//16  ALLOT HERE TST1 NEGATE + 16 = ?~ Error #33: testing ALLOT
+
+//-16 ALLOT HERE TST1 = ?~ Error #34: testing ALLOT
+
+//0 CELLS 0= ?~ Error #35: testing CELLS
+
+//1 CELLS ALLOT HERE TST1 NEGATE + VARIABLE CSZ CSZ !
+
+	add	%al,(%rax)	# 431040 0 0 
+	add	%al,(%rax)	# 431042 0 0 
+	add	%al,(%rax)	# 431044 0 0 
+	add	%al,(%rax)	# 431046 0 0 
+	add	%al,(%rax)	# 431048 0 0 
+	add	%ch,%al	# 43104A 0 E8 
+	sar	$1,(%rax)	# 43104C D0 38 
+stD	# 43104E FD 
+	dec	(%rax)	# 43104F FF 8 
+	add	%al,(%rax)	# 431051 0 0 
+	add	%al,(%rax)	# 431053 0 0 
+	add	%al,(%rax)	# 431055 0 0 
+	add	%cl,-0x77(%rax)	# 431057 0 48 89 
+//CSZ @ 0= 0= ?~ Error #36: testing CELLS
+
+//3 CELLS CSZ @ DUP 2* + = ?~ Error #37: testing CELLS
+
+//-3 CELLS CSZ @ DUP 2* + + 0= ?~ Error #38: testing CELLS
+
+//: TST2  ( f -- n )  DUP IF 1+ THEN ;
+
+clC	# 43105A 45 F8 
+	test	%rax,%rax	# 43105C 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43105F 48 8B 45 F8 
+	jz	 ( TST2+15  ) 	# 431063 F 84 4 0 0 0 
+	lea	0x01(%rax),%rax	# 431069 48 8D 40 1 
+	ret		# 43106D C3 
+//0 TST2 0=  ?~ Error #39: testing IF THEN
+
+//1 TST2 2 = ?~ Error #40: testing IF THEN
+
+//: TST3  ( n1 -- n2 )  IF 123 ELSE 234 THEN ;
+
+TST3:
+	test	%rax,%rax	# 43106E 48 85 C0 
+	mov	0x00(%rbp),%rax	# 431071 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431075 48 8D 6D 8 
+	jz	 ( TST3+23  ) 	# 431079 F 84 12 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 43107F 48 89 45 F8 
+	mov	$0x7B,%eax	# 431083 B8 7B 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431088 48 8D 6D F8 
+	jmp	 ( TST3+30  ) 	# 43108C E9 D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431091 48 89 45 F8 
+	mov	$0xEA,%eax	# 431095 B8 EA 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43109A 48 8D 6D F8 
+	ret		# 43109E C3 
+//0 TST3 234 = ?~ Error #41: testing IF ELSE THEN
+
+//1 TST3 123 = ?~ Error #42: testing IF ELSE THEN
+
+//: TST4  ( -- n )  0 5 0 DO 1+ LOOP ;
+
+TST4:
+	mov	%rax,-0x08(%rbp)	# 43109F 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 4310A3 48 C7 45 F0 0 0 0 0 
+	movq	$0x5,-0x18(%rbp)	# 4310AB 48 C7 45 E8 5 0 0 0 
+	mov	$0x0,%eax	# 4310B3 B8 0 0 0 0 
+	lea	-0x18(%rbp),%rbp	# 4310B8 48 8D 6D E8 
+	call	 ( (DO) ) 	# 4310BC E8 28 39 FD FF 
+	.quad  ( TST4+3B  ) 
+	lea	0x01(%rax),%rax	# 4310C9 48 8D 40 1 
+	inc	%r14	# 4310CD 49 FF C6 
+	inc	%r15	# 4310D0 49 FF C7 
+	jNo	 ( TST4+2A  ) 	# 4310D3 71 F4 
+	pop	%r14	# 4310D5 41 5E 
+	pop	%r15	# 4310D7 41 5F 
+	pop	%rcx	# 4310D9 59 
+	ret		# 4310DA C3 
+//TST4 5 = ?~ Error #43: testing DO LOOP
+
+//: TST5  ( -- n )  0 10 0 DO I + LOOP ;
+
+TST5:
+	mov	%rax,-0x08(%rbp)	# 4310DB 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 4310DF 48 C7 45 F0 0 0 0 0 
+	movq	$0xA,-0x18(%rbp)	# 4310E7 48 C7 45 E8 A 0 0 0 
+	mov	$0x0,%eax	# 4310EF B8 0 0 0 0 
+	lea	-0x18(%rbp),%rbp	# 4310F4 48 8D 6D E8 
+	call	 ( (DO) ) 	# 4310F8 E8 EC 38 FD FF 
+	.quad  ( TST5+42  ) 
+	mov	%rax,-0x08(%rbp)	# 431105 48 89 45 F8 
+	mov	%r14,%rax	# 431109 4C 89 F0 
+	add	-0x08(%rbp),%rax	# 43110C 48 3 45 F8 
+	inc	%r14	# 431110 49 FF C6 
+	inc	%r15	# 431113 49 FF C7 
+	jNo	 ( TST5+2A  ) 	# 431116 71 ED 
+	pop	%r14	# 431118 41 5E 
+	pop	%r15	# 43111A 41 5F 
+	pop	%rcx	# 43111C 59 
+	ret		# 43111D C3 
+//TST5 45 = ?~ Error #44: testing I
+
+//: TST6  ( -- n )  0 10 0 DO DUP 5 = IF LEAVE ELSE 1+ THEN LOOP ;
+
+TST6:
+	mov	%rax,-0x08(%rbp)	# 43111E 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 431122 48 C7 45 F0 0 0 0 0 
+	movq	$0xA,-0x18(%rbp)	# 43112A 48 C7 45 E8 A 0 0 0 
+	mov	$0x0,%eax	# 431132 B8 0 0 0 0 
+	lea	-0x18(%rbp),%rbp	# 431137 48 8D 6D E8 
+	call	 ( (DO) ) 	# 43113B E8 A9 38 FD FF 
+	.quad  ( TST6+63  ) 
+	mov	%rax,-0x08(%rbp)	# 431148 48 89 45 F8 
+	xor	$0x5,%rax	# 43114C 48 35 5 0 0 0 
+	sub	$0x01,%rax	# 431152 48 83 E8 1 
+	sbb	%rax,%rax	# 431156 48 19 C0 
+	test	%rax,%rax	# 431159 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43115C 48 8B 45 F8 
+	jz	 ( TST6+52  ) 	# 431160 F 84 A 0 0 0 
+	call	 ( LEAVE ) 	# 431166 E8 B2 38 FD FF 
+	jmp	 ( TST6+56  ) 	# 43116B E9 4 0 0 0 
+	lea	0x01(%rax),%rax	# 431170 48 8D 40 1 
+	inc	%r14	# 431174 49 FF C6 
+	inc	%r15	# 431177 49 FF C7 
+	jNo	 ( TST6+2A  ) 	# 43117A 71 CC 
+	pop	%r14	# 43117C 41 5E 
+	pop	%r15	# 43117E 41 5F 
+	pop	%rcx	# 431180 59 
+	ret		# 431181 C3 
+//TST6 5 = ?~ Error #45: testing LEAVE
+
+//: TST7  ( -- n1 n2 ) 123 >R 234 R> ;
+
+TST7:
+	mov	%rax,-0x08(%rbp)	# 431182 48 89 45 F8 
+	mov	$0x7B,%eax	# 431186 B8 7B 0 0 0 
+	Push	%rax	# 43118B 50 
+	movq	$0xEA,-0x10(%rbp)	# 43118C 48 C7 45 F0 EA 0 0 0 
+	pop	%rax	# 431194 58 
+	lea	-0x10(%rbp),%rbp	# 431195 48 8D 6D F0 
+	ret		# 431199 C3 
+//TST7 NEGATE + 111 = ?~ Error #46: testing >R R>
+
+//: TST8  ( -- ch )  [CHAR] A ;
+
+TST8:
+	mov	%rax,-0x08(%rbp)	# 43119A 48 89 45 F8 
+	mov	$0x41,%eax	# 43119E B8 41 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4311A3 48 8D 6D F8 
+	ret		# 4311A7 C3 
+//TST8 65 = ?~ Error #47: testing [CHAR]
+
+//: TST9  ( -- )  [CHAR] s [CHAR] s [CHAR] a [CHAR] P 4 0 DO EMIT LOOP ;
+
+TST9:
+	mov	%rax,-0x08(%rbp)	# 4311A8 48 89 45 F8 
+	movq	$0x73,-0x10(%rbp)	# 4311AC 48 C7 45 F0 73 0 0 0 
+	movq	$0x73,-0x18(%rbp)	# 4311B4 48 C7 45 E8 73 0 0 0 
+	movq	$0x61,-0x20(%rbp)	# 4311BC 48 C7 45 E0 61 0 0 0 
+	movq	$0x50,-0x28(%rbp)	# 4311C4 48 C7 45 D8 50 0 0 0 
+	movq	$0x4,-0x30(%rbp)	# 4311CC 48 C7 45 D0 4 0 0 0 
+	mov	$0x0,%eax	# 4311D4 B8 0 0 0 0 
+	lea	-0x30(%rbp),%rbp	# 4311D9 48 8D 6D D0 
+	call	 ( (DO) ) 	# 4311DD E8 7 38 FD FF 
+	.quad  ( TST9+54  ) 
+	call	 ( EMIT ) 	# 4311EA E8 F4 3D FD FF 
+	inc	%r14	# 4311EF 49 FF C6 
+	inc	%r15	# 4311F2 49 FF C7 
+	jNo	 ( TST9+42  ) 	# 4311F5 71 F3 
+	pop	%r14	# 4311F7 41 5E 
+	pop	%r15	# 4311F9 41 5F 
+	pop	%rcx	# 4311FB 59 
+	ret		# 4311FC C3 
+//TST9 .MSG(  #22: testing EMIT) CR
+
+//: TST10  ( -- )  S" Pass #23: testing S" TYPE [CHAR] " EMIT CR ; TST10
+
+TST10:
+	call	 ( (S") ) 	# 4311FD E8 40 3E FD FF 
+	.byte 0x13,0x50,0x61,0x73,0x73,0x20,0x23,0x32,0x33,0x3A,0x20,0x74,0x65,0x73,0x74,0x69,0x6E,0x67,0x20,0x53
+	call	 ( TYPE ) 	# 431216 E8 9B 3D FD FF 
+	mov	%rax,-0x08(%rbp)	# 43121B 48 89 45 F8 
+	mov	$0x22,%eax	# 43121F B8 22 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431224 48 8D 6D F8 
+	call	 ( EMIT ) 	# 431228 E8 B6 3D FD FF 
+	call	 ( CR ) 	# 43122D E8 D1 3D FD FF 
+	ret		# 431232 C3 
+//
+
+//~ The Hayes core test core.fr uses CONSTANT before it is tested therefore
+
+//~ we test CONSTANT here
+
+//
+
+//1234 CONSTANT CTEST
+
+CTEST:
+	call	 ( DOCONSTANT ) 	# 431233 E8 DB 36 FD FF 
+	rol	%cl,(%rax,%rax,1)	# 431238 D2 4 0 
+	add	%al,(%rax)	# 43123B 0 0 
+	add	%al,(%rax)	# 43123D 0 0 
+	add	%al,(%rax)	# 43123F 0 0 
+//CTEST 1234 = ?~ Error #48: testing CONSTANT
+
+//
+
+//~ The Hayes tester uses some words from the Core extension word set
+
+//~ These will be conditionally defined following definition of a
+
+//~ word called ?DEFINED to determine whether these are already defined
+
+//
+
+//VARIABLE TIMM1 0 TIMM1 !
+
+	add	%al,(%rax)	# 431241 0 0 
+TIMM1:
+	call	 ( DOCREATE ) 	# 431243 E8 D8 36 FD FF 
+	jNp	 ( TIMM1+7  ) 	# 431248 7B 0 
+	add	%al,(%rax)	# 43124A 0 0 
+	add	%al,(%rax)	# 43124C 0 0 
+	add	%al,(%rax)	# 43124E 0 0 
+//: TIMM2  123 TIMM1 ! ; IMMEDIATE
+
+TIMM2:
+	movq	$0x7B, ( TIMM1+5  ) (%rip)	# 431250 48 C7 5 ED FF FF FF 7B 0 0 0 
+	ret		# 43125B C3 
+//: TIMM3 TIMM2 ; TIMM1 @ 123 = ?~ Error #49: testing IMMEDIATE
+
+TIMM3:
+	ret		# 43125C C3 
+//
+
+//: ?DEFINED  ( "name" -- 0 | -1 )  32 WORD FIND SWAP DROP 0= 0= ;
+
+queDEFINED:
+	mov	%rax,-0x08(%rbp)	# 43125D 48 89 45 F8 
+	mov	$0x20,%eax	# 431261 B8 20 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431266 48 8D 6D F8 
+	call	 ( WORD ) 	# 43126A E8 F3 D4 FD FF 
+	call	 ( FIND ) 	# 43126F E8 70 E1 FD FF 
+	mov	0x00(%rbp),%rdx	# 431274 48 8B 55 0 
+	sub	$0x01,%rax	# 431278 48 83 E8 1 
+	sbb	%rax,%rax	# 43127C 48 19 C0 
+	sub	$0x01,%rax	# 43127F 48 83 E8 1 
+	sbb	%rax,%rax	# 431283 48 19 C0 
+	lea	0x08(%rbp),%rbp	# 431286 48 8D 6D 8 
+	ret		# 43128A C3 
+//?DEFINED SWAP ?~ Error #50: testing FIND ?DEFINED
+
+//?DEFINED <<no-such-word-hopefully>> 0= ?~ Error #51 testing FIND ?DEFINED
+
+//
+
+//?DEFINED \ ?~ : \ ~ ; IMMEDIATE 
+
+//\ Error #52: testing \
+
+//: TIMM4  \ Error #53: testing \ is IMMEDIATE
+
+//;
+
+TIMM4:
+	ret		# 43128B C3 
+//
+
+//~ TRUE and FALSE are defined as colon definitions as they have been used
+
+//~ more than CONSTANT above
+
+//
+
+//?DEFINED TRUE  ?~ : TRUE 1 NEGATE ;
+
+//?DEFINED FALSE ?~ : FALSE 0 ;
+
+//?DEFINED HEX   ?~ : HEX 16 BASE ! ;
+
+//
+
+//TRUE -1 = ?~ Error #54: testing TRUE
+
+//FALSE 0=  ?~ Error #55: testing FALSE
+
+//10 HEX 0A = ?~ Error #56: testing HEX
+
+//AB 0A BASE ! 171 = ?~ Error #57: testing hex number
+
+//
+
+//~ Delete the ~ on the next 2 lines to check the final error report
+
+//~ Error #998: testing a deliberate failure
+
+//~ Error #999: testing a deliberate failure
+
+//
+
+//~ Describe the messages that should be seen. The previously defined .MSG(
+
+//~ can be used for text messages
+
+//
+
+//CR .MSG( Results: ) CR
+
+//CR .MSG( Pass messages #1 to #23 should be displayed above)
+
+//CR .MSG( and no error messages) CR
+
+//
+
+//~ Finally display a message giving the number of tests that failed.
+
+//~ This is complicated by the fact that untested words including .( ." and .
+
+//~ cannot be used. Also more colon definitions shouldn't be defined than are
+
+//~ needed. To display a number, note that the number of errors will have
+
+//~ one or two digits at most and an interpretive loop can be used to
+
+//~ display those.
+
+//
+
+//CR
+
+//0 #ERRS @
+
+//~ Loop to calculate the 10's digit (if any)
+
+//DUP NEGATE 9 + 0< NEGATE >IN +! ( -10 + SWAP 1+ SWAP 0 >IN ! )
+
+//~ Display the error count
+
+//SWAP ?DUP 0= 1+ >IN +! ( 48 + EMIT ( ) 48 + EMIT
+
+//
+
+//.MSG(  test) #ERRS @ 1 = 1+ >IN +! ~ .MSG( s)
+
+//.MSG(  failed out of 57 additional tests) CR
+
+//
+
+//CR CR .MSG( --- End of Preliminary Tests --- ) CR
+

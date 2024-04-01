@@ -1,0 +1,916 @@
+//\ To test the ANS File Access word set and extension words
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13 S" in interpretation mode tested.
+
+//\              Added SAVE-INPUT RESTORE-INPUT REFILL in a file, (moved from
+
+//\              coreexttest.fth).
+
+//\              Calls to COMPARE replaced with S= (in utilities.fth) 
+
+//\         0.11 25 April 2015 S\" in interpretation mode test added
+
+//\              REQUIRED REQUIRE INCLUDE tests added
+
+//\              Two S" and/or S\" buffers availability tested
+
+//\         0.5  1 April 2012  Tests placed in the public domain.
+
+//\         0.4  22 March 2009 { and } replaced with T{ and }T
+
+//\         0.3  20 April 2007  ANS Forth words changed to upper case.
+
+//\              Removed directory test from the filenames.
+
+//\         0.2  30 Oct 2006 updated following GForth tests to remove
+
+//\              system dependency on file size, to allow for file
+
+//\              buffering and to allow for PAD moving around.
+
+//\         0.1  Oct 2006 First version released.
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//\ and requires those files to have been loaded
+
+//
+
+//\ Words tested in this file are:
+
+//\     ( BIN CLOSE-FILE CREATE-FILE DELETE-FILE FILE-POSITION FILE-SIZE
+
+//\     OPEN-FILE R/O R/W READ-FILE READ-LINE REPOSITION-FILE RESIZE-FILE 
+
+//\     S" S\" SOURCE-ID W/O WRITE-FILE WRITE-LINE 
+
+//\     FILE-STATUS FLUSH-FILE RENAME-FILE SAVE-INPUT RESTORE-INPUT
+
+//\     REFILL
+
+//
+
+//\ Words not tested:
+
+//\     INCLUDED INCLUDE-FILE (as these will likely have been
+
+//\     tested in the execution of the test files)
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions, dependencies and notes:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set is available and tested
+
+//\     - These tests create files in the current directory, if all goes
+
+//\       well these will be deleted. If something fails they may not be
+
+//\       deleted. If this is a problem ensure you set a suitable 
+
+//\       directory before running this test. There is no ANS standard
+
+//\       way of doing this. Also be aware of the file names used below
+
+//\       which are:  fatest1.txt, fatest2.txt and fatest3.txt
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//TESTING File Access word set
+
+//
+
+//DECIMAL
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING CREATE-FILE CLOSE-FILE
+
+//
+
+//: FN1 S" fatest1.txt" ;
+
+FN1:
+	call	 ( (S") ) 	# 435926 E8 17 F7 FC FF 
+	.byte 0xB,0x66,0x61,0x74,0x65,0x73,0x74,0x31,0x2E,0x74,0x78,0x74
+	ret		# 435937 C3 
+//VARIABLE FID1
+
+	add	%al,(%rax)	# 435938 0 0 
+	add	%ch,%al	# 43593A 0 E8 
+	loopne	 ( FN1+7  ) 	# 43593C E0 EF 
+clD	# 43593E FC 
+	inc	(%rsi)	# 43593F FF 6 
+	add	%al,(%rax)	# 435941 0 0 
+	add	%al,(%rax)	# 435943 0 0 
+	add	%al,(%rax)	# 435945 0 0 
+	add	%ch,%al	# 435947 0 E8 
+//
+
+//T{ FN1 R/W CREATE-FILE SWAP FID1 ! -> 0 }T
+
+//T{ FID1 @ CLOSE-FILE -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING OPEN-FILE W/O WRITE-LINE
+
+//
+
+//: LINE1 S" Line 1" ;
+
+	cmc		# 435949 F5 
+		idiv	%ah	# 43594A F6 FC 
+	inc	(%rsi)	# 43594C FF 6 
+	imul	$-0x3CCEDF9B,0x65(%rsi),%r13	# 43594E 4C 69 6E 65 20 31 C3 
+//
+
+//T{ FN1 W/O OPEN-FILE SWAP FID1 ! -> 0 }T
+
+//T{ LINE1 FID1 @ WRITE-LINE -> 0 }T
+
+//T{ FID1 @ CLOSE-FILE -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING R/O FILE-POSITION (simple)  READ-LINE 
+
+//
+
+//200 CONSTANT BSIZE
+
+BSIZE:
+	call	 ( DOCONSTANT ) 	# 435955 E8 B9 EF FC FF 
+	enter	$0x0,$0x00	# 43595A C8 0 0 0 
+	add	%al,(%rax)	# 43595E 0 0 
+	add	%al,(%rax)	# 435960 0 0 
+//CREATE BUF BSIZE ALLOT
+
+	add	%ch,%al	# 435962 0 E8 
+	mov	$0xFFFCEF,%eax	# 435964 B8 EF FC FF 0 
+	add	%eax,(%rdx)	# 435969 1 2 
+	add	0x9080706(,%rax,1),%eax	# 43596B 3 4 5 6 7 8 9 
+	or	(%rbx),%cl	# 435972 A B 
+	or	$0x0D,%al	# 435974 C D 
+	or	$0x0F,%al	# 435976 E F 
+	adc	%dl,(%rcx)	# 435978 10 11 
+	adc	(%rbx),%dl	# 43597A 12 13 
+	adc	$0x15,%al	# 43597C 14 15 
+	adc	$0x17,%al	# 43597E 16 17 
+	sbb	%bl,(%rcx)	# 435980 18 19 
+	sbb	(%rbx),%bl	# 435982 1A 1B 
+	sbb	$0x1D,%al	# 435984 1C 1D 
+	sbb	$0x1F,%al	# 435986 1E 1F 
+	and	%ah,(%rcx)	# 435988 20 21 
+	and	(%rbx),%ah	# 43598A 22 23 
+	and	$0x00,%al	# 43598C 24 0 
+	add	%al,(%rax)	# 43598E 0 0 
+	add	%al,(%rax)	# 435990 0 0 
+	add	%al,(%rax)	# 435992 0 0 
+	add	%al,(%rax)	# 435994 0 0 
+	add	%al,(%rax)	# 435996 0 0 
+	add	%al,(%rax)	# 435998 0 0 
+	add	%al,(%rax)	# 43599A 0 0 
+	add	%al,(%rax)	# 43599C 0 0 
+	add	%al,(%rax)	# 43599E 0 0 
+	add	%al,(%rax)	# 4359A0 0 0 
+	add	%al,(%rax)	# 4359A2 0 0 
+	add	%al,(%rax)	# 4359A4 0 0 
+	add	%al,(%rax)	# 4359A6 0 0 
+	add	%al,(%rax)	# 4359A8 0 0 
+	add	%al,(%rax)	# 4359AA 0 0 
+	add	%al,(%rax)	# 4359AC 0 0 
+	add	%al,(%rax)	# 4359AE 0 0 
+	add	%al,(%rax)	# 4359B0 0 0 
+	add	%al,(%rax)	# 4359B2 0 0 
+	add	%al,(%rax)	# 4359B4 0 0 
+	add	%al,(%rax)	# 4359B6 0 0 
+	add	%al,(%rax)	# 4359B8 0 0 
+	add	%al,(%rax)	# 4359BA 0 0 
+	add	%al,(%rax)	# 4359BC 0 0 
+	add	%al,(%rax)	# 4359BE 0 0 
+	add	%al,(%rax)	# 4359C0 0 0 
+	add	%al,(%rax)	# 4359C2 0 0 
+	add	%al,(%rax)	# 4359C4 0 0 
+	add	%al,(%rax)	# 4359C6 0 0 
+	add	%al,(%rax)	# 4359C8 0 0 
+	add	%al,(%rax)	# 4359CA 0 0 
+	add	%al,(%rax)	# 4359CC 0 0 
+	add	%al,(%rax)	# 4359CE 0 0 
+	add	%al,(%rax)	# 4359D0 0 0 
+	add	%al,(%rax)	# 4359D2 0 0 
+	add	%al,(%rax)	# 4359D4 0 0 
+	add	%al,(%rax)	# 4359D6 0 0 
+	add	%al,(%rax)	# 4359D8 0 0 
+	add	%al,(%rax)	# 4359DA 0 0 
+	add	%al,(%rax)	# 4359DC 0 0 
+	add	%al,(%rax)	# 4359DE 0 0 
+	add	%al,(%rax)	# 4359E0 0 0 
+	add	%al,(%rax)	# 4359E2 0 0 
+	add	%al,(%rax)	# 4359E4 0 0 
+	add	%al,(%rax)	# 4359E6 0 0 
+	add	%al,(%rax)	# 4359E8 0 0 
+	add	%al,(%rax)	# 4359EA 0 0 
+	add	%al,(%rax)	# 4359EC 0 0 
+	add	%al,(%rax)	# 4359EE 0 0 
+	add	%al,(%rax)	# 4359F0 0 0 
+	add	%al,(%rax)	# 4359F2 0 0 
+	add	%al,(%rax)	# 4359F4 0 0 
+	add	%al,(%rax)	# 4359F6 0 0 
+	add	%al,(%rax)	# 4359F8 0 0 
+	add	%al,(%rax)	# 4359FA 0 0 
+	add	%al,(%rax)	# 4359FC 0 0 
+	add	%al,(%rax)	# 4359FE 0 0 
+	add	%al,(%rax)	# 435A00 0 0 
+	add	%al,(%rax)	# 435A02 0 0 
+	add	%al,(%rax)	# 435A04 0 0 
+	add	%al,(%rax)	# 435A06 0 0 
+	add	%al,(%rax)	# 435A08 0 0 
+	add	%al,(%rax)	# 435A0A 0 0 
+	add	%al,(%rax)	# 435A0C 0 0 
+	add	%al,(%rax)	# 435A0E 0 0 
+	add	%al,(%rax)	# 435A10 0 0 
+	add	%al,(%rax)	# 435A12 0 0 
+	add	%al,(%rax)	# 435A14 0 0 
+	add	%al,(%rax)	# 435A16 0 0 
+	add	%al,(%rax)	# 435A18 0 0 
+	add	%al,(%rax)	# 435A1A 0 0 
+	add	%al,(%rax)	# 435A1C 0 0 
+	add	%al,(%rax)	# 435A1E 0 0 
+	add	%al,(%rax)	# 435A20 0 0 
+	add	%al,(%rax)	# 435A22 0 0 
+	add	%al,(%rax)	# 435A24 0 0 
+	add	%al,(%rax)	# 435A26 0 0 
+	add	%al,(%rax)	# 435A28 0 0 
+	add	%al,(%rax)	# 435A2A 0 0 
+	add	%al,(%rax)	# 435A2C 0 0 
+	add	%al,(%rax)	# 435A2E 0 0 
+//VARIABLE #CHARS
+
+	add	%al,(%rax)	# 435A30 0 0 
+	add	%ch,%al	# 435A32 0 E8 
+	call	 ( _STEKC+15F1FEB7  ) 	# 435A34 E8 EE FC FF 15 
+	add	%al,(%rax)	# 435A39 0 0 
+	add	%al,(%rax)	# 435A3B 0 0 
+	add	%al,(%rax)	# 435A3D 0 0 
+	add	%ch,%al	# 435A3F 0 E8 
+//
+
+//T{ FN1 R/O OPEN-FILE SWAP FID1 ! -> 0 }T
+
+//T{ FID1 @ FILE-POSITION -> 0. 0 }T
+
+//T{ BUF 100 FID1 @ READ-LINE ROT DUP #CHARS ! -> TRUE 0 LINE1 SWAP DROP }T
+
+//T{ BUF #CHARS @ LINE1 S= -> TRUE }T
+
+//T{ FID1 @ CLOSE-FILE -> 0 }T
+
+//
+
+//\ Additional test contributed by Helmut Eller
+
+//\ Test with buffer shorter than the line including zero length buffer.
+
+//T{ FN1 R/O OPEN-FILE SWAP FID1 ! -> 0 }T
+
+//T{ FID1 @ FILE-POSITION -> 0. 0 }T
+
+//T{ BUF 0 FID1 @ READ-LINE ROT DUP #CHARS ! -> TRUE 0 0 }T
+
+//T{ BUF 3 FID1 @ READ-LINE ROT DUP #CHARS ! -> TRUE 0 3 }T
+
+//T{ BUF #CHARS @ LINE1 DROP 3 S= -> TRUE }T
+
+//T{ BUF 100 FID1 @ READ-LINE ROT DUP #CHARS ! -> TRUE 0 LINE1 NIP 3 - }T
+
+//T{ BUF #CHARS @ LINE1 3 /STRING S= -> TRUE }T
+
+//T{ FID1 @ CLOSE-FILE -> 0 }T
+
+//
+
+//\ Additional test contributed by Helmut Eller
+
+//\ Test with buffer exactly as long as the line.
+
+//T{ FN1 R/O OPEN-FILE SWAP FID1 ! -> 0 }T
+
+//T{ FID1 @ FILE-POSITION -> 0. 0 }T
+
+//T{ BUF LINE1 NIP FID1 @ READ-LINE ROT DUP #CHARS ! -> TRUE 0 LINE1 NIP }T
+
+//T{ BUF #CHARS @ LINE1 S= -> TRUE }T
+
+//T{ FID1 @ CLOSE-FILE -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING S" in interpretation mode (compile mode tested in Core tests)
+
+//
+
+//T{ S" abcdef" $" abcdef" S= -> TRUE }T
+
+//T{ S" " $" " S= -> TRUE }T
+
+//T{ S" ghi"$" ghi" S= -> TRUE }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING R/W WRITE-FILE REPOSITION-FILE READ-FILE FILE-POSITION S"
+
+//
+
+//: LINE2 S" Line 2 blah blah blah" ;
+
+stD	# 435A41 FD 
+	cmc		# 435A42 F5 
+clD	# 435A43 FC 
+	call	* ( _STEKC+65606B26  ) (%rip)	# 435A44 FF 15 4C 69 6E 65 
+	and	%dh,(%rdx)	# 435A4A 20 32 
+	and	%ah,0x6C(%rdx)	# 435A4C 20 62 6C 
+	.byte	0x61	# 435A4F 61 
+	push	$0x616C6220	# 435A50 68 20 62 6C 61 
+	push	$0x616C6220	# 435A55 68 20 62 6C 61 
+	push	$0x458948C3	# 435A5A 68 C3 48 89 45 
+//: RL1 BUF 100 FID1 @ READ-LINE ;
+
+clC	# 435A5F F8 
+	lea	 ( BUF+5  ) (%rip),%rax	# 435A60 48 8D 5 1 FF FF FF 
+	mov	%rax,-0x10(%rbp)	# 435A67 48 89 45 F0 
+	movq	$0x64,-0x18(%rbp)	# 435A6B 48 C7 45 E8 64 0 0 0 
+	mov	 ( FID1+5  ) (%rip),%rax	# 435A73 48 8B 5 C6 FE FF FF 
+	lea	-0x18(%rbp),%rbp	# 435A7A 48 8D 6D E8 
+	call	 ( READ-LINE ) 	# 435A7E E8 65 7C FD FF 
+	ret		# 435A83 C3 
+//2VARIABLE FP
+
+	add	%al,(%rax)	# 435A84 0 0 
+	add	%al,(%rax)	# 435A86 0 0 
+	add	%al,(%rax)	# 435A88 0 0 
+	add	%ch,%al	# 435A8A 0 E8 
+	nop		# 435A8C 90 
+	out	%al,(%dx)		# 435A8D EE 
+clD	# 435A8E FC 
+	inc	(%rax)	# 435A8F FF 0 
+	add	%al,(%rax)	# 435A91 0 0 
+	add	%al,(%rax)	# 435A93 0 0 
+	add	%al,(%rax)	# 435A95 0 0 
+	add	%bl,(%rax,%rax,1)	# 435A97 0 1C 0 
+	add	%al,(%rax)	# 435A9A 0 0 
+	add	%al,(%rax)	# 435A9C 0 0 
+	add	%al,(%rax)	# 435A9E 0 0 
+//
+
+//T{ FN1 R/W OPEN-FILE SWAP FID1 ! -> 0 }T
+
+//T{ FID1 @ FILE-SIZE DROP FID1 @ REPOSITION-FILE -> 0 }T
+
+//T{ FID1 @ FILE-SIZE -> FID1 @ FILE-POSITION }T
+
+//T{ LINE2 FID1 @ WRITE-FILE -> 0 }T
+
+//T{ 10. FID1 @ REPOSITION-FILE -> 0 }T
+
+//T{ FID1 @ FILE-POSITION -> 10. 0 }T
+
+//T{ 0. FID1 @ REPOSITION-FILE -> 0 }T
+
+//T{ RL1 -> LINE1 SWAP DROP TRUE 0 }T
+
+//T{ RL1 ROT DUP #CHARS ! -> TRUE 0 LINE2 SWAP DROP }T
+
+//T{ BUF #CHARS @ LINE2 S= -> TRUE }T
+
+//T{ RL1 -> 0 FALSE 0 }T
+
+//T{ FID1 @ FILE-POSITION ROT ROT FP 2! -> 0 }T
+
+//T{ FP 2@ FID1 @ FILE-SIZE DROP D= -> TRUE }T
+
+//T{ S" " FID1 @ WRITE-LINE -> 0 }T
+
+//T{ S" " FID1 @ WRITE-LINE -> 0 }T
+
+//T{ FP 2@ FID1 @ REPOSITION-FILE -> 0 }T
+
+//T{ RL1 -> 0 TRUE 0 }T
+
+//T{ RL1 -> 0 TRUE 0 }T
+
+//T{ RL1 -> 0 FALSE 0 }T
+
+//T{ FID1 @ CLOSE-FILE -> 0 }T
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING BIN READ-FILE FILE-SIZE
+
+//
+
+//: CBUF BUF BSIZE 0 FILL ;
+
+CBUF:
+	mov	%rax,-0x08(%rbp)	# 435AA0 48 89 45 F8 
+	lea	 ( BUF+5  ) (%rip),%rax	# 435AA4 48 8D 5 BD FE FF FF 
+	mov	%rax,-0x10(%rbp)	# 435AAB 48 89 45 F0 
+	movq	$0xC8,-0x18(%rbp)	# 435AAF 48 C7 45 E8 C8 0 0 0 
+	mov	$0x0,%eax	# 435AB7 B8 0 0 0 0 
+	lea	-0x18(%rbp),%rbp	# 435ABC 48 8D 6D E8 
+	call	 ( FILL ) 	# 435AC0 E8 E0 ED FC FF 
+	ret		# 435AC5 C3 
+//: FN2 S" FATEST2.TXT" ;
+
+FN2:
+	call	 ( (S") ) 	# 435AC6 E8 77 F5 FC FF 
+	.byte 0xB,0x46,0x41,0x54,0x45,0x53,0x54,0x32,0x2E,0x54,0x58,0x54
+	ret		# 435AD7 C3 
+//VARIABLE FID2
+
+	add	%al,(%rax)	# 435AD8 0 0 
+	add	%ch,%al	# 435ADA 0 E8 
+	out	%al,(%dx)		# 435ADC 40 EE 
+clD	# 435ADE FC 
+	inc	(%rsi)	# 435ADF FF 6 
+	add	%al,(%rax)	# 435AE1 0 0 
+	add	%al,(%rax)	# 435AE3 0 0 
+	add	%al,(%rax)	# 435AE5 0 0 
+	add	%cl,-0x77(%rax)	# 435AE7 0 48 89 
+//: SETPAD PAD 50 0 DO I OVER C! CHAR+ LOOP DROP ;
+
+clC	# 435AEA 45 F8 
+	movq	$0x404D89,-0x10(%rbp)	# 435AEC 48 C7 45 F0 89 4D 40 0 
+	movq	$0x32,-0x18(%rbp)	# 435AF4 48 C7 45 E8 32 0 0 0 
+	mov	$0x0,%eax	# 435AFC B8 0 0 0 0 
+	lea	-0x18(%rbp),%rbp	# 435B01 48 8D 6D E8 
+	call	 ( (DO) ) 	# 435B05 E8 DF EE FC FF 
+	.quad  ( SETPAD+4C  ) 
+	mov	%rax,-0x08(%rbp)	# 435B12 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 435B16 4C 89 75 F0 
+	mov	-0x10(%rbp),%dl	# 435B1A 8A 55 F0 
+	mov	%dl,(%rax)	# 435B1D 88 10 
+	mov	-0x08(%rbp),%rax	# 435B1F 48 8B 45 F8 
+	lea	0x01(%rax),%rax	# 435B23 48 8D 40 1 
+	inc	%r14	# 435B27 49 FF C6 
+	inc	%r15	# 435B2A 49 FF C7 
+	jNo	 ( SETPAD+2A  ) 	# 435B2D 71 E3 
+	pop	%r14	# 435B2F 41 5E 
+	pop	%r15	# 435B31 41 5F 
+	pop	%rcx	# 435B33 59 
+	mov	0x00(%rbp),%rax	# 435B34 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435B38 48 8D 6D 8 
+	ret		# 435B3C C3 
+//
+
+//SETPAD   \ If anything else is defined setpad must be called again
+
+//         \ as pad may move
+
+//
+
+//T{ FN2 R/W BIN CREATE-FILE SWAP FID2 ! -> 0 }T
+
+//T{ PAD 50 FID2 @ WRITE-FILE FID2 @ FLUSH-FILE -> 0 0 }T
+
+//T{ FID2 @ FILE-SIZE -> 50. 0 }T
+
+//T{ 0. FID2 @ REPOSITION-FILE -> 0 }T
+
+//T{ CBUF BUF 29 FID2 @ READ-FILE -> 29 0 }T
+
+//T{ PAD 29 BUF 29 S= -> TRUE }T
+
+//T{ PAD 30 BUF 30 S= -> FALSE }T
+
+//T{ CBUF BUF 29 FID2 @ READ-FILE -> 21 0 }T
+
+//T{ PAD 29 + 21 BUF 21 S= -> TRUE }T
+
+//T{ FID2 @ FILE-SIZE DROP FID2 @ FILE-POSITION DROP D= -> TRUE }T
+
+//T{ BUF 10 FID2 @ READ-FILE -> 0 0 }T
+
+//T{ FID2 @ CLOSE-FILE -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING RESIZE-FILE
+
+//
+
+//T{ FN2 R/W BIN OPEN-FILE SWAP FID2 ! -> 0 }T
+
+//T{ 37. FID2 @ RESIZE-FILE -> 0 }T
+
+//T{ FID2 @ FILE-SIZE -> 37. 0 }T
+
+//T{ 0. FID2 @ REPOSITION-FILE -> 0 }T
+
+//T{ CBUF BUF 100 FID2 @ READ-FILE -> 37 0 }T
+
+//T{ PAD 37 BUF 37 S= -> TRUE }T
+
+//T{ PAD 38 BUF 38 S= -> FALSE }T
+
+//T{ 500. FID2 @ RESIZE-FILE -> 0 }T
+
+//T{ FID2 @ FILE-SIZE -> 500. 0 }T
+
+//T{ 0. FID2 @ REPOSITION-FILE -> 0 }T
+
+//T{ CBUF BUF 100 FID2 @ READ-FILE -> 100 0 }T
+
+//T{ PAD 37 BUF 37 S= -> TRUE }T
+
+//T{ FID2 @ CLOSE-FILE -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING DELETE-FILE
+
+//
+
+//T{ FN2 DELETE-FILE -> 0 }T
+
+//T{ FN2 R/W BIN OPEN-FILE SWAP DROP 0= -> FALSE }T
+
+//T{ FN2 DELETE-FILE 0= -> FALSE }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING SOURCE-ID (can only test it does not return 0 or -1)
+
+//
+
+//T{ SOURCE-ID DUP -1 = SWAP 0= OR -> FALSE }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING RENAME-FILE FILE-STATUS FLUSH-FILE
+
+//
+
+//: FN3 S" fatest3.txt" ;
+
+FN3:
+	call	 ( (S") ) 	# 435B3D E8 0 F5 FC FF 
+	.byte 0xB,0x66,0x61,0x74,0x65,0x73,0x74,0x33,0x2E,0x74,0x78,0x74
+	ret		# 435B4E C3 
+//: >END FID1 @ FILE-SIZE DROP FID1 @ REPOSITION-FILE ;
+
+greatEND:
+	mov	%rax,-0x08(%rbp)	# 435B4F 48 89 45 F8 
+	mov	 ( FID1+5  ) (%rip),%rax	# 435B53 48 8B 5 E6 FD FF FF 
+	lea	-0x08(%rbp),%rbp	# 435B5A 48 8D 6D F8 
+	call	 ( FILE-SIZE ) 	# 435B5E E8 3E EE FC FF 
+	mov	 ( FID1+5  ) (%rip),%rax	# 435B63 48 8B 5 D6 FD FF FF 
+	call	 ( REPOSITION-FILE ) 	# 435B6A E8 EA ED FC FF 
+	ret		# 435B6F C3 
+//
+
+//
+
+//T{ FN3 DELETE-FILE DROP -> }T
+
+//T{ FN1 FN3 RENAME-FILE 0= -> TRUE }T
+
+//\- FILE-STATUS .( FILE-STATUS doesn't exist) CR
+
+//\+ FILE-STATUS T{ FN1 FILE-STATUS SWAP DROP 0= -> FALSE }T
+
+//\+ FILE-STATUS T{ FN3 FILE-STATUS SWAP DROP 0= -> TRUE }T  \ Return value is undefined
+
+//T{ FN3 R/W OPEN-FILE SWAP FID1 ! -> 0 }T
+
+//T{ >END -> 0 }T
+
+//T{ S" Final line" fid1 @ WRITE-LINE -> 0 }T
+
+//T{ FID1 @ FLUSH-FILE -> 0 }T      \ Can only test FLUSH-FILE doesn't fail
+
+//T{ FID1 @ CLOSE-FILE -> 0 }T
+
+//\ Tidy the test folder
+
+//T{ fn3 DELETE-FILE DROP -> }T
+
+//  
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING S\" (Forth 2012 interpretation mode)
+
+//
+
+//\ S\" in compilation mode already tested in Core Extension tests
+
+//T{ : SSQ11 S\" \a\b\e\f\l\m\q\r\t\v\x0F0\x1Fa\xaBx\z\"\\" ; -> }T
+
+SSQ11:
+	call	 ( (S") ) 	# 435B70 E8 CD F4 FC FF 
+	.byte 0x14,0x7,0x8,0x1B,0xC,0xA,0xD,0xA,0x22,0xD,0x9,0xB,0xF,0x30,0x1F,0x61,0xAB,0x78,0x0,0x22,0x5C
+	ret		# 435B8A C3 
+//T{ S\" \a\b\e\f\l\m\q\r\t\v\x0F0\x1Fa\xaBx\z\"\\" SSQ11  S= -> TRUE }T
+
+	adc	$0x07,%al	# 435B8B 14 7 
+	or	%bl,(%rbx)	# 435B8D 8 1B 
+	or	$0x0A,%al	# 435B8F C A 
+	or	$0x90D220A,%eax	# 435B91 D A 22 D 9 
+	or	(%rdi),%ecx	# 435B96 B F 
+	xor	%bl,(%rdi)	# 435B98 30 1F 
+	.byte	0x61	# 435B9A 61 
+	stos	%eax,%es:(%rdi)		# 435B9B AB 
+	js	 ( SSQ11+2E  ) 	# 435B9C 78 0 
+	and	-0x63(%rax,%rbp,8),%bl	# 435B9E 22 5C E8 9D 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING two buffers available for S" and/or S\" (Forth 2012)
+
+//
+
+//: SSQ12 S" abcd" ;   : SSQ13 S" 1234" ;
+
+	hlt		# 435BA2 F4 
+clD	# 435BA3 FC 
+	inc	(%rcx)	# 435BA4 FF 4 61 
+	.byte	0x62	# 435BA7 62 
+	movslq	-0x18(%rbx,%rax,8),%esp	# 435BA8 63 64 C3 E8 
+	xchg	%edx,%eax	# 435BAC 92 
+	hlt		# 435BAD F4 
+clD	# 435BAE FC 
+	inc	(%rcx,%rsi,1)	# 435BAF FF 4 31 
+	xor	(%rbx),%dh	# 435BB2 32 33 
+	xor	$-0x3D,%al	# 435BB4 34 C3 
+//T{ S" abcd"  S" 1234" SSQ13  S= ROT ROT SSQ12 S= -> TRUE TRUE }T
+
+//T{ S\" abcd" S\" 1234" SSQ13 S= ROT ROT SSQ12 S= -> TRUE TRUE }T
+
+	add	$0x61,%al	# 435BB6 4 61 
+	.byte	0x62	# 435BB8 62 
+	movslq	0x31(%rsp,%rax,1),%esp	# 435BB9 63 64 4 31 
+	xor	(%rbx),%dh	# 435BBD 32 33 
+	xor	$0x04,%al	# 435BBF 34 4 
+//T{ S" abcd"  S\" 1234" SSQ13 S= ROT ROT SSQ12 S= -> TRUE TRUE }T
+
+	xor	%esi,(%rdx)	# 435BC1 31 32 
+	xor	(%rsp,%rax,1),%esi	# 435BC3 33 34 4 
+//T{ S\" abcd" S" 1234" SSQ13  S= ROT ROT SSQ12 S= -> TRUE TRUE }T
+
+	.byte	0x61	# 435BC6 61 
+	.byte	0x62	# 435BC7 62 
+	movslq	-0x18(%rax,%rax,1),%esp	# 435BC8 63 64 0 E8 
+//
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING SAVE-INPUT and RESTORE-INPUT with a file source
+
+//
+
+//VARIABLE SIV -1 SIV !
+
+	Push	%rax	# 435BCC 50 
+	in	(%dx),%eax		# 435BCD ED 
+clD	# 435BCE FC 
+	inc	(%rax)	# 435BCF FF 0 
+	add	%al,(%rax)	# 435BD1 0 0 
+	add	%al,(%rax)	# 435BD3 0 0 
+	add	%al,(%rax)	# 435BD5 0 0 
+	add	%ch,%al	# 435BD7 0 E8 
+//
+
+//: NEVEREXECUTED
+
+//   CR ." This should never be executed" CR
+
+	and	$-0x0C,%al	# 435BD9 26 F4 
+clD	# 435BDB FC 
+	jmpf	*%rax	# 435BDC FF E8 
+	.byte	0x60	# 435BDE 60 
+	hlt		# 435BDF F4 
+clD	# 435BE0 FC 
+	callf	* ( _STEKC+735B6BCB  ) (%rip)	# 435BE1 FF 1D 54 68 69 73 
+	and	%dh,0x68(%rbx)	# 435BE7 20 73 68 
+	outsl	%ds:(%rsi),(%dx)		# 435BEA 6F 
+	jNz	 ( SI2+11  ) 	# 435BEB 75 6C 
+	and	%ch,FS:0x65(%rsi)	# 435BED 64 20 6E 65 
+	jbe	 ( SI2+10  ) 	# 435BF1 76 65 
+	jb	 ( READ_A_LINE+A  ) 	# 435BF3 72 20 
+	.byte	0x62	# 435BF5 62 
+	.byte	0x65	# 435BF6 65 
+	and	%ah,0x78(%rbp)	# 435BF7 20 65 78 
+	.byte	0x65	# 435BFA 65 
+	movslq	0x74(%rbp),%esi	# 435BFB 63 75 74 
+	.byte	0x65	# 435BFE 65 
+	call	 ( TYPE ) 	# 435BFF 64 E8 B1 F3 FC FF 
+	call	 ( CR ) 	# 435C05 E8 F9 F3 FC FF 
+//;
+
+	ret		# 435C0A C3 
+//
+
+//T{ 11111 SAVE-INPUT
+
+//
+
+//SIV @
+
+//
+
+//[?IF]
+
+//\?   0 SIV !
+
+//\?   RESTORE-INPUT
+
+//\?   NEVEREXECUTED
+
+//\?   33333
+
+//[?ELSE]
+
+//
+
+//\? TESTING the -[ELSE]- part is executed
+
+//\? 22222
+
+//
+
+//[?THEN]
+
+//
+
+//   -> 11111 0 22222 }T   \ 0 comes from RESTORE-INPUT
+
+//
+
+//TESTING nested SAVE-INPUT, RESTORE-INPUT and REFILL from a file
+
+//
+
+//: READ_A_LINE
+
+//   REFILL 0=
+
+READ_A_LINE:
+	call	 ( REFILL ) 	# 435C0B E8 D9 83 FD FF 
+	sub	$0x01,%rax	# 435C10 48 83 E8 1 
+	sbb	%rax,%rax	# 435C14 48 19 C0 
+//   ABORT" REFILL FAILED"
+
+	call	 ( (S") ) 	# 435C17 E8 26 F4 FC FF 
+	.byte 0xD,0x52,0x45,0x46,0x49,0x4C,0x4C,0x20,0x46,0x41,0x49,0x4C,0x45,0x44
+	call	 ( (ABORT'') ) 	# 435C2A E8 F9 3 FE FF 
+//;
+
+	ret		# 435C2F C3 
+//
+
+//0 SI_INC !
+
+//
+
+//CREATE 2RES -1 , -1 ,   \ Don't use 2VARIABLE from Double number word set 
+
+	add	%al,(%rax)	# 435C30 0 0 
+	add	%ch,%al	# 435C32 0 E8 
+	call	 ( _STEKC+29F200B5  ) 	# 435C34 E8 EC FC FF 29 
+	or	%eax,(%rax)	# 435C39 9 0 
+	add	%al,(%rax)	# 435C3B 0 0 
+	add	%al,(%rax)	# 435C3D 0 0 
+	add	%al,(%rax)	# 435C3F 0 0 
+	add	%al,(%rax)	# 435C41 0 0 
+	add	%al,(%rax)	# 435C43 0 0 
+	add	%al,(%rax)	# 435C45 0 0 
+	add	%ch,%al	# 435C47 0 E8 
+//
+
+//: SI2
+
+//   READ_A_LINE
+
+	mov	$0xE8FFFFFF,%esi	# 435C49 BE FF FF FF E8 
+//   READ_A_LINE
+
+	mov	$0xE8FFFFFF,%ecx	# 435C4E B9 FF FF FF E8 
+//   SAVE-INPUT
+
+	Push	%rcx	# 435C53 51 
+	stos	%al,%es:(%rdi)		# 435C54 AA 
+	g4??	%edi	# 435C55 FF FF 
+//   READ_A_LINE
+
+	call	 ( READ_A_LINE ) 	# 435C57 E8 AF FF FF FF 
+//   READ_A_LINE
+
+	call	 ( READ_A_LINE ) 	# 435C5C E8 AA FF FF FF 
+//   S$ EVALUATE 2RES 2!
+
+	call	 ( S$ ) 	# 435C61 E8 40 ED FF FF 
+	call	 ( EVALUATE ) 	# 435C66 E8 C3 83 FD FF 
+	mov	%rax,-0x08(%rbp)	# 435C6B 48 89 45 F8 
+	lea	 ( 2RES+5  ) (%rip),%rax	# 435C6F 48 8D 5 C2 FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 435C76 48 8D 6D F8 
+	call	 ( 2! ) 	# 435C7A E8 3B E8 FC FF 
+//   RESTORE-INPUT
+
+	call	 ( RESTORE-INPUT ) 	# 435C7F E8 5F AA FF FF 
+//;
+
+	ret		# 435C84 C3 
+//
+
+//\ WARNING: do not delete or insert lines of text after si2 is called
+
+//\ otherwise the next test will fail
+
+//
+
+//T{ SI2
+
+//33333               \ This line should be ignored
+
+//2RES 2@ 44444      \ RESTORE-INPUT should return to this line
+
+//
+
+//55555
+
+//TESTING the nested results
+
+// -> 0 0 2345 44444 55555 }T
+
+//
+
+//\ End of warning
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//FILE-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of File-Access word set tests) CR
+

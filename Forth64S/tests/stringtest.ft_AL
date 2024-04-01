@@ -1,0 +1,811 @@
+//\ To test the ANS Forth String word set
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13 13 Nov 2015 Interpretive use of S" replaced by $" from
+
+//\                          utilities.fth
+
+//\         0.11 25 April 2015 Tests for REPLACES SUBSTITUTE UNESCAPE added
+
+//\         0.6 1 April 2012 Tests placed in the public domain.
+
+//\         0.5 29 April 2010 Added tests for SEARCH and COMPARE with
+
+//\             all strings zero length (suggested by Krishna Myneni).
+
+//\             SLITERAL test amended in line with comp.lang.forth
+
+//\             discussion
+
+//\         0.4 30 November 2009 <TRUE> and <FALSE> replaced with TRUE
+
+//\             and FALSE
+
+//\         0.3 6 March 2009 { and } replaced with T{ and }T
+
+//\         0.2 20 April 2007 ANS Forth words changed to upper case
+
+//\         0.1 Oct 2006 First version released
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//\ and requires those files to have been loaded
+
+//
+
+//\ Words tested in this file are:
+
+//\     -TRAILING /STRING BLANK CMOVE CMOVE> COMPARE SEARCH SLITERAL
+
+//\     REPLACES SUBSTITUTE UNESCAPE
+
+//\
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions, dependencies and notes:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set is available and tested
+
+//\     - COMPARE is case sensitive
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//TESTING String word set
+
+//
+
+//DECIMAL
+
+//
+
+//T{ :  S1 S" abcdefghijklmnopqrstuvwxyz" ; -> }T
+
+S1:
+	call	 ( (S") ) 	# 436476 E8 C7 EB FC FF 
+	.byte 0x1A,0x61,0x62,0x63,0x64,0x65,0x66,0x67,0x68,0x69,0x6A,0x6B,0x6C,0x6D,0x6E,0x6F,0x70,0x71,0x72,0x73,0x74,0x75,0x76,0x77,0x78,0x79,0x7A
+	ret		# 436496 C3 
+//T{ :  S2 S" abc"   ; -> }T
+
+S2:
+	call	 ( (S") ) 	# 436497 E8 A6 EB FC FF 
+	.byte 0x3,0x61,0x62,0x63
+	ret		# 4364A0 C3 
+//T{ :  S3 S" jklmn" ; -> }T
+
+S3:
+	call	 ( (S") ) 	# 4364A1 E8 9C EB FC FF 
+	.byte 0x5,0x6A,0x6B,0x6C,0x6D,0x6E
+	ret		# 4364AC C3 
+//T{ :  S4 S" z"     ; -> }T
+
+S4:
+	call	 ( (S") ) 	# 4364AD E8 90 EB FC FF 
+	.byte 0x1,0x7A
+	ret		# 4364B4 C3 
+//T{ :  S5 S" mnoq"  ; -> }T
+
+S5:
+	call	 ( (S") ) 	# 4364B5 E8 88 EB FC FF 
+	.byte 0x4,0x6D,0x6E,0x6F,0x71
+	ret		# 4364BF C3 
+//T{ :  S6 S" 12345" ; -> }T
+
+S6:
+	call	 ( (S") ) 	# 4364C0 E8 7D EB FC FF 
+	.byte 0x5,0x31,0x32,0x33,0x34,0x35
+	ret		# 4364CB C3 
+//T{ :  S7 S" "      ; -> }T
+
+S7:
+	call	 ( (S") ) 	# 4364CC E8 71 EB FC FF 
+	.byte 0x0
+	ret		# 4364D2 C3 
+//T{ :  S8 S" abc  " ; -> }T
+
+S8:
+	call	 ( (S") ) 	# 4364D3 E8 6A EB FC FF 
+	.byte 0x5,0x61,0x62,0x63,0x20,0x20
+	ret		# 4364DE C3 
+//T{ :  S9 S"      " ; -> }T
+
+S9:
+	call	 ( (S") ) 	# 4364DF E8 5E EB FC FF 
+	.byte 0x5,0x20,0x20,0x20,0x20,0x20
+	ret		# 4364EA C3 
+//T{ : S10 S"    a " ; -> }T
+
+S10:
+	call	 ( (S") ) 	# 4364EB E8 52 EB FC FF 
+	.byte 0x5,0x20,0x20,0x20,0x61,0x20
+	ret		# 4364F6 C3 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING -TRAILING
+
+//
+
+//T{  S1 -TRAILING -> S1 }T
+
+//T{  S8 -TRAILING -> S8 2 - }T
+
+//T{  S7 -TRAILING -> S7 }T
+
+//T{  S9 -TRAILING -> S9 DROP 0 }T
+
+//T{ S10 -TRAILING -> S10 1- }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING /STRING
+
+//
+
+//T{ S1  5 /STRING -> S1 SWAP 5 + SWAP 5 - }T
+
+//T{ S1 10 /STRING -4 /STRING -> S1 6 /STRING }T
+
+//T{ S1  0 /STRING -> S1 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING SEARCH
+
+//
+
+//T{ S1 S2 SEARCH -> S1 TRUE }T
+
+//T{ S1 S3 SEARCH -> S1  9 /STRING TRUE }T
+
+//T{ S1 S4 SEARCH -> S1 25 /STRING TRUE }T
+
+//T{ S1 S5 SEARCH -> S1 FALSE }T
+
+//T{ S1 S6 SEARCH -> S1 FALSE }T
+
+//T{ S1 S7 SEARCH -> S1 TRUE }T
+
+//T{ S7 PAD 0 SEARCH -> S7 TRUE }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING COMPARE
+
+//
+
+//T{ S1 S1 COMPARE -> 0 }T
+
+//T{ S1 PAD SWAP CMOVE -> }T
+
+//T{ S1 PAD OVER COMPARE -> 0 }T
+
+//T{ S1 PAD 6 COMPARE -> 1 }T
+
+//T{ PAD 10 S1 COMPARE -> -1 }T
+
+//T{ S1 PAD 0 COMPARE -> 1 }T
+
+//T{ PAD 0 S1 COMPARE -> -1 }T
+
+//T{ S1 S6 COMPARE ->  1 }T
+
+//T{ S6 S1 COMPARE -> -1 }T
+
+//T{ S7 PAD 0 COMPARE -> 0 }T
+
+//
+
+//T{ S1 $" abdde"  COMPARE -> -1 }T
+
+//T{ S1 $" abbde"  COMPARE ->  1 }T
+
+//T{ S1 $" abcdf"  COMPARE -> -1 }T
+
+//T{ S1 $" abcdee" COMPARE ->  1 }T
+
+//
+
+//: S11 S" 0abc" ;
+
+S11:
+	call	 ( (S") ) 	# 4364F7 E8 46 EB FC FF 
+	.byte 0x4,0x30,0x61,0x62,0x63
+	ret		# 436501 C3 
+//: S12 S" 0aBc" ;
+
+S12:
+	call	 ( (S") ) 	# 436502 E8 3B EB FC FF 
+	.byte 0x4,0x30,0x61,0x42,0x63
+	ret		# 43650C C3 
+//
+
+//T{ S11 S12  COMPARE -> 1 }T
+
+//T{ S12 S11  COMPARE -> -1 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING CMOVE and CMOVE>
+
+//
+
+//PAD 30 CHARS 0 FILL
+
+//T{ S1 PAD SWAP CMOVE -> }T
+
+//T{ S1 PAD S1 SWAP DROP COMPARE -> 0 }T
+
+//T{ S6 PAD 10 CHARS + SWAP CMOVE -> }T
+
+//T{ $" abcdefghij12345pqrstuvwxyz" PAD S1 SWAP DROP COMPARE -> 0 }T
+
+//T{ PAD 15 CHARS + PAD CHAR+ 6 CMOVE -> }T
+
+//T{ $" apqrstuhij12345pqrstuvwxyz" PAD 26 COMPARE -> 0 }T
+
+//T{ PAD PAD 3 CHARS + 7 CMOVE -> }T
+
+//T{ $" apqapqapqa12345pqrstuvwxyz" PAD 26 COMPARE -> 0 }T
+
+//T{ PAD PAD CHAR+ 10 CMOVE -> }T
+
+//T{ $" aaaaaaaaaaa2345pqrstuvwxyz" PAD 26 COMPARE -> 0 }T
+
+//T{ S7 PAD 14 CHARS + SWAP CMOVE -> }T
+
+//T{ $" aaaaaaaaaaa2345pqrstuvwxyz" PAD 26 COMPARE -> 0 }T
+
+//
+
+//PAD 30 CHARS 0 FILL
+
+//
+
+//T{ S1 PAD SWAP CMOVE> -> }T
+
+//T{ S1 PAD S1 SWAP DROP COMPARE -> 0 }T
+
+//T{ S6 PAD 10 CHARS + SWAP CMOVE> -> }T
+
+//T{ $" abcdefghij12345pqrstuvwxyz" PAD S1 SWAP DROP COMPARE -> 0 }T
+
+//T{ PAD 15 CHARS + PAD CHAR+ 6 CMOVE> -> }T
+
+//T{ $" apqrstuhij12345pqrstuvwxyz" PAD 26 COMPARE -> 0 }T
+
+//T{ PAD 13 CHARS + PAD 10 CHARS + 7 CMOVE> -> }T
+
+//T{ $" apqrstuhijtrstrstrstuvwxyz" PAD 26 COMPARE -> 0 }T
+
+//T{ PAD 12 CHARS + PAD 11 CHARS + 10 CMOVE> -> }T
+
+//T{ $" apqrstuhijtvvvvvvvvvvvwxyz" PAD 26 COMPARE -> 0 }T
+
+//T{ S7 PAD 14 CHARS + SWAP CMOVE> -> }T
+
+//T{ $" apqrstuhijtvvvvvvvvvvvwxyz" PAD 26 COMPARE -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING BLANK
+
+//
+
+//: S13 S" aaaaa      a" ;   \ Don't move this down as it might corrupt PAD
+
+S13:
+	call	 ( (S") ) 	# 43650D E8 30 EB FC FF 
+	.byte 0xC,0x61,0x61,0x61,0x61,0x61,0x20,0x20,0x20,0x20,0x20,0x20,0x61
+	ret		# 43651F C3 
+//
+
+//T{ PAD 25 CHAR a FILL -> }T
+
+//T{ PAD 5 CHARS + 6 BLANK -> }T
+
+//T{ PAD 12 S13 COMPARE -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING SLITERAL
+
+//
+
+//T{ HERE DUP S1 DUP ALLOT ROT SWAP CMOVE S1 SWAP DROP 2CONSTANT S1A -> }T
+
+	.byte	0x61	# 436520 61 
+	.byte	0x62	# 436521 62 
+	movslq	0x66(%rbp),%esp	# 436522 63 64 65 66 
+	push	$0x6C6B6A69	# 436526 67 68 69 6A 6B 6C 
+	insl	(%dx),%es:(%rdi)		# 43652C 6D 
+	outsb	%ds:(%rsi),(%dx)		# 43652D 6E 
+	outsl	%ds:(%rsi),(%dx)		# 43652E 6F 
+	jo	 ( SUBBUF+2F  ) 	# 43652F 70 71 
+	jb	 ( SUBBUF+33  ) 	# 436531 72 73 
+	jz	 ( $CHECK+2  ) 	# 436533 74 75 
+	jbe	 ( $CHECK+6  ) 	# 436535 76 77 
+	js	 ( $CHECK+A  ) 	# 436537 78 79 
+	jp	 ( S1A ) 	# 436539 7A 0 
+S1A:
+	call	 ( 2CONSTANT+14  ) 	# 43653B E8 E3 D6 FF FF 
+	sbb	(%rax),%al	# 436540 1A 0 
+	add	%al,(%rax)	# 436542 0 0 
+	add	%al,(%rax)	# 436544 0 0 
+	add	%al,(%rax)	# 436546 0 0 
+	and	%ah,0x43(%rbp)	# 436548 20 65 43 
+	add	%al,(%rax)	# 43654B 0 0 
+	add	%al,(%rax)	# 43654D 0 0 
+	add	%ch,%al	# 43654F 0 E8 
+//T{ : S14 [ S1A ] SLITERAL ; -> }T
+
+	in	(%dx),%eax		# 436551 ED 
+	.byte	0xEA	# 436552 EA 
+clD	# 436553 FC 
+	callf	*(%rdx)	# 436554 FF 1A 
+	.byte	0x61	# 436556 61 
+	.byte	0x62	# 436557 62 
+	movslq	0x66(%rbp),%esp	# 436558 63 64 65 66 
+	push	$0x6C6B6A69	# 43655C 67 68 69 6A 6B 6C 
+	insl	(%dx),%es:(%rdi)		# 436562 6D 
+	outsb	%ds:(%rsi),(%dx)		# 436563 6E 
+	outsl	%ds:(%rsi),(%dx)		# 436564 6F 
+	jo	 ( $CHECK+30  ) 	# 436565 70 71 
+	jb	 ( $CHECK+34  ) 	# 436567 72 73 
+	jz	 ( $CHECK+38  ) 	# 436569 74 75 
+	jbe	 ( $CHECK+3C  ) 	# 43656B 76 77 
+	js	 ( $CHECK+40  ) 	# 43656D 78 79 
+	jp	 ( S13+27  ) 	# 43656F 7A C3 
+//T{ S1A S14 COMPARE -> 0 }T
+
+//T{ S1A DROP S14 DROP = -> FALSE }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING UNESCAPE
+
+//
+
+//CREATE SUBBUF 48 CHARS ALLOT
+
+	add	%al,(%rax)	# 436571 0 0 
+SUBBUF:
+	call	 ( DOCREATE ) 	# 436573 E8 A8 E3 FC FF 
+	and	$0x63626125,%eax	# 436578 25 25 61 62 63 
+	and	$0x66656425,%eax	# 43657D 25 25 64 65 66 
+	and	$0x67252525,%eax	# 436582 25 25 25 25 67 
+	push	$0x252569	# 436587 68 69 25 25 0 
+	add	%al,(%rax)	# 43658C 0 0 
+	add	%al,(%rax)	# 43658E 0 0 
+	add	%al,(%rax)	# 436590 0 0 
+	add	%al,(%rax)	# 436592 0 0 
+	add	%al,(%rax)	# 436594 0 0 
+	add	%al,(%rax)	# 436596 0 0 
+	add	%al,(%rax)	# 436598 0 0 
+	add	%al,(%rax)	# 43659A 0 0 
+	add	%al,(%rax)	# 43659C 0 0 
+	add	%al,(%rax)	# 43659E 0 0 
+	add	%al,(%rax)	# 4365A0 0 0 
+	add	%al,(%rax)	# 4365A2 0 0 
+	add	%al,(%rax)	# 4365A4 0 0 
+	add	%al,(%rax)	# 4365A6 0 0 
+//
+
+//\ $CHECK AND $CHECKN return f = 0 if caddr1 = SUBBUF and string1 = string2
+
+//: $CHECK   ( caddr1 u1 caddr2 u2 -- f )  2SWAP OVER SUBBUF <> >R COMPARE R> or ;
+
+dolCHECK:
+	mov	0x00(%rbp),%rcx	# 4365A8 48 8B 4D 0 
+	mov	0x08(%rbp),%rdx	# 4365AC 48 8B 55 8 
+	mov	0x10(%rbp),%rbx	# 4365B0 48 8B 5D 10 
+	mov	%rcx,0x10(%rbp)	# 4365B4 48 89 4D 10 
+	mov	%rax,0x08(%rbp)	# 4365B8 48 89 45 8 
+	mov	%rbx,0x00(%rbp)	# 4365BC 48 89 5D 0 
+	mov	%rdx,-0x08(%rbp)	# 4365C0 48 89 55 F8 
+	mov	0x00(%rbp),%rax	# 4365C4 48 8B 45 0 
+	mov	%rax,-0x10(%rbp)	# 4365C8 48 89 45 F0 
+	lea	 ( SUBBUF+5  ) (%rip),%rax	# 4365CC 48 8D 5 A5 FF FF FF 
+	xor	-0x10(%rbp),%rax	# 4365D3 48 33 45 F0 
+		negq	%rax	# 4365D7 48 F7 D8 
+	sbb	%rax,%rax	# 4365DA 48 19 C0 
+	Push	%rax	# 4365DD 50 
+	mov	-0x08(%rbp),%rax	# 4365DE 48 8B 45 F8 
+	call	 ( COMPARE ) 	# 4365E2 E8 8 A7 FF FF 
+	mov	%rax,-0x08(%rbp)	# 4365E7 48 89 45 F8 
+	pop	%rax	# 4365EB 58 
+	or	-0x08(%rbp),%rax	# 4365EC 48 B 45 F8 
+	ret		# 4365F0 C3 
+//: $CHECKN  ( caddr1 u1 n caddr2 u2 -- f n )  ROT >R $CHECK R> ;
+
+dolCHECKN:
+	mov	0x00(%rbp),%rdx	# 4365F1 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 4365F5 48 89 45 0 
+	mov	0x08(%rbp),%rax	# 4365F9 48 8B 45 8 
+	mov	%rdx,0x08(%rbp)	# 4365FD 48 89 55 8 
+	Push	%rax	# 436601 50 
+	mov	0x00(%rbp),%rax	# 436602 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 436606 48 8D 6D 8 
+	call	 ( $CHECK ) 	# 43660A E8 99 FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 43660F 48 89 45 F8 
+	pop	%rax	# 436613 58 
+	lea	-0x08(%rbp),%rbp	# 436614 48 8D 6D F8 
+	ret		# 436618 C3 
+//
+
+//T{ 123 SUBBUF C! $" " SUBBUF UNESCAPE SUBBUF 0 $CHECK -> FALSE }T
+
+//T{ SUBBUF C@ -> 123 }T
+
+//T{ $" unchanged" SUBBUF UNESCAPE $" unchanged" $CHECK -> FALSE }T
+
+//T{ $" %" SUBBUF UNESCAPE $" %%" $CHECK -> FALSE }T
+
+//T{ $" %%%" SUBBUF UNESCAPE $" %%%%%%" $CHECK -> FALSE }T
+
+//T{ $" abc%def" SUBBUF UNESCAPE $" abc%%def" $CHECK -> FALSE }T
+
+//T{ : TEST-UNESCAPE S" %abc%def%%ghi%" SUBBUF UNESCAPE ; -> }T \ Compile check
+
+TESTsubUNESCAPE:
+	call	 ( (S") ) 	# 436619 E8 24 EA FC FF 
+	.byte 0xE,0x25,0x61,0x62,0x63,0x25,0x64,0x65,0x66,0x25,0x25,0x67,0x68,0x69,0x25
+	mov	%rax,-0x08(%rbp)	# 43662D 48 89 45 F8 
+	lea	 ( SUBBUF+5  ) (%rip),%rax	# 436631 48 8D 5 40 FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 436638 48 8D 6D F8 
+	call	 ( UNESCAPE ) 	# 43663C E8 9E A7 FF FF 
+	ret		# 436641 C3 
+//T{ TEST-UNESCAPE $" %%abc%%def%%%%ghi%%" $CHECK -> FALSE }T
+
+//
+
+//[IFDEF] SUBSTITUTE
+
+//TESTING SUBSTITUTE REPLACES
+
+//
+
+//T{ $" abcdef" SUBBUF 20 SUBSTITUTE $" abcdef" $CHECKN -> FALSE 0 }T \ Unchanged
+
+//T{ $" " SUBBUF 20 SUBSTITUTE $" " $CHECKN -> FALSE 0 }T    \ Zero length string
+
+//T{ $" %%" SUBBUF 20 SUBSTITUTE $" %" $CHECKN -> FALSE 0 }T        \ %% --> %
+
+//T{ $" %%%%%%" SUBBUF 25 SUBSTITUTE $" %%%" $CHECKN -> FALSE 0 }T
+
+//T{ $" %%%%%%%" SUBBUF 25 SUBSTITUTE $" %%%%" $CHECKN -> FALSE 0 }T \ Odd no. %'s
+
+//
+
+//: MAC1 S" mac1" ;  : MAC2 S" mac2" ;  : MAC3 S" mac3" ;
+
+//
+
+//T{ $" wxyz" MAC1 REPLACES -> }T
+
+//T{ $" %mac1%" SUBBUF 20 SUBSTITUTE $" wxyz" $CHECKN -> FALSE 1 }T
+
+//T{ $" abc%mac1%d" SUBBUF 20 SUBSTITUTE $" abcwxyzd" $CHECKN -> FALSE 1 }T
+
+//T{ : SUBST SUBBUF 20 SUBSTITUTE ; -> }T   \ Check it compiles
+
+//T{ $" defg%mac1%hi" SUBST $" defgwxyzhi" $CHECKN -> FALSE 1 }T
+
+//T{ $" 12" MAC2 REPLACES -> }T
+
+//T{ $" %mac1%mac2" SUBBUF 20 SUBSTITUTE $" wxyzmac2" $CHECKN -> FALSE 1 }T
+
+//T{ $" abc %mac2% def%mac1%gh" SUBBUF 20 SUBSTITUTE $" abc 12 defwxyzgh" $CHECKN
+
+//      -> FALSE 2 }T
+
+//T{ : REPL  ( caddr1 u1 "name" -- )  PARSE-NAME REPLACES ; -> }T
+
+//T{ $" " REPL MAC3 -> }T    \ Check compiled version
+
+//T{ $" abc%mac3%def%mac1%gh" SUBBUF 20 SUBSTITUTE $" abcdefwxyzgh" $CHECKN
+
+//      -> FALSE 2 }T      \ Zero length string substituted
+
+//T{ $" %mac3%" SUBBUF 10 SUBSTITUTE $" " $CHECKN
+
+//      -> FALSE 1 }T      \ Zero length string substituted
+
+//T{ $" abc%%mac1%%%mac2%" SUBBUF 20 SUBSTITUTE $" abc%mac1%12" $CHECKN
+
+//      -> FALSE 1 }T   \ Check substitution is single pass
+
+//T{ $" %mac3%" MAC3 REPLACES -> }T
+
+//T{ $" a%mac3%b" SUBBUF 20 SUBSTITUTE $" a%mac3%b" $CHECKN
+
+//      -> FALSE 1 }T    \ Check non-recursive
+
+//T{ $" %%" MAC3 REPLACES -> }T
+
+//T{ $" abc%mac1%de%mac3%g%mac2%%%%mac1%hij" SUBBUF 30 SUBSTITUTE
+
+//      $" abcwxyzde%%g12%wxyzhij" $CHECKN -> FALSE 4 }T
+
+//T{ $" ab%mac4%c" SUBBUF 20 SUBSTITUTE $" ab%mac4%c" $CHECKN
+
+//      -> FALSE 0 }T   \ Non-substitution name passed unchanged
+
+//T{ $" %mac2%%mac5%" SUBBUF 20 SUBSTITUTE $" 12%mac5%" $CHECKN
+
+//      -> FALSE 1 }T   \ Non-substitution name passed unchanged
+
+//T{ $" %mac5%" SUBBUF 20 SUBSTITUTE $" %mac5%" $CHECKN
+
+//      -> FALSE 0 }T   \ Non-substitution name passed unchanged
+
+//
+
+//\ Check UNESCAPE SUBSTITUTE leaves a string unchanged
+
+//T{ $" %mac1%" SUBBUF 30 CHARS + UNESCAPE SUBBUF 10 SUBSTITUTE $" %mac1%" $CHECKN
+
+//   -> FALSE 0 }T
+
+//
+
+//\ Check with odd numbers of % characters, last is passed unchanged
+
+//T{ $" %" SUBBUF 10 SUBSTITUTE $" %" $CHECKN -> FALSE 0 }T
+
+//T{ $" %abc" SUBBUF 10 SUBSTITUTE $" %abc" $CHECKN -> FALSE 0 }T
+
+//T{ $" abc%" SUBBUF 10 SUBSTITUTE $" abc%" $CHECKN -> FALSE 0 }T
+
+//T{ $" abc%mac1" SUBBUF 10 SUBSTITUTE $" abc%mac1" $CHECKN -> FALSE 0 }T
+
+//T{ $" abc%mac1%d%%e%mac2%%mac3" SUBBUF 20 SUBSTITUTE
+
+//      $" abcwxyzd%e12%mac3" $CHECKN -> FALSE 2 }T
+
+//
+
+//\ Check for errors
+
+//T{ $" abcd" SUBBUF 4 SUBSTITUTE $" abcd" $CHECKN -> FALSE 0 }T  \ Just fits
+
+//T{ $" abcd" SUBBUF 3 SUBSTITUTE ROT ROT 2DROP 0< -> TRUE }T     \ Just too long
+
+//T{ $" abcd" SUBBUF 0 SUBSTITUTE ROT ROT 2DROP 0< -> TRUE }T
+
+//T{ $" zyxwvutsr" MAC3 REPLACES -> }T
+
+//T{ $" abc%mac3%d" SUBBUF 10 SUBSTITUTE ROT ROT 2DROP 0< -> TRUE }T
+
+//
+
+//\ Conditional test for overlapping strings, including the case where
+
+//\ caddr1 = caddr2. If a system cannot handle overlapping strings it should
+
+//\ return n < 0 with (caddr2 u2) undefined. If it can handle them correctly
+
+//\ it should return the usual results for success. The following definitions
+
+//\ apply the appropriate tests depending on whether n < 0 or not.
+
+//\ The overlapping SUBSTITUTE tests:
+
+//\     succeed if SUBSTITUTE returns an error i.e. n<0
+
+//\     fail if n is incorrect 
+
+//\     fail if the result string is at the incorrect addresses
+
+//\     fail if the result string is incorrect
+
+//\ Note that variables are used to avoid complicated stack manipulations
+
+//
+
+//VARIABLE sdest       \ Holds dest address for SUBSTITUTE
+
+//20 constant ssize
+
+//2VARIABLE $sresult   VARIABLE #subst   \ Hold output from SUBSTITUTE
+
+//
+
+//\ sinit set ups addresses and inputs for SUBSTITUTE and saves the
+
+//\ output destination for check-subst
+
+//\     srcn and destn are offsets into the substitution buffer subbuf
+
+//\     (caddr1 u1) is the input string for SUBSTITUTE
+
+//
+
+//: sinit  ( caddr1 u1 srcn destn -- src u1 dest size )
+
+//   CHARS subbuf + sdest !        ( -- caddr1 u1 srcn )
+
+//   CHARS subbuf + 2DUP 2>R       ( -- caddr1 u1 src ) ( R: -- u1 src )
+
+//   SWAP CHARS MOVE               ( -- )
+
+//   R> R> sdest @ ssize           ( -- src u1 dest size) ( R: -- )
+
+//;
+
+//
+
+//\ In check-subst
+
+//\     (caddr1 u1) is the expected result from SUBSTITUTE
+
+//\     n is the expected n if SUBSTITUTE succeeded with overlapping buffers
+
+//
+
+//: check-subst  ( caddr1 u1 n -- f )
+
+//   #subst @ 0<
+
+//   IF DROP 2DROP TRUE EXIT THEN  \ SUBSTITUTE failed, test succeeds
+
+//   #subst @ = >R
+
+//   $sresult CELL+ @ sdest @ = R> AND
+
+//   IF $sresult 2@ COMPARE 0= EXIT THEN
+
+//   2DROP FALSE                   \ Fails if #subst or result address is wrong
+
+//;
+
+//
+
+//\ Testing the helpers sinit and check-subst
+
+//
+
+//T{ $" abcde" 2 6 sinit -> subbuf 2 chars + 5 subbuf 6 chars + ssize }T
+
+//T{ $" abcde" subbuf 2 chars + over compare -> 0 }T
+
+//T{ sdest @ -> subbuf 6 chars + }T
+
+//
+
+//T{ -78 #subst ! 0 0 0 check-subst -> TRUE }T
+
+//T{ 5 #subst ! $" def" over sdest ! 2dup $sresult 2! 5 check-subst -> TRUE }T
+
+//T{ 5 #subst ! $" def" over sdest ! 2dup $sresult 2! 4 check-subst -> FALSE }T
+
+//T{ 5 #subst ! $" def" over sdest ! 2dup 1+ $sresult 2! 5 check-subst -> FALSE }T
+
+//T{ 5 #subst ! $" def" over sdest ! 2dup 1- $sresult 2! 3 check-subst -> FALSE }T
+
+//
+
+//\ Testing overlapping SUBSTITUTE
+
+//
+
+//: do-subst  ( caddr1 u1 n1 n2 -- )
+
+//   sinit SUBSTITUTE #subst ! $sresult 2!
+
+//;
+
+//
+
+//T{ $" zyxwvut" MAC3 REPLACES -> }T
+
+//T{ $" zyx"     MAC2 REPLACES -> }T
+
+//
+
+//T{ $" a%mac3%b" 0 9 do-subst $" azyxwvutb" 1 check-subst -> TRUE }T
+
+//T{ $" c%mac3%d" 0 3 do-subst $" czyxwvutd" 1 check-subst -> TRUE }T
+
+//T{ $" e%mac2%f" 0 3 do-subst $" ezyxf"     1 check-subst -> TRUE }T
+
+//T{ $" abcdefgh" 0 0 do-subst $" abcdefgh"  0 check-subst -> TRUE }T
+
+//T{ $" i%mac3%j" 3 0 do-subst $" izyxwvutj" 1 check-subst -> TRUE }T
+
+//T{ $" k%mac3%l" 9 0 do-subst $" kzyxwvutl" 1 check-subst -> TRUE }T
+
+//
+
+//\ Simulating a failing overlapping SUBSTITUTE
+
+//
+
+//T{ $" pqrst" 2dup 0 0 do-subst -78 #subst ! 0 check-subst -> TRUE }T
+
+//
+
+//\ Using SUBSTITUTE to define a name whose (caddr u) is on the stack
+
+//: $CREATE  ( caddr u -- )
+
+//   S" name" REPLACES          ( -- )
+
+//   S" CREATE %name%" SUBBUF 40 SUBSTITUTE
+
+//   0 > IF EVALUATE THEN
+
+//;
+
+//t{ $" SUBST2" $CREATE 123 , -> }t
+
+//t{ SUBST2 @ -> 123 }t
+
+//
+
+//[ELSE] .( SUBSTITUTE is undefined word) CR
+
+//[THEN]
+
+//
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//STRING-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of String word tests) CR
+

@@ -1,0 +1,397 @@
+//\ To test the ANS Forth Exception word set and extension words
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13 13 Nov 2015 C6 rewritten to avoid use of CASE etc and hence
+
+//\              dependence on the Core extension word set.     
+
+//\         0.4 1 April 2012  Tests placed in the public domain.
+
+//\         0.3 6 March 2009 { and } replaced with T{ and }T
+
+//\         0.2 20 April 2007 ANS Forth words changed to upper case
+
+//\         0.1 Oct 2006 First version released
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//\
+
+//\ Words tested in this file are:
+
+//\     CATCH THROW ABORT ABORT"
+
+//\
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions and dependencies:
+
+//\     - the forth system under test throws an exception with throw
+
+//\       code -13 for a word not found by the text interpreter. The
+
+//\       undefined word used is $$qweqweqwert$$,  if this happens to be
+
+//\       a valid word in your system change the definition of t7 below
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set available and tested
+
+//\     - CASE, OF, ENDOF and ENDCASE from the core extension wordset
+
+//\       are present and work correctly
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING CATCH THROW
+
+//
+
+//DECIMAL
+
+//
+
+//: T1 9 ;
+
+T1:
+	mov	%rax,-0x08(%rbp)	# 435458 48 89 45 F8 
+	mov	$0x9,%eax	# 43545C B8 9 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435461 48 8D 6D F8 
+	ret		# 435465 C3 
+//: C1 1 2 3 ['] T1 CATCH ;
+
+C1:
+	mov	%rax,-0x08(%rbp)	# 435466 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 43546A 48 C7 45 F0 1 0 0 0 
+	movq	$0x2,-0x18(%rbp)	# 435472 48 C7 45 E8 2 0 0 0 
+	movq	$0x3,-0x20(%rbp)	# 43547A 48 C7 45 E0 3 0 0 0 
+	mov	$0x435458,%eax	# 435482 B8 58 54 43 0 
+	lea	-0x20(%rbp),%rbp	# 435487 48 8D 6D E0 
+	call	 ( CATCH ) 	# 43548B E8 CB 0 FD FF 
+	ret		# 435490 C3 
+//T{ C1 -> 1 2 3 9 0 }T         \ No THROW executed
+
+//
+
+//: T2 8 0 THROW ;
+
+T2:
+	mov	%rax,-0x08(%rbp)	# 435491 48 89 45 F8 
+	movq	$0x8,-0x10(%rbp)	# 435495 48 C7 45 F0 8 0 0 0 
+	mov	$0x0,%eax	# 43549D B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4354A2 48 8D 6D F0 
+	call	 ( THROW ) 	# 4354A6 E8 9 1 FD FF 
+	ret		# 4354AB C3 
+//: C2 1 2 ['] T2 CATCH ;
+
+C2:
+	mov	%rax,-0x08(%rbp)	# 4354AC 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 4354B0 48 C7 45 F0 1 0 0 0 
+	movq	$0x2,-0x18(%rbp)	# 4354B8 48 C7 45 E8 2 0 0 0 
+	mov	$0x435491,%eax	# 4354C0 B8 91 54 43 0 
+	lea	-0x18(%rbp),%rbp	# 4354C5 48 8D 6D E8 
+	call	 ( CATCH ) 	# 4354C9 E8 8D 0 FD FF 
+	ret		# 4354CE C3 
+//T{ C2 -> 1 2 8 0 }T            \ 0 THROW does nothing
+
+//
+
+//: T3 7 8 9 99 THROW ;
+
+T3:
+	mov	%rax,-0x08(%rbp)	# 4354CF 48 89 45 F8 
+	movq	$0x7,-0x10(%rbp)	# 4354D3 48 C7 45 F0 7 0 0 0 
+	movq	$0x8,-0x18(%rbp)	# 4354DB 48 C7 45 E8 8 0 0 0 
+	movq	$0x9,-0x20(%rbp)	# 4354E3 48 C7 45 E0 9 0 0 0 
+	mov	$0x63,%eax	# 4354EB B8 63 0 0 0 
+	lea	-0x20(%rbp),%rbp	# 4354F0 48 8D 6D E0 
+	call	 ( THROW ) 	# 4354F4 E8 BB 0 FD FF 
+	ret		# 4354F9 C3 
+//: C3 1 2 ['] T3 CATCH ;
+
+C3:
+	mov	%rax,-0x08(%rbp)	# 4354FA 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 4354FE 48 C7 45 F0 1 0 0 0 
+	movq	$0x2,-0x18(%rbp)	# 435506 48 C7 45 E8 2 0 0 0 
+	mov	$0x4354CF,%eax	# 43550E B8 CF 54 43 0 
+	lea	-0x18(%rbp),%rbp	# 435513 48 8D 6D E8 
+	call	 ( CATCH ) 	# 435517 E8 3F 0 FD FF 
+	ret		# 43551C C3 
+//T{ C3 -> 1 2 99 }T            \ Restores stack to CATCH depth
+
+//
+
+//: T4 1- DUP 0> IF RECURSE ELSE 999 THROW -222 THEN ;
+
+T4:
+	lea	-0x01(%rax),%rax	# 43551D 48 8D 40 FF 
+	mov	%rax,-0x08(%rbp)	# 435521 48 89 45 F8 
+	lea	-0x08(%rbp),%rbp	# 435525 48 8D 6D F8 
+	call	 ( 0> ) 	# 435529 E8 B4 B7 FF FF 
+	test	%rax,%rax	# 43552E 48 85 C0 
+	mov	0x00(%rbp),%rax	# 435531 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435535 48 8D 6D 8 
+	jz	 ( T4+2C  ) 	# 435539 F 84 A 0 0 0 
+	call	 ( T4 ) 	# 43553F E8 D9 FF FF FF 
+	jmp	 ( T4+4D  ) 	# 435544 E9 21 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 435549 48 89 45 F8 
+	mov	$0x3E7,%eax	# 43554D B8 E7 3 0 0 
+	lea	-0x08(%rbp),%rbp	# 435552 48 8D 6D F8 
+	call	 ( THROW ) 	# 435556 E8 59 0 FD FF 
+	mov	%rax,-0x08(%rbp)	# 43555B 48 89 45 F8 
+	movq	$-0xDE,%rax	# 43555F 48 C7 C0 22 FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 435566 48 8D 6D F8 
+	ret		# 43556A C3 
+//: C4 3 4 5 10 ['] T4 CATCH -111 ;
+
+C4:
+	mov	%rax,-0x08(%rbp)	# 43556B 48 89 45 F8 
+	movq	$0x3,-0x10(%rbp)	# 43556F 48 C7 45 F0 3 0 0 0 
+	movq	$0x4,-0x18(%rbp)	# 435577 48 C7 45 E8 4 0 0 0 
+	movq	$0x5,-0x20(%rbp)	# 43557F 48 C7 45 E0 5 0 0 0 
+	movq	$0xA,-0x28(%rbp)	# 435587 48 C7 45 D8 A 0 0 0 
+	mov	$0x43551D,%eax	# 43558F B8 1D 55 43 0 
+	lea	-0x28(%rbp),%rbp	# 435594 48 8D 6D D8 
+	call	 ( CATCH ) 	# 435598 E8 BE FF FC FF 
+	mov	%rax,-0x08(%rbp)	# 43559D 48 89 45 F8 
+	movq	$-0x6F,%rax	# 4355A1 48 C7 C0 91 FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 4355A8 48 8D 6D F8 
+	ret		# 4355AC C3 
+//T{ C4 -> 3 4 5 0 999 -111 }T   \ Test return stack unwinding
+
+//
+
+//: T5 2DROP 2DROP 9999 THROW ;
+
+T5:
+	mov	$0x270F,%eax	# 4355AD B8 F 27 0 0 
+	lea	0x18(%rbp),%rbp	# 4355B2 48 8D 6D 18 
+	call	 ( THROW ) 	# 4355B6 E8 F9 FF FC FF 
+	ret		# 4355BB C3 
+//: C5 1 2 3 4 ['] T5 CATCH            \ Test depth restored correctly
+
+C5:
+	mov	%rax,-0x08(%rbp)	# 4355BC 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 4355C0 48 C7 45 F0 1 0 0 0 
+	movq	$0x2,-0x18(%rbp)	# 4355C8 48 C7 45 E8 2 0 0 0 
+	movq	$0x3,-0x20(%rbp)	# 4355D0 48 C7 45 E0 3 0 0 0 
+	movq	$0x4,-0x28(%rbp)	# 4355D8 48 C7 45 D8 4 0 0 0 
+	mov	$0x4355AD,%eax	# 4355E0 B8 AD 55 43 0 
+	lea	-0x28(%rbp),%rbp	# 4355E5 48 8D 6D D8 
+	call	 ( CATCH ) 	# 4355E9 E8 6D FF FC FF 
+//   DEPTH >R DROP 2DROP 2DROP R> ;   \ after stack has been emptied
+
+	call	 ( DEPTH ) 	# 4355EE E8 B3 FA FC FF 
+	Push	%rax	# 4355F3 50 
+	pop	%rax	# 4355F4 58 
+	lea	0x28(%rbp),%rbp	# 4355F5 48 8D 6D 28 
+	ret		# 4355F9 C3 
+//T{ C5 -> 5 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING ABORT ABORT"
+
+//
+
+//-1  CONSTANT EXC_ABORT
+
+EXC_ABORT:
+	call	 ( DOCONSTANT ) 	# 4355FA E8 14 F3 FC FF 
+	g4??	%edi	# 4355FF FF FF 
+	g4??	%edi	# 435601 FF FF 
+	g4??	%edi	# 435603 FF FF 
+	g4??	%edi	# 435605 FF FF 
+//-2  CONSTANT EXC_ABORT"
+
+EXC_ABORTdtic:
+	call	 ( DOCONSTANT ) 	# 435607 E8 7 F3 FC FF 
+	g4??	%bh	# 43560C FE FF 
+	g4??	%edi	# 43560E FF FF 
+	g4??	%edi	# 435610 FF FF 
+	g4??	%edi	# 435612 FF FF 
+//-13 CONSTANT EXC_UNDEF
+
+EXC_UNDEF:
+	call	 ( DOCONSTANT ) 	# 435614 E8 FA F2 FC FF 
+	repz		# 435619 F3 
+	g4??	%edi	# 43561A FF FF 
+	g4??	%edi	# 43561C FF FF 
+	g4??	%edi	# 43561E FF FF 
+	jmpf	*%rax	# 435620 FF E8 
+//: T6 ABORT ;
+
+	add	%al,(%rax)	# 435622 0 0 
+stD	# 435624 FD 
+	inc	%ebx	# 435625 FF C3 
+//
+
+//\ The 77 in T10 is necessary for the second ABORT" test as the data stack
+
+//\ is restored to a depth of 2 when THROW is executed. The 77 ensures the top
+
+//\ of stack value is known for the results check
+
+//
+
+//: T10 77 SWAP ABORT" This should not be displayed" ;
+
+T10:
+	movq	$0x4D,-0x08(%rbp)	# 435627 48 C7 45 F8 4D 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43562F 48 8D 6D F8 
+	call	 ( (S") ) 	# 435633 E8 A FA FC FF 
+	.byte 0x1C,0x54,0x68,0x69,0x73,0x20,0x73,0x68,0x6F,0x75,0x6C,0x64,0x20,0x6E,0x6F,0x74,0x20,0x62,0x65,0x20,0x64,0x69,0x73,0x70,0x6C,0x61,0x79,0x65,0x64
+	call	 ( (ABORT'') ) 	# 435655 E8 CE 9 FE FF 
+	ret		# 43565A C3 
+//: C6 CATCH
+
+C6:
+	call	 ( CATCH ) 	# 43565B E8 FB FE FC FF 
+//   >R   R@ EXC_ABORT  = IF 11
+
+	Push	%rax	# 435660 50 
+	mov	0x00(%rbp),%rax	# 435661 48 8B 45 0 
+	mov	(%rsp),%rax	# 435665 48 8B 4 24 
+	xor	$-0x01,%rax	# 435669 48 83 F0 FF 
+	sub	$0x01,%rax	# 43566D 48 83 E8 1 
+	sbb	%rax,%rax	# 435671 48 19 C0 
+	test	%rax,%rax	# 435674 48 85 C0 
+	mov	0x00(%rbp),%rax	# 435677 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43567B 48 8D 6D 8 
+	jz	 ( C6+3C  ) 	# 43567F F 84 12 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 435685 48 89 45 F8 
+	mov	$0xB,%eax	# 435689 B8 B 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43568E 48 8D 6D F8 
+//   ELSE R@ EXC_ABORT" = IF 12
+
+	jmp	 ( C6+9B  ) 	# 435692 E9 5F 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 435697 48 89 45 F8 
+	mov	(%rsp),%rax	# 43569B 48 8B 4 24 
+	xor	$-0x02,%rax	# 43569F 48 83 F0 FE 
+	sub	$0x01,%rax	# 4356A3 48 83 E8 1 
+	sbb	%rax,%rax	# 4356A7 48 19 C0 
+	test	%rax,%rax	# 4356AA 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4356AD 48 8B 45 F8 
+	jz	 ( C6+6E  ) 	# 4356B1 F 84 12 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4356B7 48 89 45 F8 
+	mov	$0xC,%eax	# 4356BB B8 C 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4356C0 48 8D 6D F8 
+//   ELSE R@ EXC_UNDEF  = IF 13
+
+	jmp	 ( C6+9B  ) 	# 4356C4 E9 2D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4356C9 48 89 45 F8 
+	mov	(%rsp),%rax	# 4356CD 48 8B 4 24 
+	xor	$-0x0D,%rax	# 4356D1 48 83 F0 F3 
+	sub	$0x01,%rax	# 4356D5 48 83 E8 1 
+	sbb	%rax,%rax	# 4356D9 48 19 C0 
+	test	%rax,%rax	# 4356DC 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4356DF 48 8B 45 F8 
+	jz	 ( C6+9B  ) 	# 4356E3 F 84 D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4356E9 48 89 45 F8 
+	mov	$0xD,%eax	# 4356ED B8 D 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4356F2 48 8D 6D F8 
+//   THEN THEN THEN R> DROP
+
+	mov	%rax,-0x08(%rbp)	# 4356F6 48 89 45 F8 
+	pop	%rax	# 4356FA 58 
+	mov	-0x08(%rbp),%rax	# 4356FB 48 8B 45 F8 
+//;
+
+	ret		# 4356FF C3 
+//
+
+//T{ 1 2 ' T6 C6  -> 1 2 11 }T     \ Test that ABORT is caught
+
+//T{ 3 0 ' T10 C6 -> 3 77 }T       \ ABORT" does nothing
+
+//T{ 4 5 ' T10 C6 -> 4 77 12 }T    \ ABORT" caught, no message
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING a system generated exception
+
+//
+
+//: T7 S" 333 $$QWEQWEQWERT$$ 334" EVALUATE 335 ;
+
+T7:
+	call	 ( (S") ) 	# 435700 E8 3D F9 FC FF 
+	.byte 0x17,0x33,0x33,0x33,0x20,0x24,0x24,0x51,0x57,0x45,0x51,0x57,0x45,0x51,0x57,0x45,0x52,0x54,0x24,0x24,0x0,0x33,0x33,0x34
+	call	 ( EVALUATE ) 	# 43571D E8 C 89 FD FF 
+	mov	%rax,-0x08(%rbp)	# 435722 48 89 45 F8 
+	mov	$0x14F,%eax	# 435726 B8 4F 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 43572B 48 8D 6D F8 
+	ret		# 43572F C3 
+//: T8 S" 222 T7 223" EVALUATE 224 ;
+
+T8:
+	call	 ( (S") ) 	# 435730 E8 D F9 FC FF 
+	.byte 0xA,0x32,0x32,0x32,0x20,0x54,0x37,0x20,0x32,0x32,0x33
+	call	 ( EVALUATE ) 	# 435740 E8 E9 88 FD FF 
+	mov	%rax,-0x08(%rbp)	# 435745 48 89 45 F8 
+	mov	$0xE0,%eax	# 435749 B8 E0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43574E 48 8D 6D F8 
+	ret		# 435752 C3 
+//: T9 S" 111 112 T8 113" EVALUATE 114 ;
+
+T9:
+	call	 ( (S") ) 	# 435753 E8 EA F8 FC FF 
+	.byte 0xE,0x31,0x31,0x31,0x20,0x31,0x31,0x32,0x20,0x54,0x38,0x20,0x31,0x31,0x33
+	call	 ( EVALUATE ) 	# 435767 E8 C2 88 FD FF 
+	mov	%rax,-0x08(%rbp)	# 43576C 48 89 45 F8 
+	mov	$0x72,%eax	# 435770 B8 72 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435775 48 8D 6D F8 
+	ret		# 435779 C3 
+//
+
+//T{ 6 7 ' T9 C6 3 -> 6 7 13 3 }T         \ Test unlinking of sources
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//EXCEPTION-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of Exception word tests) CR
+
+//
+

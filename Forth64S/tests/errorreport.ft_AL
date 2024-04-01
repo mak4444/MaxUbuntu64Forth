@@ -1,0 +1,530 @@
+//\ To collect and report on the number of errors resulting from running the
+
+//\ ANS Forth and Forth 2012 test programs
+
+//
+
+//\ This program was written by Gerry Jackson in 2015, and is in the public
+
+//\ domain - it can be distributed and/or modified in any way but please
+
+//\ retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ This file is INCLUDED after Core tests are complete and only uses Core words
+
+//\ already tested. The purpose of this file is to count errors in test results
+
+//\ and present them as a summary at the end of the tests.
+
+//
+
+//DECIMAL
+
+//
+
+//VARIABLE TOTAL-ERRORS
+
+TOTALsubERRORS:
+	call	 ( DOCREATE ) 	# 433C73 E8 A8 C FD FF 
+	add	%al,(%rax)	# 433C78 0 0 
+	add	%al,(%rax)	# 433C7A 0 0 
+	add	%al,(%rax)	# 433C7C 0 0 
+	add	%al,(%rax)	# 433C7E 0 0 
+//
+
+//: ERROR-COUNT  ( "name" n1 -- n2 )  \ n2 = n1 + 1cell
+
+//   CREATE  DUP , CELL+
+
+ERRORsubCOUNT:
+	call	 ( CREATE ) 	# 433C80 E8 1B B5 FD FF 
+	mov	%rax,-0x08(%rbp)	# 433C85 48 89 45 F8 
+	lea	-0x08(%rbp),%rbp	# 433C89 48 8D 6D F8 
+	call	 ( , ) 	# 433C8D E8 88 12 FD FF 
+	lea	0x08(%rax),%rax	# 433C92 48 8D 40 8 
+//   DOES>  ( -- offset ) @     \ offset in address units
+
+	call	 ( (DOES>) ) 	# 433C96 E8 EC B5 FD FF 
+	mov	%rax,-0x08(%rbp)	# 433C9B 48 89 45 F8 
+	pop	%rax	# 433C9F 58 
+	mov	(%rax),%rax	# 433CA0 48 8B 0 
+	lea	-0x08(%rbp),%rbp	# 433CA3 48 8D 6D F8 
+//;
+
+	ret		# 433CA7 C3 
+//
+
+//0     \ Offset into ERRORS[] array
+
+//ERROR-COUNT CORE-ERRORS          ERROR-COUNT CORE-EXT-ERRORS
+
+	add	%al,(%rax)	# 433CA8 0 0 
+	add	%ch,%al	# 433CAA 0 E8 
+	jmp	 ( CORE-ERRORS+2  ) 	# 433CAC EB FF 
+	g4??	%edi	# 433CAE FF FF 
+	add	%al,(%rax)	# 433CB0 0 0 
+	add	%al,(%rax)	# 433CB2 0 0 
+	add	%al,(%rax)	# 433CB4 0 0 
+	add	%al,(%rax)	# 433CB6 0 0 
+	add	%al,(%rax)	# 433CB8 0 0 
+	add	%ch,%al	# 433CBA 0 E8 
+	.byte	0xDB	# 433CBC DB 
+	g4??	%edi	# 433CBD FF FF 
+	dec	(%rax)	# 433CBF FF 8 
+	add	%al,(%rax)	# 433CC1 0 0 
+	add	%al,(%rax)	# 433CC3 0 0 
+	add	%al,(%rax)	# 433CC5 0 0 
+	add	%al,(%rax)	# 433CC7 0 0 
+//ERROR-COUNT DOUBLE-ERRORS        ERROR-COUNT EXCEPTION-ERRORS
+
+	add	%al,(%rax)	# 433CC9 0 0 
+DOUBLEsubERRORS:
+	call	 ( ERROR-COUNT+1B  ) 	# 433CCB E8 CB FF FF FF 
+	adc	%al,(%rax)	# 433CD0 10 0 
+	add	%al,(%rax)	# 433CD2 0 0 
+	add	%al,(%rax)	# 433CD4 0 0 
+	add	%al,(%rax)	# 433CD6 0 0 
+	add	%al,(%rax)	# 433CD8 0 0 
+	add	%ch,%al	# 433CDA 0 E8 
+	mov	$0x18FFFFFF,%ebx	# 433CDC BB FF FF FF 18 
+	add	%al,(%rax)	# 433CE1 0 0 
+	add	%al,(%rax)	# 433CE3 0 0 
+	add	%al,(%rax)	# 433CE5 0 0 
+	add	%al,(%rax)	# 433CE7 0 0 
+//ERROR-COUNT FACILITY-ERRORS      ERROR-COUNT FILE-ERRORS
+
+	add	%al,(%rax)	# 433CE9 0 0 
+FACILITYsubERRORS:
+	call	 ( ERROR-COUNT+1B  ) 	# 433CEB E8 AB FF FF FF 
+	and	%al,(%rax)	# 433CF0 20 0 
+	add	%al,(%rax)	# 433CF2 0 0 
+	add	%al,(%rax)	# 433CF4 0 0 
+	add	%al,(%rax)	# 433CF6 0 0 
+	add	%al,(%rax)	# 433CF8 0 0 
+	add	%ch,%al	# 433CFA 0 E8 
+	wait		# 433CFC 9B 
+	g4??	%edi	# 433CFD FF FF 
+	jmpf	*(%rax)	# 433CFF FF 28 
+	add	%al,(%rax)	# 433D01 0 0 
+	add	%al,(%rax)	# 433D03 0 0 
+	add	%al,(%rax)	# 433D05 0 0 
+	add	%al,(%rax)	# 433D07 0 0 
+//ERROR-COUNT LOCALS-ERRORS        ERROR-COUNT MEMORY-ERRORS
+
+	add	%al,(%rax)	# 433D09 0 0 
+LOCALSsubERRORS:
+	call	 ( ERROR-COUNT+1B  ) 	# 433D0B E8 8B FF FF FF 
+	xor	%al,(%rax)	# 433D10 30 0 
+	add	%al,(%rax)	# 433D12 0 0 
+	add	%al,(%rax)	# 433D14 0 0 
+	add	%al,(%rax)	# 433D16 0 0 
+	add	%al,(%rax)	# 433D18 0 0 
+	add	%ch,%al	# 433D1A 0 E8 
+	jNp	 ( MEMORY-ERRORS+2  ) 	# 433D1C 7B FF 
+	g4??	%edi	# 433D1E FF FF 
+	cmp	%al,(%rax)	# 433D20 38 0 
+	add	%al,(%rax)	# 433D22 0 0 
+	add	%al,(%rax)	# 433D24 0 0 
+	add	%al,(%rax)	# 433D26 0 0 
+//ERROR-COUNT SEARCHORDER-ERRORS   ERROR-COUNT STRING-ERRORS
+
+	add	%al,(%rax)	# 433D28 0 0 
+	add	%ch,%al	# 433D2A 0 E8 
+	imul	$-0x01,%edi,%edi	# 433D2C 6B FF FF 
+	inc	0x00(%rax)	# 433D2F FF 40 0 
+	add	%al,(%rax)	# 433D32 0 0 
+	add	%al,(%rax)	# 433D34 0 0 
+	add	%al,(%rax)	# 433D36 0 0 
+	add	%al,(%rax)	# 433D38 0 0 
+	add	%ch,%al	# 433D3A 0 E8 
+	pop	%rbx	# 433D3C 5B 
+	g4??	%edi	# 433D3D FF FF 
+	dec	0x00(%rax)	# 433D3F FF 48 0 
+	add	%al,(%rax)	# 433D42 0 0 
+	add	%al,(%rax)	# 433D44 0 0 
+	add	%al,(%rax)	# 433D46 0 0 
+//ERROR-COUNT TOOLS-ERRORS         ERROR-COUNT BLOCK-ERRORS
+
+	add	%al,(%rax)	# 433D48 0 0 
+	add	%ch,%al	# 433D4A 0 E8 
+	g4??	%r15	# 433D4C 4B FF FF 
+	call	*0x00(%rax)	# 433D4F FF 50 0 
+	add	%al,(%rax)	# 433D52 0 0 
+	add	%al,(%rax)	# 433D54 0 0 
+	add	%al,(%rax)	# 433D56 0 0 
+	add	%al,(%rax)	# 433D58 0 0 
+	add	%ch,%al	# 433D5A 0 E8 
+	cmp	%edi,%edi	# 433D5C 3B FF 
+	g4??	%edi	# 433D5E FF FF 
+	pop	%rax	# 433D60 58 
+	add	%al,(%rax)	# 433D61 0 0 
+	add	%al,(%rax)	# 433D63 0 0 
+	add	%al,(%rax)	# 433D65 0 0 
+	add	%al,(%rax)	# 433D67 0 0 
+//CREATE ERRORS[] DUP ALLOT CONSTANT #ERROR-COUNTS
+
+	add	%al,(%rax)	# 433D69 0 0 
+ERRORSxcyc:
+	call	 ( DOCREATE ) 	# 433D6B E8 B0 B FD FF 
+	add	%al,(%rax)	# 433D70 0 0 
+	add	%al,(%rax)	# 433D72 0 0 
+	add	%al,(%rax)	# 433D74 0 0 
+	add	%al,(%rax)	# 433D76 0 0 
+	g4??	%edi	# 433D78 FF FF 
+	g4??	%edi	# 433D7A FF FF 
+	g4??	%edi	# 433D7C FF FF 
+	g4??	%edi	# 433D7E FF FF 
+	g4??	%edi	# 433D80 FF FF 
+	g4??	%edi	# 433D82 FF FF 
+	g4??	%edi	# 433D84 FF FF 
+	g4??	%edi	# 433D86 FF FF 
+	g4??	%edi	# 433D88 FF FF 
+	g4??	%edi	# 433D8A FF FF 
+	g4??	%edi	# 433D8C FF FF 
+	g4??	%edi	# 433D8E FF FF 
+	g4??	%edi	# 433D90 FF FF 
+	g4??	%edi	# 433D92 FF FF 
+	g4??	%edi	# 433D94 FF FF 
+	g4??	%edi	# 433D96 FF FF 
+	g4??	%edi	# 433D98 FF FF 
+	g4??	%edi	# 433D9A FF FF 
+	g4??	%edi	# 433D9C FF FF 
+	g4??	%edi	# 433D9E FF FF 
+	g4??	%edi	# 433DA0 FF FF 
+	g4??	%edi	# 433DA2 FF FF 
+	g4??	%edi	# 433DA4 FF FF 
+	g4??	%edi	# 433DA6 FF FF 
+	g4??	%edi	# 433DA8 FF FF 
+	g4??	%edi	# 433DAA FF FF 
+	g4??	%edi	# 433DAC FF FF 
+	g4??	%edi	# 433DAE FF FF 
+	g4??	%edi	# 433DB0 FF FF 
+	g4??	%edi	# 433DB2 FF FF 
+	g4??	%edi	# 433DB4 FF FF 
+	g4??	%edi	# 433DB6 FF FF 
+	g4??	%edi	# 433DB8 FF FF 
+	g4??	%edi	# 433DBA FF FF 
+	g4??	%edi	# 433DBC FF FF 
+	g4??	%edi	# 433DBE FF FF 
+	g4??	%edi	# 433DC0 FF FF 
+	g4??	%edi	# 433DC2 FF FF 
+	g4??	%edi	# 433DC4 FF FF 
+	g4??	%edi	# 433DC6 FF FF 
+	g4??	%edi	# 433DC8 FF FF 
+	g4??	%edi	# 433DCA FF FF 
+	g4??	%edi	# 433DCC FF FF 
+	g4??	%edi	# 433DCE FF FF 
+hashERRORsubCOUNTS:
+	call	 ( DOCONSTANT ) 	# 433DD0 E8 3E B FD FF 
+	.byte	0x60	# 433DD5 60 
+	add	%al,(%rax)	# 433DD6 0 0 
+	add	%al,(%rax)	# 433DD8 0 0 
+	add	%al,(%rax)	# 433DDA 0 0 
+	add	%cl,-0x77(%rax)	# 433DDC 0 48 89 
+//
+
+//\ SET-ERROR-COUNT called at the end of each test file with its own offset into
+
+//\ the ERRORS[] array. #ERRORS is in files tester.fr and ttester.fs
+
+//
+
+//: SET-ERROR-COUNT  ( offset -- )
+
+//   #ERRORS @ SWAP ERRORS[] + !
+
+clC	# 433DDF 45 F8 
+	mov	 ( #ERRORS+5  ) (%rip),%rdx	# 433DE1 48 8B 15 F8 D5 FF FF 
+	mov	%rdx,-0x08(%rbp)	# 433DE8 48 89 55 F8 
+	mov	%rax,-0x10(%rbp)	# 433DEC 48 89 45 F0 
+	lea	 ( ERRORS[]+5  ) (%rip),%rax	# 433DF0 48 8D 5 79 FF FF FF 
+	add	-0x10(%rbp),%rax	# 433DF7 48 3 45 F0 
+	mov	-0x08(%rbp),%rdx	# 433DFB 48 8B 55 F8 
+	mov	%rdx,(%rax)	# 433DFF 48 89 10 
+	mov	 ( #ERRORS+5  ) (%rip),%rax	# 433E02 48 8B 5 D7 D5 FF FF 
+	add	%rax, ( TOTAL-ERRORS+5  ) (%rip)	# 433E09 48 1 5 68 FE FF FF 
+//   #ERRORS @ TOTAL-ERRORS +!
+
+	movq	$0x0, ( #ERRORS+5  ) (%rip)	# 433E10 48 C7 5 C5 D5 FF FF 0 0 0 0 
+//   0 #ERRORS !
+
+	mov	0x00(%rbp),%rax	# 433E1B 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 433E1F 48 8D 6D 8 
+//;
+
+	ret		# 433E23 C3 
+//
+
+//: INIT-ERRORS  ( -- )
+
+//   ERRORS[] #ERROR-COUNTS OVER + SWAP DO -1 I ! 1 CELLS +LOOP
+
+INITsubERRORS:
+	mov	%rax,-0x08(%rbp)	# 433E24 48 89 45 F8 
+	lea	 ( ERRORS[]+5  ) (%rip),%rax	# 433E28 48 8D 5 41 FF FF FF 
+	mov	%rax,-0x10(%rbp)	# 433E2F 48 89 45 F0 
+	movq	$0x60,-0x18(%rbp)	# 433E33 48 C7 45 E8 60 0 0 0 
+	add	-0x18(%rbp),%rax	# 433E3B 48 3 45 E8 
+	mov	-0x10(%rbp),%rdx	# 433E3F 48 8B 55 F0 
+	mov	%rax,-0x10(%rbp)	# 433E43 48 89 45 F0 
+	mov	%rdx,%rax	# 433E47 48 89 D0 
+	lea	-0x10(%rbp),%rbp	# 433E4A 48 8D 6D F0 
+	call	 ( (DO) ) 	# 433E4E E8 96 B FD FF 
+	.quad  ( INIT-ERRORS+6B  ) 
+	mov	%rax,-0x08(%rbp)	# 433E5B 48 89 45 F8 
+	movq	$-0x1,-0x10(%rbp)	# 433E5F 48 C7 45 F0 FF FF FF FF 
+	mov	%r14,%rax	# 433E67 4C 89 F0 
+	mov	-0x10(%rbp),%rdx	# 433E6A 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 433E6E 48 89 10 
+	mov	$0x8,%eax	# 433E71 B8 8 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 433E76 48 8D 6D F8 
+	add	%rax,%r14	# 433E7A 49 1 C6 
+	add	%rax,%r15	# 433E7D 49 1 C7 
+	mov	0x00(%rbp),%rax	# 433E80 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 433E84 48 8D 6D 8 
+	jNo	 ( INIT-ERRORS+37  ) 	# 433E88 71 D1 
+	pop	%r14	# 433E8A 41 5E 
+	pop	%r15	# 433E8C 41 5F 
+	pop	%rcx	# 433E8E 59 
+//   0 TOTAL-ERRORS !
+
+	movq	$0x0, ( TOTAL-ERRORS+5  ) (%rip)	# 433E8F 48 C7 5 DE FD FF FF 0 0 0 0 
+//   CORE-ERRORS SET-ERROR-COUNT
+
+	call	 ( CORE-ERRORS ) 	# 433E9A E8 C FE FF FF 
+	call	 ( SET-ERROR-COUNT ) 	# 433E9F E8 39 FF FF FF 
+//;
+
+	ret		# 433EA4 C3 
+//
+
+//INIT-ERRORS
+
+//
+
+//\ Report summary of errors
+
+//
+
+//25 CONSTANT MARGIN
+
+MARGIN:
+	call	 ( DOCONSTANT ) 	# 433EA5 E8 69 A FD FF 
+	sbb	%eax,(%rax)	# 433EAA 19 0 
+	add	%al,(%rax)	# 433EAC 0 0 
+	add	%al,(%rax)	# 433EAE 0 0 
+	add	%al,(%rax)	# 433EB0 0 0 
+//
+
+//: SHOW-ERROR-LINE  ( n caddr u -- )
+
+//   CR SWAP OVER TYPE MARGIN - ABS >R
+
+SHOWsubERRORsubLINE:
+	call	 ( CR ) 	# 433EB2 E8 4C 11 FD FF 
+	mov	0x00(%rbp),%rdx	# 433EB7 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 433EBB 48 89 45 0 
+	mov	%rdx,-0x08(%rbp)	# 433EBF 48 89 55 F8 
+	lea	-0x08(%rbp),%rbp	# 433EC3 48 8D 6D F8 
+	call	 ( TYPE ) 	# 433EC7 E8 EA 10 FD FF 
+	add	$-0x19,%rax	# 433ECC 48 83 C0 E7 
+	cqto		# 433ED0 48 99 
+	xor	%rdx,%rax	# 433ED2 48 31 D0 
+	sub	%rdx,%rax	# 433ED5 48 29 D0 
+	Push	%rax	# 433ED8 50 
+	mov	0x00(%rbp),%rax	# 433ED9 48 8B 45 0 
+	xor	$-0x01,%rax	# 433EDD 48 83 F0 FF 
+//   DUP -1 = IF DROP R> 1- SPACES ." -" ELSE
+
+	sub	$0x01,%rax	# 433EE1 48 83 E8 1 
+	sbb	%rax,%rax	# 433EE5 48 19 C0 
+	test	%rax,%rax	# 433EE8 48 85 C0 
+	mov	0x00(%rbp),%rax	# 433EEB 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 433EEF 48 8D 6D 8 
+	jz	 ( SHOW-ERROR-LINE+62  ) 	# 433EF3 F 84 1B 0 0 0 
+	pop	%rax	# 433EF9 58 
+	lea	-0x01(%rax),%rax	# 433EFA 48 8D 40 FF 
+	call	 ( SPACES ) 	# 433EFE E8 45 34 FE FF 
+	call	 ( (S") ) 	# 433F03 E8 3A 11 FD FF 
+	.byte 0x1,0x2D
+	call	 ( TYPE ) 	# 433F0A E8 A7 10 FD FF 
+	jmp	 ( SHOW-ERROR-LINE+70  ) 	# 433F0F E9 E 0 0 0 
+//   R> .R THEN
+
+	mov	%rax,-0x08(%rbp)	# 433F14 48 89 45 F8 
+	pop	%rax	# 433F18 58 
+	lea	-0x08(%rbp),%rbp	# 433F19 48 8D 6D F8 
+	call	 ( .R ) 	# 433F1D E8 62 80 FD FF 
+//;
+
+	ret		# 433F22 C3 
+//
+
+//: SHOW-ERROR-COUNT  ( caddr u offset -- )
+
+//   ERRORS[] + @ ROT ROT SHOW-ERROR-LINE
+
+SHOWsubERRORsubCOUNT:
+	mov	%rax,-0x08(%rbp)	# 433F23 48 89 45 F8 
+	lea	 ( ERRORS[]+5  ) (%rip),%rax	# 433F27 48 8D 5 42 FE FF FF 
+	add	-0x08(%rbp),%rax	# 433F2E 48 3 45 F8 
+	mov	(%rax),%rax	# 433F32 48 8B 0 
+	mov	0x00(%rbp),%rdx	# 433F35 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 433F39 48 89 45 0 
+	mov	0x08(%rbp),%rax	# 433F3D 48 8B 45 8 
+	mov	%rdx,0x08(%rbp)	# 433F41 48 89 55 8 
+	mov	0x00(%rbp),%rdx	# 433F45 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 433F49 48 89 45 0 
+	mov	0x08(%rbp),%rax	# 433F4D 48 8B 45 8 
+	mov	%rdx,0x08(%rbp)	# 433F51 48 89 55 8 
+	call	 ( SHOW-ERROR-LINE ) 	# 433F55 E8 58 FF FF FF 
+//;
+
+	ret		# 433F5A C3 
+//
+
+//: HLINE  ( -- )  CR ." ---------------------------"  ;
+
+HLINE:
+	call	 ( CR ) 	# 433F5B E8 A3 10 FD FF 
+	call	 ( (S") ) 	# 433F60 E8 DD 10 FD FF 
+	.byte 0x1B,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D
+	call	 ( TYPE ) 	# 433F81 E8 30 10 FD FF 
+	ret		# 433F86 C3 
+//
+
+//: REPORT-ERRORS
+
+//   HLINE
+
+REPORTsubERRORS:
+	call	 ( HLINE ) 	# 433F87 E8 CF FF FF FF 
+//   CR 8 SPACES ." Error Report"
+
+	call	 ( CR ) 	# 433F8C E8 72 10 FD FF 
+	mov	%rax,-0x08(%rbp)	# 433F91 48 89 45 F8 
+	mov	$0x8,%eax	# 433F95 B8 8 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 433F9A 48 8D 6D F8 
+	call	 ( SPACES ) 	# 433F9E E8 A5 33 FE FF 
+	call	 ( (S") ) 	# 433FA3 E8 9A 10 FD FF 
+	.byte 0xC,0x45,0x72,0x72,0x6F,0x72,0x20,0x52,0x65,0x70,0x6F,0x72,0x74
+	call	 ( TYPE ) 	# 433FB5 E8 FC F FD FF 
+//   CR ." Word Set" 13 SPACES ." Errors"
+
+	call	 ( CR ) 	# 433FBA E8 44 10 FD FF 
+	call	 ( (S") ) 	# 433FBF E8 7E 10 FD FF 
+	.byte 0x8,0x57,0x6F,0x72,0x64,0x20,0x53,0x65,0x74
+	call	 ( TYPE ) 	# 433FCD E8 E4 F FD FF 
+	mov	%rax,-0x08(%rbp)	# 433FD2 48 89 45 F8 
+	mov	$0xD,%eax	# 433FD6 B8 D 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 433FDB 48 8D 6D F8 
+	call	 ( SPACES ) 	# 433FDF E8 64 33 FE FF 
+	call	 ( (S") ) 	# 433FE4 E8 59 10 FD FF 
+	.byte 0x6,0x45,0x72,0x72,0x6F,0x72,0x73
+	call	 ( TYPE ) 	# 433FF0 E8 C1 F FD FF 
+//   HLINE
+
+	call	 ( HLINE ) 	# 433FF5 E8 61 FF FF FF 
+//   S" Core" CORE-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 433FFA E8 43 10 FD FF 
+	.byte 0x4,0x43,0x6F,0x72,0x65
+	call	 ( CORE-ERRORS ) 	# 434004 E8 A2 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 434009 E8 15 FF FF FF 
+//   S" Core extension" CORE-EXT-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 43400E E8 2F 10 FD FF 
+	.byte 0xE,0x43,0x6F,0x72,0x65,0x20,0x65,0x78,0x74,0x65,0x6E,0x73,0x69,0x6F,0x6E
+	call	 ( CORE-EXT-ERRORS ) 	# 434022 E8 94 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 434027 E8 F7 FE FF FF 
+//   S" Block" BLOCK-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 43402C E8 11 10 FD FF 
+	.byte 0x5,0x42,0x6C,0x6F,0x63,0x6B
+	call	 ( BLOCK-ERRORS ) 	# 434037 E8 1F FD FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 43403C E8 E2 FE FF FF 
+//   S" Double number" DOUBLE-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 434041 E8 FC F FD FF 
+	.byte 0xD,0x44,0x6F,0x75,0x62,0x6C,0x65,0x20,0x6E,0x75,0x6D,0x62,0x65,0x72
+	call	 ( DOUBLE-ERRORS ) 	# 434054 E8 72 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 434059 E8 C5 FE FF FF 
+//   S" Exception" EXCEPTION-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 43405E E8 DF F FD FF 
+	.byte 0x9,0x45,0x78,0x63,0x65,0x70,0x74,0x69,0x6F,0x6E
+	call	 ( EXCEPTION-ERRORS ) 	# 43406D E8 69 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 434072 E8 AC FE FF FF 
+//   S" Facility" FACILITY-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 434077 E8 C6 F FD FF 
+	.byte 0x8,0x46,0x61,0x63,0x69,0x6C,0x69,0x74,0x79
+	call	 ( FACILITY-ERRORS ) 	# 434085 E8 61 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 43408A E8 94 FE FF FF 
+//   S" File-access" FILE-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 43408F E8 AE F FD FF 
+	.byte 0xB,0x46,0x69,0x6C,0x65,0x2D,0x61,0x63,0x63,0x65,0x73,0x73
+	call	 ( FILE-ERRORS ) 	# 4340A0 E8 56 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 4340A5 E8 79 FE FF FF 
+//   S" Locals"    LOCALS-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 4340AA E8 93 F FD FF 
+	.byte 0x6,0x4C,0x6F,0x63,0x61,0x6C,0x73
+	call	 ( LOCALS-ERRORS ) 	# 4340B6 E8 50 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 4340BB E8 63 FE FF FF 
+//   S" Memory-allocation" MEMORY-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 4340C0 E8 7D F FD FF 
+	.byte 0x11,0x4D,0x65,0x6D,0x6F,0x72,0x79,0x2D,0x61,0x6C,0x6C,0x6F,0x63,0x61,0x74,0x69,0x6F,0x6E
+	call	 ( MEMORY-ERRORS ) 	# 4340D7 E8 3F FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 4340DC E8 42 FE FF FF 
+//   S" Programming-tools" TOOLS-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 4340E1 E8 5C F FD FF 
+	.byte 0x11,0x50,0x72,0x6F,0x67,0x72,0x61,0x6D,0x6D,0x69,0x6E,0x67,0x2D,0x74,0x6F,0x6F,0x6C,0x73
+	call	 ( TOOLS-ERRORS ) 	# 4340F8 E8 4E FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 4340FD E8 21 FE FF FF 
+//   S" Search-order" SEARCHORDER-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 434102 E8 3B F FD FF 
+	.byte 0xC,0x53,0x65,0x61,0x72,0x63,0x68,0x2D,0x6F,0x72,0x64,0x65,0x72
+	call	 ( SEARCHORDER-ERRORS ) 	# 434114 E8 12 FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 434119 E8 5 FE FF FF 
+//   S" String" STRING-ERRORS SHOW-ERROR-COUNT
+
+	call	 ( (S") ) 	# 43411E E8 1F F FD FF 
+	.byte 0x6,0x53,0x74,0x72,0x69,0x6E,0x67
+	call	 ( STRING-ERRORS ) 	# 43412A E8 C FC FF FF 
+	call	 ( SHOW-ERROR-COUNT ) 	# 43412F E8 EF FD FF FF 
+//   HLINE
+
+	call	 ( HLINE ) 	# 434134 E8 22 FE FF FF 
+//   TOTAL-ERRORS @ S" Total" SHOW-ERROR-LINE
+
+	mov	%rax,-0x08(%rbp)	# 434139 48 89 45 F8 
+	mov	 ( TOTAL-ERRORS+5  ) (%rip),%rax	# 43413D 48 8B 5 34 FB FF FF 
+	lea	-0x08(%rbp),%rbp	# 434144 48 8D 6D F8 
+	call	 ( (S") ) 	# 434148 E8 F5 E FD FF 
+	.byte 0x5,0x54,0x6F,0x74,0x61,0x6C
+	call	 ( SHOW-ERROR-LINE ) 	# 434153 E8 5A FD FF FF 
+//   HLINE CR CR
+
+	call	 ( HLINE ) 	# 434158 E8 FE FD FF FF 
+	call	 ( CR ) 	# 43415D E8 A1 E FD FF 
+	call	 ( CR ) 	# 434162 E8 9C E FD FF 
+//;
+
+	ret		# 434167 C3 

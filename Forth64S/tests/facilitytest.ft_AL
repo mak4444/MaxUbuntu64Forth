@@ -1,0 +1,491 @@
+//\ To test part of the Forth 2012 Facility word set
+
+//
+
+//\ This program was written by Gerry Jackson in 2015, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13 Assumptions and dependencies added
+
+//\         0.11 25 April 2015 Added tests for BEGIN-STRUCTURE END-STRUCTURE +FIELD
+
+//\              FIELD: CFIELD:
+
+//\ -----------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//
+
+//\ Words tested in this file are: +FIELD BEGIN-STRUCTURE CFIELD: END-STRUCTURE
+
+//\      FIELD:
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions and dependencies:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set is available and tested
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING Facility words
+
+//
+
+//DECIMAL
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING BEGIN-STRUCTURE END-STRUCTURE +FIELD
+
+//
+
+//T{ BEGIN-STRUCTURE STRCT1
+
+	add	%ch,%al	# 43577A 0 E8 
+	mov	$-0x4C,%bh	# 43577C B7 B4 
+	g4??	%edi	# 43577E FF FF 
+	add	%al,(%rax)	# 435780 0 0 
+	add	%al,(%rax)	# 435782 0 0 
+	add	%al,(%rax)	# 435784 0 0 
+	add	%al,(%rax)	# 435786 0 0 
+//   END-STRUCTURE   -> }T
+
+//T{ STRCT1 -> 0 }T
+
+//
+
+//T{ BEGIN-STRUCTURE STRCT2
+
+	add	%al,(%rax)	# 435788 0 0 
+	add	%ch,%al	# 43578A 0 E8 
+	cmpsl	%es:(%rdi),%ds:(%rsi)		# 43578C A7 
+	mov	$-0x01,%ah	# 43578D B4 FF 
+	dec	(%rbx)	# 43578F FF B 
+	add	%al,(%rax)	# 435791 0 0 
+	add	%al,(%rax)	# 435793 0 0 
+	add	%al,(%rax)	# 435795 0 0 
+	add	%al,(%rax)	# 435797 0 0 
+//      1 CHARS +FIELD F21
+
+	add	%al,(%rax)	# 435799 0 0 
+F21:
+	call	 ( +FIELD+23  ) 	# 43579B E8 DC B4 FF FF 
+	add	%al,(%rax)	# 4357A0 0 0 
+	add	%al,(%rax)	# 4357A2 0 0 
+	add	%al,(%rax)	# 4357A4 0 0 
+	add	%al,(%rax)	# 4357A6 0 0 
+//      2 CHARS +FIELD F22
+
+	add	%al,(%rax)	# 4357A8 0 0 
+	add	%ch,%al	# 4357AA 0 E8 
+	int3		# 4357AC CC 
+	mov	$-0x01,%ah	# 4357AD B4 FF 
+	inc	(%rcx)	# 4357AF FF 1 
+	add	%al,(%rax)	# 4357B1 0 0 
+	add	%al,(%rax)	# 4357B3 0 0 
+	add	%al,(%rax)	# 4357B5 0 0 
+	add	%al,(%rax)	# 4357B7 0 0 
+//      0 +FIELD F23
+
+	add	%al,(%rax)	# 4357B9 0 0 
+F23:
+	call	 ( +FIELD+23  ) 	# 4357BB E8 BC B4 FF FF 
+	add	(%rax),%eax	# 4357C0 3 0 
+	add	%al,(%rax)	# 4357C2 0 0 
+	add	%al,(%rax)	# 4357C4 0 0 
+	add	%al,(%rax)	# 4357C6 0 0 
+//      1 CELLS +FIELD F24
+
+	add	%al,(%rax)	# 4357C8 0 0 
+	add	%ch,%al	# 4357CA 0 E8 
+	lods	%ds:(%rsi),%al		# 4357CC AC 
+	mov	$-0x01,%ah	# 4357CD B4 FF 
+	inc	(%rbx)	# 4357CF FF 3 
+	add	%al,(%rax)	# 4357D1 0 0 
+	add	%al,(%rax)	# 4357D3 0 0 
+	add	%al,(%rax)	# 4357D5 0 0 
+	add	%al,(%rax)	# 4357D7 0 0 
+//   END-STRUCTURE   -> }T
+
+//
+
+//T{ STRCT2 -> 3 chars 1 cells + }T   \ +FIELD doesn't align
+
+//T{ 0 F21 -> 0 }T
+
+//T{ 0 F22 -> 1 }T
+
+//T{ 0 F23 -> 3 }T
+
+//T{ 0 F24 -> 3 }T
+
+//T{ 5 F23 -> 8 }T
+
+//
+
+//T{ CREATE S21 STRCT2 ALLOT -> }T
+
+	add	%al,(%rax)	# 4357D9 0 0 
+S21:
+	call	 ( DOCREATE ) 	# 4357DB E8 40 F1 FC FF 
+	or	(%rsi),%edx	# 4357E0 B 16 
+	add	%ch,(%rax,%rax,1)	# 4357E2 0 2C 0 
+	add	%al,(%rax)	# 4357E5 0 0 
+	add	%al,(%rax)	# 4357E7 0 0 
+	add	%al,(%rax)	# 4357E9 0 0 
+//T{ 11 S21 F21 C! -> }T
+
+//T{ 22 S21 F22 C! -> }T
+
+//T{ 33 S21 F23 C! -> }T
+
+//T{ S21 F23 C@ -> 33 }T
+
+//T{ 44 S21 F24 C! -> }T
+
+//T{ S21 F21 C@ -> 11 }T
+
+//T{ S21 F22 C@ -> 22 }T
+
+//T{ S21 F23 C@ -> 44 }T
+
+//T{ S21 F24 C@ -> 44 }T
+
+//
+
+//T{ CREATE S22 STRCT2 ALLOT -> }T
+
+S22:
+	call	 ( DOCREATE ) 	# 4357EB E8 30 F1 FC FF 
+	xor	$0x42,%eax	# 4357F0 37 42 0 0 0 
+	add	%al,(%rax)	# 4357F5 0 0 
+	add	%al,(%rax)	# 4357F7 0 0 
+	add	%al,(%rax)	# 4357F9 0 0 
+//T{ 55 S22 F21 C! -> }T
+
+//T{ 66 S22 F22 C! -> }T
+
+//T{ S21 F21 C@ -> 11 }T
+
+//T{ S21 F22 C@ -> 22 }T
+
+//T{ S22 F21 C@ -> 55 }T
+
+//T{ S22 F22 C@ -> 66 }T
+
+//
+
+//TESTING FIELD: CFIELD:
+
+//
+
+//T{ BEGIN-STRUCTURE STRCT3
+
+STRCT3:
+	call	 ( begin-structure+40  ) 	# 4357FB E8 37 B4 FF FF 
+	and	%al,(%rax)	# 435800 20 0 
+	add	%al,(%rax)	# 435802 0 0 
+	add	%al,(%rax)	# 435804 0 0 
+	add	%al,(%rax)	# 435806 0 0 
+//      FIELD:  F31
+
+	add	%al,(%rax)	# 435808 0 0 
+	add	%ch,%al	# 43580A 0 E8 
+	insb	(%dx),%es:(%rdi)		# 43580C 6C 
+	mov	$-0x01,%ah	# 43580D B4 FF 
+	inc	(%rax)	# 43580F FF 0 
+	add	%al,(%rax)	# 435811 0 0 
+	add	%al,(%rax)	# 435813 0 0 
+	add	%al,(%rax)	# 435815 0 0 
+	add	%al,(%rax)	# 435817 0 0 
+//      FIELD:  F32
+
+	add	%al,(%rax)	# 435819 0 0 
+F32:
+	call	 ( +FIELD+23  ) 	# 43581B E8 5C B4 FF FF 
+	or	%al,(%rax)	# 435820 8 0 
+	add	%al,(%rax)	# 435822 0 0 
+	add	%al,(%rax)	# 435824 0 0 
+	add	%al,(%rax)	# 435826 0 0 
+//      CFIELD: CF31
+
+	add	%al,(%rax)	# 435828 0 0 
+	add	%ch,%al	# 43582A 0 E8 
+	mov	$-0x01,%spl	# 43582C 4C B4 FF 
+	call	*(%rax)	# 43582F FF 10 
+	add	%al,(%rax)	# 435831 0 0 
+	add	%al,(%rax)	# 435833 0 0 
+	add	%al,(%rax)	# 435835 0 0 
+	add	%al,(%rax)	# 435837 0 0 
+//      CFIELD: CF32
+
+	add	%al,(%rax)	# 435839 0 0 
+CF32:
+	call	 ( +FIELD+23  ) 	# 43583B E8 3C B4 FF FF 
+	adc	%eax,(%rax)	# 435840 11 0 
+	add	%al,(%rax)	# 435842 0 0 
+	add	%al,(%rax)	# 435844 0 0 
+	add	%al,(%rax)	# 435846 0 0 
+//      CFIELD: CF33
+
+	add	%al,(%rax)	# 435848 0 0 
+	add	%ch,%al	# 43584A 0 E8 
+	sub	$-0x4C,%al	# 43584C 2C B4 
+	g4??	%edi	# 43584E FF FF 
+	adc	(%rax),%al	# 435850 12 0 
+	add	%al,(%rax)	# 435852 0 0 
+	add	%al,(%rax)	# 435854 0 0 
+	add	%al,(%rax)	# 435856 0 0 
+//      FIELD:  F33
+
+	add	%al,(%rax)	# 435858 0 0 
+	add	%ch,%al	# 43585A 0 E8 
+	sbb	$-0x4C,%al	# 43585C 1C B4 
+	g4??	%edi	# 43585E FF FF 
+	sbb	%al,(%rax)	# 435860 18 0 
+	add	%al,(%rax)	# 435862 0 0 
+	add	%al,(%rax)	# 435864 0 0 
+	add	%al,(%rax)	# 435866 0 0 
+//   END-STRUCTURE -> }T
+
+//
+
+//T{ 0 F31  CELL+ -> 0 F32  }T
+
+//T{ 0 CF31 CHAR+ -> 0 CF32 }T
+
+//T{ 0 CF32 CHAR+ -> 0 CF33 }T
+
+//T{ 0 CF33 CHAR+ ALIGNED -> 0 F33 }T
+
+//T{ 0 F33 ALIGNED -> 0 F33 }T
+
+//
+
+//
+
+//T{ CREATE S31 STRCT3 ALLOT -> }T
+
+	add	%al,(%rax)	# 435868 0 0 
+	add	%ch,%al	# 43586A 0 E8 
+	mov	$-0x10,%al	# 43586C B0 F0 
+clD	# 43586E FC 
+	inc	(%rcx)	# 43586F FF 1 
+	add	%al,(%rax)	# 435871 0 0 
+	add	%al,(%rax)	# 435873 0 0 
+	add	%al,(%rax)	# 435875 0 0 
+	add	%al,(%rdx)	# 435877 0 2 
+	add	%al,(%rax)	# 435879 0 0 
+	add	%al,(%rax)	# 43587B 0 0 
+	add	%al,(%rax)	# 43587D 0 0 
+	add	%al,(%rbx)	# 43587F 0 3 
+	add	$0x00,%al	# 435881 4 0 
+	add	%al,(%rax)	# 435883 0 0 
+	add	%al,(%rax)	# 435885 0 0 
+	add	%al, ( S31+22  ) (%rip)	# 435887 0 5 0 0 0 0 
+	add	%al,(%rax)	# 43588D 0 0 
+	add	%al,(%rax)	# 43588F 0 0 
+//T{ 1 S31 F31   ! -> }T
+
+//T{ 2 S31 F32   ! -> }T
+
+//T{ 3 S31 CF31 C! -> }T
+
+//T{ 4 S31 CF32 C! -> }T
+
+//T{ 5 S31 F33   ! -> }T
+
+//T{ S31 F31   @ -> 1 }T
+
+//T{ S31 F32   @ -> 2 }T
+
+//T{ S31 CF31 C@ -> 3 }T
+
+//T{ S31 CF32 C@ -> 4 }T
+
+//T{ S31 F33   @ -> 5 }T
+
+//
+
+//TESTING Nested structures
+
+//
+
+//T{ BEGIN-STRUCTURE STRCT4
+
+	add	%al,(%rax)	# 435891 0 0 
+STRCT4:
+	call	 ( begin-structure+40  ) 	# 435893 E8 9F B3 FF FF 
+	cmp	$0x00,%al	# 435898 3E 0 
+	add	%al,(%rax)	# 43589A 0 0 
+	add	%al,(%rax)	# 43589C 0 0 
+	add	%al,(%rax)	# 43589E 0 0 
+//      STRCT2 +FIELD F41
+
+	add	%al,(%rax)	# 4358A0 0 0 
+	add	%ch,%al	# 4358A2 0 E8 
+	.byte	0xD4	# 4358A4 D4 
+	mov	$-0x01,%bl	# 4358A5 B3 FF 
+	inc	(%rax)	# 4358A7 FF 0 
+	add	%al,(%rax)	# 4358A9 0 0 
+	add	%al,(%rax)	# 4358AB 0 0 
+	add	%al,(%rax)	# 4358AD 0 0 
+	add	%al,(%rax)	# 4358AF 0 0 
+//      ALIGNED STRCT3 +FIELD F42
+
+	add	%al,(%rax)	# 4358B1 0 0 
+F42:
+	call	 ( +FIELD+23  ) 	# 4358B3 E8 C4 B3 FF FF 
+	adc	%al,(%rax)	# 4358B8 10 0 
+	add	%al,(%rax)	# 4358BA 0 0 
+	add	%al,(%rax)	# 4358BC 0 0 
+	add	%al,(%rax)	# 4358BE 0 0 
+//      3 +FIELD F43
+
+	add	%al,(%rax)	# 4358C0 0 0 
+	add	%ch,%al	# 4358C2 0 E8 
+	mov	$-0x4D,%ah	# 4358C4 B4 B3 
+	g4??	%edi	# 4358C6 FF FF 
+	xor	%al,(%rax)	# 4358C8 30 0 
+	add	%al,(%rax)	# 4358CA 0 0 
+	add	%al,(%rax)	# 4358CC 0 0 
+	add	%al,(%rax)	# 4358CE 0 0 
+//      STRCT2 +FIELD F44
+
+	add	%al,(%rax)	# 4358D0 0 0 
+	add	%ch,%al	# 4358D2 0 E8 
+	movsb	%ds:(%rsi),%es:(%rdi)		# 4358D4 A4 
+	mov	$-0x01,%bl	# 4358D5 B3 FF 
+	push	(%rbx)	# 4358D7 FF 33 
+	add	%al,(%rax)	# 4358D9 0 0 
+	add	%al,(%rax)	# 4358DB 0 0 
+	add	%al,(%rax)	# 4358DD 0 0 
+	add	%al,(%rax)	# 4358DF 0 0 
+//   END-STRUCTURE        -> }T
+
+//T{ STRCT4 -> STRCT2 ALIGNED STRCT3 + 3 + STRCT2 + }T
+
+//
+
+//T{ CREATE S41 STRCT4 ALLOT -> }T
+
+	add	%al,(%rax)	# 4358E1 0 0 
+S41:
+	call	 ( DOCREATE ) 	# 4358E3 E8 38 F0 FC FF 
+	adc	$0x170016,%eax	# 4358E8 15 16 0 17 0 
+	add	%al,(%rax)	# 4358ED 0 0 
+	add	%al,(%rax)	# 4358EF 0 0 
+	add	%al,(%rax)	# 4358F1 0 0 
+	add	%al,(%rax)	# 4358F3 0 0 
+	add	%al,(%rax)	# 4358F5 0 0 
+	add	%bl,(%rax)	# 4358F7 0 18 
+	add	%al,(%rax)	# 4358F9 0 0 
+	add	%al,(%rax)	# 4358FB 0 0 
+	add	%al,(%rax)	# 4358FD 0 0 
+	add	%bl,(%rcx)	# 4358FF 0 19 
+	add	%al,(%rax)	# 435901 0 0 
+	add	%al,(%rax)	# 435903 0 0 
+	add	%al,(%rax)	# 435905 0 0 
+	add	%bl,(%rdx)	# 435907 0 1A 
+	sbb	(%rax,%rax,1),%ebx	# 435909 1B 1C 0 
+	add	%al,(%rax)	# 43590C 0 0 
+	add	%al,(%rax)	# 43590E 0 0 
+	sbb	$0x0,%eax	# 435910 1D 0 0 0 0 
+	add	%al,(%rax)	# 435915 0 0 
+	add	%al,(%rax)	# 435917 0 0 
+	add	%al,(%rax)	# 435919 0 0 
+	sbb	$0x1F,%al	# 43591B 1E 1F 
+	add	%ah,(%rax)	# 43591D 0 20 
+	add	%al,(%rax)	# 43591F 0 0 
+	add	%al,(%rax)	# 435921 0 0 
+	add	%al,(%rax)	# 435923 0 0 
+	add	%al,(%rax)	# 435925 0 0 
+//T{ 21 S41 F41 F21  C! -> }T
+
+//T{ 22 S41 F41 F22  C! -> }T
+
+//T{ 23 S41 F41 F23  C! -> }T
+
+//T{ 24 S41 F42 F31   ! -> }T
+
+//T{ 25 S41 F42 F32   ! -> }T
+
+//T{ 26 S41 F42 CF31 C! -> }T
+
+//T{ 27 S41 F42 CF32 C! -> }T
+
+//T{ 28 S41 F42 CF33 C! -> }T
+
+//T{ 29 S41 F42 F33   ! -> }T
+
+//T{ 30 S41 F44 F21  C! -> }T
+
+//T{ 31 S41 F44 F22  C! -> }T
+
+//T{ 32 S41 F44 F23  C! -> }T
+
+//
+
+//T{ S41 F41 F21  C@ -> 21 }T
+
+//T{ S41 F41 F22  C@ -> 22 }T
+
+//T{ S41 F41 F23  C@ -> 23 }T
+
+//T{ S41 F42 F31   @ -> 24 }T
+
+//T{ S41 F42 F32   @ -> 25 }T
+
+//T{ S41 F42 CF31 C@ -> 26 }T
+
+//T{ S41 F42 CF32 C@ -> 27 }T
+
+//T{ S41 F42 CF33 C@ -> 28 }T
+
+//T{ S41 F42 F33   @ -> 29 }T
+
+//T{ S41 F44 F21  C@ -> 30 }T
+
+//T{ S41 F44 F22  C@ -> 31 }T
+
+//T{ S41 F44 F23  C@ -> 32 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//
+
+//FACILITY-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of Facility word tests) CR
+

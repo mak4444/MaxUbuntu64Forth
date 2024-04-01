@@ -1,0 +1,1212 @@
+//\ This file contains the code for ttester, a utility for testing Forth words,
+
+//\ as developed by several authors (see below), together with some explanations
+
+//\ of its use.
+
+//
+
+//\ ttester is based on the original tester suite by Hayes:
+
+//\ From: John Hayes S1I
+
+//\ Subject: tester.fr
+
+//\ Date: Mon, 27 Nov 95 13:10:09 PST  
+
+//\ (C) 1995 JOHNS HOPKINS UNIVERSITY / APPLIED PHYSICS LABORATORY
+
+//\ MAY BE DISTRIBUTED FREELY AS LONG AS THIS COPYRIGHT NOTICE REMAINS.
+
+//\ VERSION 1.1
+
+//\ All the subsequent changes have been placed in the public domain.
+
+//\ The primary changes from the original are the replacement of "{" by "T{"
+
+//\ and "}" by "}T" (to avoid conflicts with the uses of { for locals and }
+
+//\ for FSL arrays), modifications so that the stack is allowed to be non-empty
+
+//\ before T{, and extensions for the handling of floating point tests.
+
+//\ Code for testing equality of floating point values comes
+
+//\ from ftester.fs written by David N. Williams, based on the idea of
+
+//\ approximate equality in Dirk Zoller's float.4th.
+
+//\ Further revisions were provided by Anton Ertl, including the ability
+
+//\ to handle either integrated or separate floating point stacks.
+
+//\ Revision history and possibly newer versions can be found at
+
+//\ http://www.complang.tuwien.ac.at/cvsweb/cgi-bin/cvsweb/gforth/test/ttester.fs
+
+//\ Explanatory material and minor reformatting (no code changes) by
+
+//\ C. G. Montgomery March 2009, with helpful comments from David Williams
+
+//\ and Krishna Myneni.
+
+//\ 25/4/2015  Variable #ERRORS added to accumulate count of errors for
+
+//\    error report at end of tests
+
+//
+
+//\ Usage:
+
+//
+
+//\ The basic usage takes the form  T{ <code> -> <expected stack> }T .
+
+//\ This executes  <code>  and compares the resulting stack contents with
+
+//\ the  <expected stack>  values, and reports any discrepancy between the
+
+//\ two sets of values.
+
+//\ For example:
+
+//\ T{ 1 2 3 swap -> 1 3 2 }T  ok
+
+//\ T{ 1 2 3 swap -> 1 2 2 }T INCORRECT RESULT: T{ 1 2 3 swap -> 1 2 2 }T ok
+
+//\ T{ 1 2 3 swap -> 1 2 }T WRONG NUMBER OF RESULTS: T{ 1 2 3 swap -> 1 2 }T ok
+
+//
+
+//\ Floating point testing can involve further complications.  The code
+
+//\ attempts to determine whether floating-point support is present, and
+
+//\ if so, whether there is a separate floating-point stack, and behave
+
+//\ accordingly.  The CONSTANTs HAS-FLOATING and HAS-FLOATING-STACK
+
+//\ contain the results of its efforts, so the behavior of the code can
+
+//\ be modified by the user if necessary.
+
+//
+
+//\ Then there are the perennial issues of floating point value
+
+//\ comparisons.  Exact equality is specified by SET-EXACT (the
+
+//\ default).  If approximate equality tests are desired, execute
+
+//\ SET-NEAR .  Then the FVARIABLEs REL-NEAR (default 1E-12) and
+
+//\ ABS-NEAR (default 0E) contain the values to be used in comparisons
+
+//\ by the (internal) word FNEARLY= .
+
+//
+
+//\ When there is not a separate floating point stack and you want to
+
+//\ use approximate equality for FP values, it is necessary to identify
+
+//\ which stack items are floating point quantities.  This can be done
+
+//\ by replacing the closing }T with a version that specifies this, such
+
+//\ as RRXR}T which identifies the stack picture ( r r x r ).  The code
+
+//\ provides such words for all combinations of R and X with up to four
+
+//\ stack items.  They can be used with either an integrated or separate
+
+//\ floating point stacks. Adding more if you need them is
+
+//\ straightforward; see the examples in the source.  Here is an example
+
+//\ which also illustrates controlling the precision of comparisons:
+
+//
+
+//\   SET-NEAR
+
+//\   1E-6 REL-NEAR F!
+
+//\   T{ S" 3.14159E" >FLOAT -> -1E FACOS TRUE RX}T
+
+//
+
+//\ The word ERROR is now vectored, so that its action can be changed by
+
+//\ the user (for example, to improve the basic error counter for the
+
+//\ number of errors). The default action ERROR1 can be used as a factor
+
+//\ in the display of error reports.
+
+//
+
+//\ Loading ttester.fs does not change BASE.  Remember that floating point input
+
+//\ is ambiguous if the base is not decimal.
+
+//
+
+//\ The file defines some 70 words in all, but in most cases only the
+
+//\ ones mentioned above will be needed for successful testing.
+
+//
+
+//BASE @
+
+//DECIMAL
+
+//
+
+//VARIABLE ACTUAL-DEPTH         \ stack record
+
+	add	%al,(%rax)	# 43128C 0 0 
+	add	%al,(%rax)	# 43128E 0 0 
+	add	%al,(%rax)	# 431290 0 0 
+	add	%ch,%al	# 431292 0 E8 
+	mov	%dh,(%rsi)	# 431294 88 36 
+stD	# 431296 FD 
+	inc	(%rax)	# 431297 FF 0 
+	add	%al,(%rax)	# 431299 0 0 
+	add	%al,(%rax)	# 43129B 0 0 
+	add	%al,(%rax)	# 43129D 0 0 
+	add	%al,(%rax)	# 43129F 0 0 
+//CREATE ACTUAL-RESULTS 32 CELLS ALLOT
+
+	add	%al,(%rax)	# 4312A1 0 0 
+ACTUALsubRESULTS:
+	call	 ( DOCREATE ) 	# 4312A3 E8 78 36 FD FF 
+	add	%al,(%rax)	# 4312A8 0 0 
+	add	%al,(%rax)	# 4312AA 0 0 
+	add	%al,(%rax)	# 4312AC 0 0 
+	add	%al,(%rax)	# 4312AE 0 0 
+	add	%al,(%rax)	# 4312B0 0 0 
+	add	%al,(%rax)	# 4312B2 0 0 
+	add	%al,(%rax)	# 4312B4 0 0 
+	add	%al,(%rax)	# 4312B6 0 0 
+	add	%al,(%rax)	# 4312B8 0 0 
+	add	%al,(%rax)	# 4312BA 0 0 
+	add	%al,(%rax)	# 4312BC 0 0 
+	add	%al,(%rax)	# 4312BE 0 0 
+	add	%al,(%rax)	# 4312C0 0 0 
+	add	%al,(%rax)	# 4312C2 0 0 
+	add	%al,(%rax)	# 4312C4 0 0 
+	add	%al,(%rax)	# 4312C6 0 0 
+	add	%al,(%rax)	# 4312C8 0 0 
+	add	%al,(%rax)	# 4312CA 0 0 
+	add	%al,(%rax)	# 4312CC 0 0 
+	add	%al,(%rax)	# 4312CE 0 0 
+	add	%al,(%rax)	# 4312D0 0 0 
+	add	%al,(%rax)	# 4312D2 0 0 
+	add	%al,(%rax)	# 4312D4 0 0 
+	add	%al,(%rax)	# 4312D6 0 0 
+	add	%al,(%rax)	# 4312D8 0 0 
+	add	%al,(%rax)	# 4312DA 0 0 
+	add	%al,(%rax)	# 4312DC 0 0 
+	add	%al,(%rax)	# 4312DE 0 0 
+	add	%al,(%rax)	# 4312E0 0 0 
+	add	%al,(%rax)	# 4312E2 0 0 
+	add	%al,(%rax)	# 4312E4 0 0 
+	add	%al,(%rax)	# 4312E6 0 0 
+	add	%al,(%rax)	# 4312E8 0 0 
+	add	%al,(%rax)	# 4312EA 0 0 
+	add	%al,(%rax)	# 4312EC 0 0 
+	add	%al,(%rax)	# 4312EE 0 0 
+	add	%al,(%rax)	# 4312F0 0 0 
+	add	%al,(%rax)	# 4312F2 0 0 
+	add	%al,(%rax)	# 4312F4 0 0 
+	add	%al,(%rax)	# 4312F6 0 0 
+	add	%al,(%rax)	# 4312F8 0 0 
+	add	%al,(%rax)	# 4312FA 0 0 
+	add	%al,(%rax)	# 4312FC 0 0 
+	add	%al,(%rax)	# 4312FE 0 0 
+	add	%al,(%rax)	# 431300 0 0 
+	add	%al,(%rax)	# 431302 0 0 
+	add	%al,(%rax)	# 431304 0 0 
+	add	%al,(%rax)	# 431306 0 0 
+	add	%al,(%rax)	# 431308 0 0 
+	add	%al,(%rax)	# 43130A 0 0 
+	add	%al,(%rax)	# 43130C 0 0 
+	add	%al,(%rax)	# 43130E 0 0 
+	add	%al,(%rax)	# 431310 0 0 
+	add	%al,(%rax)	# 431312 0 0 
+	add	%al,(%rax)	# 431314 0 0 
+	add	%al,(%rax)	# 431316 0 0 
+	add	%al,(%rax)	# 431318 0 0 
+	add	%al,(%rax)	# 43131A 0 0 
+	add	%al,(%rax)	# 43131C 0 0 
+	add	%al,(%rax)	# 43131E 0 0 
+	add	%al,(%rax)	# 431320 0 0 
+	add	%al,(%rax)	# 431322 0 0 
+	add	%al,(%rax)	# 431324 0 0 
+	add	%al,(%rax)	# 431326 0 0 
+	add	%al,(%rax)	# 431328 0 0 
+	add	%al,(%rax)	# 43132A 0 0 
+	add	%al,(%rax)	# 43132C 0 0 
+	add	%al,(%rax)	# 43132E 0 0 
+	add	%al,(%rax)	# 431330 0 0 
+	add	%al,(%rax)	# 431332 0 0 
+	add	%al,(%rax)	# 431334 0 0 
+	add	%al,(%rax)	# 431336 0 0 
+	add	%al,(%rax)	# 431338 0 0 
+	add	%al,(%rax)	# 43133A 0 0 
+	add	%al,(%rax)	# 43133C 0 0 
+	add	%al,(%rax)	# 43133E 0 0 
+	add	%al,(%rax)	# 431340 0 0 
+	add	%al,(%rax)	# 431342 0 0 
+	add	%al,(%rax)	# 431344 0 0 
+	add	%al,(%rax)	# 431346 0 0 
+	add	%al,(%rax)	# 431348 0 0 
+	add	%al,(%rax)	# 43134A 0 0 
+	add	%al,(%rax)	# 43134C 0 0 
+	add	%al,(%rax)	# 43134E 0 0 
+	add	%al,(%rax)	# 431350 0 0 
+	add	%al,(%rax)	# 431352 0 0 
+	add	%al,(%rax)	# 431354 0 0 
+	add	%al,(%rax)	# 431356 0 0 
+	add	%al,(%rax)	# 431358 0 0 
+	add	%al,(%rax)	# 43135A 0 0 
+	add	%al,(%rax)	# 43135C 0 0 
+	add	%al,(%rax)	# 43135E 0 0 
+	add	%al,(%rax)	# 431360 0 0 
+	add	%al,(%rax)	# 431362 0 0 
+	add	%al,(%rax)	# 431364 0 0 
+	add	%al,(%rax)	# 431366 0 0 
+	add	%al,(%rax)	# 431368 0 0 
+	add	%al,(%rax)	# 43136A 0 0 
+	add	%al,(%rax)	# 43136C 0 0 
+	add	%al,(%rax)	# 43136E 0 0 
+	add	%al,(%rax)	# 431370 0 0 
+	add	%al,(%rax)	# 431372 0 0 
+	add	%al,(%rax)	# 431374 0 0 
+	add	%al,(%rax)	# 431376 0 0 
+	add	%al,(%rax)	# 431378 0 0 
+	add	%al,(%rax)	# 43137A 0 0 
+	add	%al,(%rax)	# 43137C 0 0 
+	add	%al,(%rax)	# 43137E 0 0 
+	add	%al,(%rax)	# 431380 0 0 
+	add	%al,(%rax)	# 431382 0 0 
+	add	%al,(%rax)	# 431384 0 0 
+	add	%al,(%rax)	# 431386 0 0 
+	add	%al,(%rax)	# 431388 0 0 
+	add	%al,(%rax)	# 43138A 0 0 
+	add	%al,(%rax)	# 43138C 0 0 
+	add	%al,(%rax)	# 43138E 0 0 
+	add	%al,(%rax)	# 431390 0 0 
+	add	%al,(%rax)	# 431392 0 0 
+	add	%al,(%rax)	# 431394 0 0 
+	add	%al,(%rax)	# 431396 0 0 
+	add	%al,(%rax)	# 431398 0 0 
+	add	%al,(%rax)	# 43139A 0 0 
+	add	%al,(%rax)	# 43139C 0 0 
+	add	%al,(%rax)	# 43139E 0 0 
+	add	%al,(%rax)	# 4313A0 0 0 
+	add	%al,(%rax)	# 4313A2 0 0 
+	add	%al,(%rax)	# 4313A4 0 0 
+	add	%al,(%rax)	# 4313A6 0 0 
+//VARIABLE START-DEPTH
+
+	add	%al,(%rax)	# 4313A8 0 0 
+	add	%ch,%al	# 4313AA 0 E8 
+	jo	 ( #ERRORS+8  ) 	# 4313AC 70 35 
+stD	# 4313AE FD 
+	inc	(%rax)	# 4313AF FF 0 
+	add	%al,(%rax)	# 4313B1 0 0 
+	add	%al,(%rax)	# 4313B3 0 0 
+	add	%al,(%rax)	# 4313B5 0 0 
+	add	%al,(%rax)	# 4313B7 0 0 
+//VARIABLE XCURSOR      \ for ...}T
+
+	add	%al,(%rax)	# 4313B9 0 0 
+XCURSOR:
+	call	 ( DOCREATE ) 	# 4313BB E8 60 35 FD FF 
+	add	%al,(%rax)	# 4313C0 0 0 
+	add	%al,(%rax)	# 4313C2 0 0 
+	add	%al,(%rax)	# 4313C4 0 0 
+	add	%al,(%rax)	# 4313C6 0 0 
+//VARIABLE ERROR-XT
+
+	add	%al,(%rax)	# 4313C8 0 0 
+	add	%ch,%al	# 4313CA 0 E8 
+	Push	%rax	# 4313CC 50 
+	xor	$0x1510FFFD,%eax	# 4313CD 35 FD FF 10 15 
+	add	%al,(%r8)	# 4313D2 43 0 0 
+	add	%al,(%rax)	# 4313D5 0 0 
+	add	%al,(%rax)	# 4313D7 0 0 
+//VARIABLE #ERRORS 0 #ERRORS !     \ For counting errors
+
+	add	%al,(%rax)	# 4313D9 0 0 
+hashERRORS:
+	call	 ( DOCREATE ) 	# 4313DB E8 40 35 FD FF 
+	add	%al,(%rax)	# 4313E0 0 0 
+	add	%al,(%rax)	# 4313E2 0 0 
+	add	%al,(%rax)	# 4313E4 0 0 
+	add	%al,(%rax)	# 4313E6 0 0 
+//
+
+//: ERROR ERROR-XT @ EXECUTE ;   \ for vectoring of error reporting
+
+ERROR:
+	mov	%rax,-0x08(%rbp)	# 4313E8 48 89 45 F8 
+	mov	 ( ERROR-XT+5  ) (%rip),%rax	# 4313EC 48 8B 5 DD FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 4313F3 48 8D 6D F8 
+	call	 ( EXECUTE ) 	# 4313F7 E8 C9 2F FD FF 
+	ret		# 4313FC C3 
+//
+
+//: "FLOATING" S" FLOATING" ;    \ only compiled S" in CORE
+
+dticFLOATINGdtic:
+	call	 ( (S") ) 	# 4313FD E8 40 3C FD FF 
+	.byte 0x8,0x46,0x4C,0x4F,0x41,0x54,0x49,0x4E,0x47
+	ret		# 43140B C3 
+//: "FLOATING-STACK" S" FLOATING-STACK" ;
+
+dticFLOATINGsubSTACKdtic:
+	call	 ( (S") ) 	# 43140C E8 31 3C FD FF 
+	.byte 0xE,0x46,0x4C,0x4F,0x41,0x54,0x49,0x4E,0x47,0x2D,0x53,0x54,0x41,0x43,0x4B
+	ret		# 431420 C3 
+//"FLOATING" ENVIRONMENT? [IF]
+
+//    [IF]
+
+//        TRUE
+
+//    [ELSE]
+
+//        FALSE
+
+//    [THEN]
+
+//[ELSE]
+
+//    FALSE
+
+//[THEN] CONSTANT HAS-FLOATING
+
+HASsubFLOATING:
+	call	 ( DOCONSTANT ) 	# 431421 E8 ED 34 FD FF 
+	add	%al,(%rax)	# 431426 0 0 
+	add	%al,(%rax)	# 431428 0 0 
+	add	%al,(%rax)	# 43142A 0 0 
+	add	%al,(%rax)	# 43142C 0 0 
+//"FLOATING-STACK" ENVIRONMENT? [IF]
+
+//    [IF]
+
+//        TRUE
+
+//    [ELSE]
+
+//        FALSE
+
+//    [THEN]
+
+//[ELSE]            \ We don't know whether the FP stack is separate.
+
+//    HAS-FLOATING  \ If we have FLOATING, we assume it is.
+
+//[THEN] CONSTANT HAS-FLOATING-STACK
+
+HASsubFLOATINGsubSTACK:
+	call	 ( DOCONSTANT ) 	# 43142E E8 E0 34 FD FF 
+	add	%al,(%rax)	# 431433 0 0 
+	add	%al,(%rax)	# 431435 0 0 
+	add	%al,(%rax)	# 431437 0 0 
+	add	%al,(%rax)	# 431439 0 0 
+//
+
+//HAS-FLOATING [IF]
+
+//    \ Set the following to the relative and absolute tolerances you
+
+//    \ want for approximate float equality, to be used with F~ in
+
+//    \ FNEARLY=.  Keep the signs, because F~ needs them.
+
+//    FVARIABLE REL-NEAR 1E-12 REL-NEAR F!
+
+//    FVARIABLE ABS-NEAR 0E    ABS-NEAR F!
+
+//
+
+//    \ When EXACT? is TRUE, }F uses FEXACTLY=, otherwise FNEARLY=.
+
+//    
+
+//    TRUE VALUE EXACT?
+
+//    : SET-EXACT  ( -- )   TRUE TO EXACT? ;
+
+//    : SET-NEAR   ( -- )  FALSE TO EXACT? ;
+
+//
+
+//    : FEXACTLY=  ( F: X Y -- S: FLAG )
+
+//        (
+
+//        Leave TRUE if the two floats are identical.
+
+//        )
+
+//        0E F~ ;
+
+//    
+
+//    : FABS=  ( F: X Y -- S: FLAG )
+
+//        (
+
+//        Leave TRUE if the two floats are equal within the tolerance
+
+//        stored in ABS-NEAR.
+
+//        )
+
+//        ABS-NEAR F@ F~ ;
+
+//    
+
+//    : FREL=  ( F: X Y -- S: FLAG )
+
+//        (
+
+//        Leave TRUE if the two floats are relatively equal based on the
+
+//        tolerance stored in ABS-NEAR.
+
+//        )
+
+//        REL-NEAR F@ FNEGATE F~ ;
+
+//
+
+//    : F2DUP  FOVER FOVER ;
+
+//    : F2DROP FDROP FDROP ;
+
+//    
+
+//    : FNEARLY=  ( F: X Y -- S: FLAG )
+
+//        (
+
+//        Leave TRUE if the two floats are nearly equal.  This is a 
+
+//        refinement of Dirk Zoller's FEQ to also allow X = Y, including
+
+//        both zero, or to allow approximately equality when X and Y are too
+
+//        small to satisfy the relative approximation mode in the F~ 
+
+//        specification.
+
+//        )
+
+//        F2DUP FEXACTLY= IF F2DROP TRUE EXIT THEN
+
+//        F2DUP FREL=     IF F2DROP TRUE EXIT THEN
+
+//        FABS= ;
+
+//
+
+//    : FCONF= ( R1 R2 -- F )
+
+//        EXACT? IF
+
+//            FEXACTLY=
+
+//        ELSE
+
+//            FNEARLY=
+
+//        THEN ;
+
+//[THEN]
+
+//
+
+//HAS-FLOATING-STACK [IF]
+
+//    VARIABLE ACTUAL-FDEPTH
+
+//    CREATE ACTUAL-FRESULTS 32 FLOATS ALLOT
+
+//    VARIABLE START-FDEPTH
+
+//    VARIABLE FCURSOR
+
+//
+
+//    : EMPTY-FSTACK ( ... -- ... )
+
+//        FDEPTH START-FDEPTH @ < IF
+
+//            FDEPTH START-FDEPTH @ SWAP DO 0E LOOP
+
+//        THEN
+
+//        FDEPTH START-FDEPTH @ > IF
+
+//            FDEPTH START-FDEPTH @ DO FDROP LOOP
+
+//        THEN ;
+
+//    
+
+//    : F{ ( -- )
+
+//        FDEPTH START-FDEPTH ! 0 FCURSOR ! ;
+
+//
+
+//    : F-> ( ... -- ... )
+
+//        FDEPTH DUP ACTUAL-FDEPTH !
+
+//        START-FDEPTH @ > IF
+
+//            FDEPTH START-FDEPTH @ - 0 DO ACTUAL-FRESULTS I FLOATS + F! LOOP
+
+//        THEN ;
+
+//
+
+//    : F} ( ... -- ... )
+
+//        FDEPTH ACTUAL-FDEPTH @ = IF
+
+//            FDEPTH START-FDEPTH @ > IF
+
+//                FDEPTH START-FDEPTH @ - 0 DO
+
+//                    ACTUAL-FRESULTS I FLOATS + F@ FCONF= INVERT IF
+
+//                        S" INCORRECT FP RESULT: " ERROR LEAVE
+
+//                    THEN
+
+//                LOOP
+
+//            THEN
+
+//        ELSE
+
+//            S" WRONG NUMBER OF FP RESULTS: " ERROR
+
+//        THEN ;
+
+//
+
+//    : F...}T ( -- )
+
+//        FCURSOR @ START-FDEPTH @ + ACTUAL-FDEPTH @ <> IF
+
+//            S" NUMBER OF FLOAT RESULTS BEFORE '->' DOES NOT MATCH ...}T SPECIFICATION: " ERROR
+
+//        ELSE FDEPTH START-FDEPTH @ = 0= IF
+
+//            S" NUMBER OF FLOAT RESULTS BEFORE AND AFTER '->' DOES NOT MATCH: " ERROR
+
+//        THEN THEN ;
+
+//
+
+//    
+
+//    : FTESTER ( R -- )
+
+//        FDEPTH 0= ACTUAL-FDEPTH @ FCURSOR @ START-FDEPTH @ + 1+ < OR IF
+
+//            S" NUMBER OF FLOAT RESULTS AFTER '->' BELOW ...}T SPECIFICATION: " ERROR 
+
+//        ELSE ACTUAL-FRESULTS FCURSOR @ FLOATS + F@ FCONF= 0= IF
+
+//            S" INCORRECT FP RESULT: " ERROR
+
+//        THEN THEN
+
+//        1 FCURSOR +! ;
+
+//        
+
+//[ELSE]
+
+//    : EMPTY-FSTACK ;
+
+EMPTYsubFSTACK:
+	ret		# 43143B C3 
+//    : F{ ;
+
+Flsk:
+	ret		# 43143C C3 
+//    : F-> ;
+
+Fsubgreat:
+	ret		# 43143D C3 
+//    : F} ;
+
+Frsk:
+	ret		# 43143E C3 
+//    : F...}T ;
+
+FdotdotdotrskT:
+	ret		# 43143F C3 
+//
+
+//    HAS-FLOATING [IF]
+
+//    : COMPUTE-CELLS-PER-FP ( -- U )
+
+//        DEPTH 0E DEPTH 1- >R FDROP R> SWAP - ;
+
+//
+
+//    COMPUTE-CELLS-PER-FP CONSTANT CELLS-PER-FP
+
+//
+
+//    : FTESTER ( R -- )
+
+//        DEPTH CELLS-PER-FP < ACTUAL-DEPTH @ XCURSOR @ START-DEPTH @ + CELLS-PER-FP + < OR IF
+
+//            S" NUMBER OF RESULTS AFTER '->' BELOW ...}T SPECIFICATION: " ERROR EXIT
+
+//        ELSE ACTUAL-RESULTS XCURSOR @ CELLS + F@ FCONF= 0= IF
+
+//            S" INCORRECT FP RESULT: " ERROR
+
+//        THEN THEN
+
+//        CELLS-PER-FP XCURSOR +! ;
+
+//    [THEN]
+
+//[THEN]    
+
+//
+
+//: EMPTY-STACK   \ ( ... -- ) empty stack; handles underflowed stack too.
+
+//    DEPTH START-DEPTH @ < IF
+
+EMPTYsubSTACK:
+	call	 ( DEPTH ) 	# 431440 E8 61 3C FD FF 
+	cmp	%rax, ( START-DEPTH+5  ) (%rip)	# 431445 48 39 5 64 FF FF FF 
+	mov	 ( START-DEPTH+5  ) (%rip),%rax	# 43144C 48 8B 5 5D FF FF FF 
+	setNle	%al	# 431453 F 9F C0 
+		neg	%al	# 431456 F6 D8 
+	movsbq	%al,%rax	# 431458 48 F BE C0 
+	test	%rax,%rax	# 43145C 48 85 C0 
+	mov	0x00(%rbp),%rax	# 43145F 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431463 48 8D 6D 8 
+	jz	 ( EMPTY-STACK+68  ) 	# 431467 F 84 3B 0 0 0 
+//        DEPTH START-DEPTH @ SWAP DO 0 LOOP
+
+	call	 ( DEPTH ) 	# 43146D E8 34 3C FD FF 
+	mov	 ( START-DEPTH+5  ) (%rip),%rdx	# 431472 48 8B 15 37 FF FF FF 
+	mov	%rdx,-0x08(%rbp)	# 431479 48 89 55 F8 
+	lea	-0x08(%rbp),%rbp	# 43147D 48 8D 6D F8 
+	call	 ( (DO) ) 	# 431481 E8 63 35 FD FF 
+	.quad  ( EMPTY-STACK+68  ) 
+	mov	%rax,-0x08(%rbp)	# 43148E 48 89 45 F8 
+	mov	$0x0,%eax	# 431492 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431497 48 8D 6D F8 
+	inc	%r14	# 43149B 49 FF C6 
+	inc	%r15	# 43149E 49 FF C7 
+	jNo	 ( EMPTY-STACK+4E  ) 	# 4314A1 71 EB 
+	pop	%r14	# 4314A3 41 5E 
+	pop	%r15	# 4314A5 41 5F 
+	pop	%rcx	# 4314A7 59 
+//    THEN
+
+//    DEPTH START-DEPTH @ > IF
+
+	call	 ( DEPTH ) 	# 4314A8 E8 F9 3B FD FF 
+	mov	%rax,-0x08(%rbp)	# 4314AD 48 89 45 F8 
+	cmp	%rax, ( START-DEPTH+5  ) (%rip)	# 4314B1 48 39 5 F8 FE FF FF 
+	mov	 ( START-DEPTH+5  ) (%rip),%rax	# 4314B8 48 8B 5 F1 FE FF FF 
+	setl	%al	# 4314BF F 9C C0 
+		neg	%al	# 4314C2 F6 D8 
+	movsbq	%al,%rax	# 4314C4 48 F BE C0 
+	test	%rax,%rax	# 4314C8 48 85 C0 
+	mov	0x00(%rbp),%rax	# 4314CB 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4314CF 48 8D 6D 8 
+	jz	 ( EMPTY-STACK+CF  ) 	# 4314D3 F 84 36 0 0 0 
+//        DEPTH START-DEPTH @ DO DROP LOOP
+
+	call	 ( DEPTH ) 	# 4314D9 E8 C8 3B FD FF 
+	mov	%rax,-0x08(%rbp)	# 4314DE 48 89 45 F8 
+	mov	 ( START-DEPTH+5  ) (%rip),%rax	# 4314E2 48 8B 5 C7 FE FF FF 
+	lea	-0x08(%rbp),%rbp	# 4314E9 48 8D 6D F8 
+	call	 ( (DO) ) 	# 4314ED E8 F7 34 FD FF 
+	.quad  ( EMPTY-STACK+CF  ) 
+	mov	0x00(%rbp),%rax	# 4314FA 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4314FE 48 8D 6D 8 
+	inc	%r14	# 431502 49 FF C6 
+	inc	%r15	# 431505 49 FF C7 
+	jNo	 ( EMPTY-STACK+BA  ) 	# 431508 71 F0 
+	pop	%r14	# 43150A 41 5E 
+	pop	%r15	# 43150C 41 5F 
+	pop	%rcx	# 43150E 59 
+//    THEN
+
+//    EMPTY-FSTACK ;
+
+	ret		# 43150F C3 
+//
+
+//: ERROR1   \ ( C-ADDR U -- ) display an error message 
+
+//      \ followed by the line that had the error.
+
+//   TYPE SOURCE TYPE CR         \ display line corresponding to error
+
+ERROR1:
+	call	 ( TYPE ) 	# 431510 E8 A1 3A FD FF 
+	mov	%rax,-0x08(%rbp)	# 431515 48 89 45 F8 
+	mov	 ( TIB+5  ) (%rip),%rax	# 431519 48 8B 5 1E BC FD FF 
+	mov	%rax,-0x10(%rbp)	# 431520 48 89 45 F0 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 431524 48 8B 5 4E 37 FD FF 
+	lea	-0x10(%rbp),%rbp	# 43152B 48 8D 6D F0 
+	call	 ( TYPE ) 	# 43152F E8 82 3A FD FF 
+	call	 ( CR ) 	# 431534 E8 CA 3A FD FF 
+//   EMPTY-STACK               \ throw away everything else
+
+	call	 ( EMPTY-STACK ) 	# 431539 E8 2 FF FF FF 
+//   #ERRORS @ 1 + #ERRORS ! \ update error count
+
+	mov	%rax,-0x08(%rbp)	# 43153E 48 89 45 F8 
+	mov	 ( #ERRORS+5  ) (%rip),%rax	# 431542 48 8B 5 97 FE FF FF 
+	lea	0x01(%rax),%rax	# 431549 48 8D 40 1 
+	mov	%rax, ( #ERRORS+5  ) (%rip)	# 43154D 48 89 5 8C FE FF FF 
+	mov	-0x08(%rbp),%rax	# 431554 48 8B 45 F8 
+//;
+
+	ret		# 431558 C3 
+//
+
+//' ERROR1 ERROR-XT !
+
+//
+
+//: T{      \ ( -- ) syntactic sugar.
+
+//   DEPTH START-DEPTH ! 0 XCURSOR ! F{ ;
+
+Tlsk:
+	call	 ( DEPTH ) 	# 431559 E8 48 3B FD FF 
+	mov	%rax, ( START-DEPTH+5  ) (%rip)	# 43155E 48 89 5 4B FE FF FF 
+	movq	$0x0, ( XCURSOR+5  ) (%rip)	# 431565 48 C7 5 50 FE FF FF 0 0 0 0 
+	mov	0x00(%rbp),%rax	# 431570 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431574 48 8D 6D 8 
+	ret		# 431578 C3 
+//
+
+//: ->      \ ( ... -- ) record depth and contents of stack.
+
+//   DEPTH DUP ACTUAL-DEPTH !      \ record depth
+
+subgreat:
+	call	 ( DEPTH ) 	# 431579 E8 28 3B FD FF 
+	mov	%rax, ( ACTUAL-DEPTH+5  ) (%rip)	# 43157E 48 89 5 13 FD FF FF 
+//   START-DEPTH @ > IF      \ if there is something on the stack
+
+	cmp	%rax, ( START-DEPTH+5  ) (%rip)	# 431585 48 39 5 24 FE FF FF 
+	mov	 ( START-DEPTH+5  ) (%rip),%rax	# 43158C 48 8B 5 1D FE FF FF 
+	setl	%al	# 431593 F 9C C0 
+		neg	%al	# 431596 F6 D8 
+	movsbq	%al,%rax	# 431598 48 F BE C0 
+	test	%rax,%rax	# 43159C 48 85 C0 
+	mov	0x00(%rbp),%rax	# 43159F 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4315A3 48 8D 6D 8 
+	jz	 ( ->+9B  ) 	# 4315A7 F 84 67 0 0 0 
+//       DEPTH START-DEPTH @ - 0 DO ACTUAL-RESULTS I CELLS + ! LOOP \ save them
+
+	call	 ( DEPTH ) 	# 4315AD E8 F4 3A FD FF 
+	mov	%rax,-0x08(%rbp)	# 4315B2 48 89 45 F8 
+	mov	 ( START-DEPTH+5  ) (%rip),%rax	# 4315B6 48 8B 5 F3 FD FF FF 
+		negq	%rax	# 4315BD 48 F7 D8 
+	add	-0x08(%rbp),%rax	# 4315C0 48 3 45 F8 
+	mov	%rax,-0x08(%rbp)	# 4315C4 48 89 45 F8 
+	mov	$0x0,%eax	# 4315C8 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4315CD 48 8D 6D F8 
+	call	 ( (DO) ) 	# 4315D1 E8 13 34 FD FF 
+	.quad  ( ->+9B  ) 
+	mov	%rax,-0x08(%rbp)	# 4315DE 48 89 45 F8 
+	lea	 ( ACTUAL-RESULTS+5  ) (%rip),%rax	# 4315E2 48 8D 5 BF FC FF FF 
+	mov	%rax,-0x10(%rbp)	# 4315E9 48 89 45 F0 
+	mov	%r14,%rax	# 4315ED 4C 89 F0 
+	shl	$0x03,%rax	# 4315F0 48 C1 E0 3 
+	add	-0x10(%rbp),%rax	# 4315F4 48 3 45 F0 
+	mov	-0x08(%rbp),%rdx	# 4315F8 48 8B 55 F8 
+	mov	%rdx,(%rax)	# 4315FC 48 89 10 
+	mov	0x00(%rbp),%rax	# 4315FF 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431603 48 8D 6D 8 
+	inc	%r14	# 431607 49 FF C6 
+	inc	%r15	# 43160A 49 FF C7 
+	jNo	 ( ->+65  ) 	# 43160D 71 CF 
+	pop	%r14	# 43160F 41 5E 
+	pop	%r15	# 431611 41 5F 
+	pop	%rcx	# 431613 59 
+//   THEN
+
+//   F-> ;
+
+	ret		# 431614 C3 
+//
+
+//: }T      \ ( ... -- ) COMPARE STACK (EXPECTED) CONTENTS WITH SAVED
+
+//      \ (ACTUAL) CONTENTS.
+
+//   DEPTH ACTUAL-DEPTH @ = IF      \ if depths match
+
+rskT:
+	call	 ( DEPTH ) 	# 431615 E8 8C 3A FD FF 
+	xor	 ( ACTUAL-DEPTH+5  ) (%rip),%rax	# 43161A 48 33 5 77 FC FF FF 
+	sub	$0x01,%rax	# 431621 48 83 E8 1 
+	sbb	%rax,%rax	# 431625 48 19 C0 
+	test	%rax,%rax	# 431628 48 85 C0 
+	mov	0x00(%rbp),%rax	# 43162B 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43162F 48 8D 6D 8 
+	jz	 ( }T+EE  ) 	# 431633 F 84 CA 0 0 0 
+//      DEPTH START-DEPTH @ > IF      \ if there is something on the stack
+
+	call	 ( DEPTH ) 	# 431639 E8 68 3A FD FF 
+	cmp	%rax, ( START-DEPTH+5  ) (%rip)	# 43163E 48 39 5 6B FD FF FF 
+	mov	 ( START-DEPTH+5  ) (%rip),%rax	# 431645 48 8B 5 64 FD FF FF 
+	setl	%al	# 43164C F 9C C0 
+		neg	%al	# 43164F F6 D8 
+	movsbq	%al,%rax	# 431651 48 F BE C0 
+	test	%rax,%rax	# 431655 48 85 C0 
+	mov	0x00(%rbp),%rax	# 431658 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43165C 48 8D 6D 8 
+	jz	 ( }T+E9  ) 	# 431660 F 84 98 0 0 0 
+//         DEPTH START-DEPTH @ - 0 DO   \ for each stack item
+
+	call	 ( DEPTH ) 	# 431666 E8 3B 3A FD FF 
+	mov	%rax,-0x08(%rbp)	# 43166B 48 89 45 F8 
+	mov	 ( START-DEPTH+5  ) (%rip),%rax	# 43166F 48 8B 5 3A FD FF FF 
+		negq	%rax	# 431676 48 F7 D8 
+	add	-0x08(%rbp),%rax	# 431679 48 3 45 F8 
+	mov	%rax,-0x08(%rbp)	# 43167D 48 89 45 F8 
+	mov	$0x0,%eax	# 431681 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431686 48 8D 6D F8 
+	call	 ( (DO) ) 	# 43168A E8 5A 33 FD FF 
+	.quad  ( }T+E9  ) 
+//       ACTUAL-RESULTS I CELLS + @   \ compare actual with expected
+
+	mov	%rax,-0x08(%rbp)	# 431697 48 89 45 F8 
+	lea	 ( ACTUAL-RESULTS+5  ) (%rip),%rax	# 43169B 48 8D 5 6 FC FF FF 
+	mov	%rax,-0x10(%rbp)	# 4316A2 48 89 45 F0 
+	mov	%r14,%rax	# 4316A6 4C 89 F0 
+	shl	$0x03,%rax	# 4316A9 48 C1 E0 3 
+	add	-0x10(%rbp),%rax	# 4316AD 48 3 45 F0 
+	mov	(%rax),%rax	# 4316B1 48 8B 0 
+	xor	-0x08(%rbp),%rax	# 4316B4 48 33 45 F8 
+//       <> IF S" INCORRECT RESULT: " ERROR LEAVE THEN
+
+		negq	%rax	# 4316B8 48 F7 D8 
+	sbb	%rax,%rax	# 4316BB 48 19 C0 
+	test	%rax,%rax	# 4316BE 48 85 C0 
+	mov	0x00(%rbp),%rax	# 4316C1 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4316C5 48 8D 6D 8 
+	jz	 ( }T+DC  ) 	# 4316C9 F 84 22 0 0 0 
+	call	 ( (S") ) 	# 4316CF E8 6E 39 FD FF 
+	.byte 0x12,0x49,0x4E,0x43,0x4F,0x52,0x52,0x45,0x43,0x54,0x20,0x52,0x45,0x53,0x55,0x4C,0x54,0x3A,0x20
+	call	 ( ERROR ) 	# 4316E7 E8 FC FC FF FF 
+	call	 ( LEAVE ) 	# 4316EC E8 2C 33 FD FF 
+//    LOOP
+
+	inc	%r14	# 4316F1 49 FF C6 
+	inc	%r15	# 4316F4 49 FF C7 
+	jNo	 ( }T+82  ) 	# 4316F7 71 9E 
+	pop	%r14	# 4316F9 41 5E 
+	pop	%r15	# 4316FB 41 5F 
+	pop	%rcx	# 4316FD 59 
+//      THEN
+
+//   ELSE               \ depth mismatch
+
+	jmp	 ( }T+112  ) 	# 4316FE E9 24 0 0 0 
+//      S" WRONG NUMBER OF RESULTS: " ERROR
+
+	call	 ( (S") ) 	# 431703 E8 3A 39 FD FF 
+	.byte 0x19,0x57,0x52,0x4F,0x4E,0x47,0x20,0x4E,0x55,0x4D,0x42,0x45,0x52,0x20,0x4F,0x46,0x20,0x52,0x45,0x53,0x55,0x4C,0x54,0x53,0x3A,0x20
+	call	 ( ERROR ) 	# 431722 E8 C1 FC FF FF 
+//   THEN
+
+//   F} ;
+
+	ret		# 431727 C3 
+//
+
+//: ...}T ( -- )
+
+//    XCURSOR @ START-DEPTH @ + ACTUAL-DEPTH @ <> IF
+
+dotdotdotrskT:
+	mov	%rax,-0x08(%rbp)	# 431728 48 89 45 F8 
+	mov	 ( XCURSOR+5  ) (%rip),%rax	# 43172C 48 8B 5 8D FC FF FF 
+	add	 ( START-DEPTH+5  ) (%rip),%rax	# 431733 48 3 5 76 FC FF FF 
+	xor	 ( ACTUAL-DEPTH+5  ) (%rip),%rax	# 43173A 48 33 5 57 FB FF FF 
+		negq	%rax	# 431741 48 F7 D8 
+	sbb	%rax,%rax	# 431744 48 19 C0 
+	test	%rax,%rax	# 431747 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43174A 48 8B 45 F8 
+	jz	 ( ...}T+83  ) 	# 43174E F 84 57 0 0 0 
+//        S" NUMBER OF CELL RESULTS BEFORE '->' DOES NOT MATCH ...}T SPECIFICATION: " ERROR
+
+	call	 ( (S") ) 	# 431754 E8 E9 38 FD FF 
+	.byte 0x47,0x4E,0x55,0x4D,0x42,0x45,0x52,0x20,0x4F,0x46,0x20,0x43,0x45,0x4C,0x4C,0x20,0x52,0x45,0x53,0x55,0x4C,0x54,0x53,0x20,0x42,0x45,0x46,0x4F,0x52,0x45,0x20,0x27,0x2D,0x3E,0x27,0x20,0x44,0x4F,0x45,0x53,0x20,0x4E,0x4F,0x54,0x20,0x4D,0x41,0x54,0x43,0x48,0x20,0x2E,0x2E,0x2E,0x7D,0x54,0x20,0x53,0x50,0x45,0x43,0x49,0x46,0x49,0x43,0x41,0x54,0x49,0x4F,0x4E,0x3A,0x20
+	call	 ( ERROR ) 	# 4317A1 E8 42 FC FF FF 
+//    ELSE DEPTH START-DEPTH @ = 0= IF
+
+	jmp	 ( ...}T+F6  ) 	# 4317A6 E9 73 0 0 0 
+	call	 ( DEPTH ) 	# 4317AB E8 F6 38 FD FF 
+	xor	 ( START-DEPTH+5  ) (%rip),%rax	# 4317B0 48 33 5 F9 FB FF FF 
+	sub	$0x01,%rax	# 4317B7 48 83 E8 1 
+	sbb	%rax,%rax	# 4317BB 48 19 C0 
+	sub	$0x01,%rax	# 4317BE 48 83 E8 1 
+	sbb	%rax,%rax	# 4317C2 48 19 C0 
+	test	%rax,%rax	# 4317C5 48 85 C0 
+	mov	0x00(%rbp),%rax	# 4317C8 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4317CC 48 8D 6D 8 
+	jz	 ( ...}T+F6  ) 	# 4317D0 F 84 48 0 0 0 
+//        S" NUMBER OF CELL RESULTS BEFORE AND AFTER '->' DOES NOT MATCH: " ERROR
+
+	call	 ( (S") ) 	# 4317D6 E8 67 38 FD FF 
+	.byte 0x3D,0x4E,0x55,0x4D,0x42,0x45,0x52,0x20,0x4F,0x46,0x20,0x43,0x45,0x4C,0x4C,0x20,0x52,0x45,0x53,0x55,0x4C,0x54,0x53,0x20,0x42,0x45,0x46,0x4F,0x52,0x45,0x20,0x41,0x4E,0x44,0x20,0x41,0x46,0x54,0x45,0x52,0x20,0x27,0x2D,0x3E,0x27,0x20,0x44,0x4F,0x45,0x53,0x20,0x4E,0x4F,0x54,0x20,0x4D,0x41,0x54,0x43,0x48,0x3A,0x20
+	call	 ( ERROR ) 	# 431819 E8 CA FB FF FF 
+//    THEN THEN
+
+//    F...}T ;
+
+	ret		# 43181E C3 
+//
+
+//: XTESTER ( X -- )
+
+//    DEPTH 0= ACTUAL-DEPTH @ XCURSOR @ START-DEPTH @ + 1+ < OR IF
+
+XTESTER:
+	call	 ( DEPTH ) 	# 43181F E8 82 38 FD FF 
+	sub	$0x01,%rax	# 431824 48 83 E8 1 
+	sbb	%rax,%rax	# 431828 48 19 C0 
+	mov	%rax,-0x08(%rbp)	# 43182B 48 89 45 F8 
+	mov	 ( ACTUAL-DEPTH+5  ) (%rip),%rax	# 43182F 48 8B 5 62 FA FF FF 
+	mov	%rax,-0x10(%rbp)	# 431836 48 89 45 F0 
+	mov	 ( XCURSOR+5  ) (%rip),%rax	# 43183A 48 8B 5 7F FB FF FF 
+	add	 ( START-DEPTH+5  ) (%rip),%rax	# 431841 48 3 5 68 FB FF FF 
+	lea	0x01(%rax),%rax	# 431848 48 8D 40 1 
+	cmp	-0x10(%rbp),%rax	# 43184C 48 3B 45 F0 
+	setNle	%al	# 431850 F 9F C0 
+		neg	%al	# 431853 F6 D8 
+	movsbq	%al,%rax	# 431855 48 F BE C0 
+	or	-0x08(%rbp),%rax	# 431859 48 B 45 F8 
+	test	%rax,%rax	# 43185D 48 85 C0 
+	mov	0x00(%rbp),%rax	# 431860 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431864 48 8D 6D 8 
+	jz	 ( XTESTER+9D  ) 	# 431868 F 84 4E 0 0 0 
+//        S" NUMBER OF CELL RESULTS AFTER '->' BELOW ...}T SPECIFICATION: " ERROR EXIT
+
+	call	 ( (S") ) 	# 43186E E8 CF 37 FD FF 
+	.byte 0x3D,0x4E,0x55,0x4D,0x42,0x45,0x52,0x20,0x4F,0x46,0x20,0x43,0x45,0x4C,0x4C,0x20,0x52,0x45,0x53,0x55,0x4C,0x54,0x53,0x20,0x41,0x46,0x54,0x45,0x52,0x20,0x27,0x2D,0x3E,0x27,0x20,0x42,0x45,0x4C,0x4F,0x57,0x20,0x2E,0x2E,0x2E,0x7D,0x54,0x20,0x53,0x50,0x45,0x43,0x49,0x46,0x49,0x43,0x41,0x54,0x49,0x4F,0x4E,0x3A,0x20
+	call	 ( ERROR ) 	# 4318B1 E8 32 FB FF FF 
+	ret		# 4318B6 C3 
+//    ELSE ACTUAL-RESULTS XCURSOR @ CELLS + @ <> IF
+
+	jmp	 ( XTESTER+FB  ) 	# 4318B7 E9 5E 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4318BC 48 89 45 F8 
+	lea	 ( ACTUAL-RESULTS+5  ) (%rip),%rax	# 4318C0 48 8D 5 E1 F9 FF FF 
+	mov	%rax,-0x10(%rbp)	# 4318C7 48 89 45 F0 
+	mov	 ( XCURSOR+5  ) (%rip),%rax	# 4318CB 48 8B 5 EE FA FF FF 
+	shl	$0x03,%rax	# 4318D2 48 C1 E0 3 
+	add	-0x10(%rbp),%rax	# 4318D6 48 3 45 F0 
+	mov	(%rax),%rax	# 4318DA 48 8B 0 
+	xor	-0x08(%rbp),%rax	# 4318DD 48 33 45 F8 
+		negq	%rax	# 4318E1 48 F7 D8 
+	sbb	%rax,%rax	# 4318E4 48 19 C0 
+	test	%rax,%rax	# 4318E7 48 85 C0 
+	mov	0x00(%rbp),%rax	# 4318EA 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4318EE 48 8D 6D 8 
+	jz	 ( XTESTER+FB  ) 	# 4318F2 F 84 22 0 0 0 
+//        S" INCORRECT CELL RESULT: " ERROR
+
+	call	 ( (S") ) 	# 4318F8 E8 45 37 FD FF 
+	.byte 0x17,0x49,0x4E,0x43,0x4F,0x52,0x52,0x45,0x43,0x54,0x20,0x43,0x45,0x4C,0x4C,0x20,0x52,0x45,0x53,0x55,0x4C,0x54,0x3A,0x20
+	call	 ( ERROR ) 	# 431915 E8 CE FA FF FF 
+//    THEN THEN
+
+//    1 XCURSOR +! ;
+
+	mov	%rax,-0x08(%rbp)	# 43191A 48 89 45 F8 
+	lea	 ( XCURSOR+5  ) (%rip),%rax	# 43191E 48 8D 5 9B FA FF FF 
+	movq	$0x1,%rdx	# 431925 48 C7 C2 1 0 0 0 
+	add	%rdx,(%rax)	# 43192C 48 1 10 
+	mov	-0x08(%rbp),%rax	# 43192F 48 8B 45 F8 
+	ret		# 431933 C3 
+//
+
+//: X}T XTESTER ...}T ;
+
+XrskT:
+	call	 ( XTESTER ) 	# 431934 E8 E6 FE FF FF 
+	call	 ( ...}T ) 	# 431939 E8 EA FD FF FF 
+	ret		# 43193E C3 
+//: XX}T XTESTER XTESTER ...}T ;
+
+XXrskT:
+	call	 ( XTESTER ) 	# 43193F E8 DB FE FF FF 
+	call	 ( XTESTER ) 	# 431944 E8 D6 FE FF FF 
+	call	 ( ...}T ) 	# 431949 E8 DA FD FF FF 
+	ret		# 43194E C3 
+//: XXX}T XTESTER XTESTER XTESTER ...}T ;
+
+XXXrskT:
+	call	 ( XTESTER ) 	# 43194F E8 CB FE FF FF 
+	call	 ( XTESTER ) 	# 431954 E8 C6 FE FF FF 
+	call	 ( XTESTER ) 	# 431959 E8 C1 FE FF FF 
+	call	 ( ...}T ) 	# 43195E E8 C5 FD FF FF 
+	ret		# 431963 C3 
+//: XXXX}T XTESTER XTESTER XTESTER XTESTER ...}T ;
+
+XXXXrskT:
+	call	 ( XTESTER ) 	# 431964 E8 B6 FE FF FF 
+	call	 ( XTESTER ) 	# 431969 E8 B1 FE FF FF 
+	call	 ( XTESTER ) 	# 43196E E8 AC FE FF FF 
+	call	 ( XTESTER ) 	# 431973 E8 A7 FE FF FF 
+	call	 ( ...}T ) 	# 431978 E8 AB FD FF FF 
+	ret		# 43197D C3 
+//
+
+//HAS-FLOATING [IF]
+
+//: R}T FTESTER ...}T ;
+
+//: XR}T FTESTER XTESTER ...}T ;
+
+//: RX}T XTESTER FTESTER ...}T ;
+
+//: RR}T FTESTER FTESTER ...}T ;
+
+//: XXR}T FTESTER XTESTER XTESTER ...}T ;
+
+//: XRX}T XTESTER FTESTER XTESTER ...}T ;
+
+//: XRR}T FTESTER FTESTER XTESTER ...}T ;
+
+//: RXX}T XTESTER XTESTER FTESTER ...}T ;
+
+//: RXR}T FTESTER XTESTER FTESTER ...}T ;
+
+//: RRX}T XTESTER FTESTER FTESTER ...}T ;
+
+//: RRR}T FTESTER FTESTER FTESTER ...}T ;
+
+//: XXXR}T FTESTER XTESTER XTESTER XTESTER ...}T ;
+
+//: XXRX}T XTESTER FTESTER XTESTER XTESTER ...}T ;
+
+//: XXRR}T FTESTER FTESTER XTESTER XTESTER ...}T ;
+
+//: XRXX}T XTESTER XTESTER FTESTER XTESTER ...}T ;
+
+//: XRXR}T FTESTER XTESTER FTESTER XTESTER ...}T ;
+
+//: XRRX}T XTESTER FTESTER FTESTER XTESTER ...}T ;
+
+//: XRRR}T FTESTER FTESTER FTESTER XTESTER ...}T ;
+
+//: RXXX}T XTESTER XTESTER XTESTER FTESTER ...}T ;
+
+//: RXXR}T FTESTER XTESTER XTESTER FTESTER ...}T ;
+
+//: RXRX}T XTESTER FTESTER XTESTER FTESTER ...}T ;
+
+//: RXRR}T FTESTER FTESTER XTESTER FTESTER ...}T ;
+
+//: RRXX}T XTESTER XTESTER FTESTER FTESTER ...}T ;
+
+//: RRXR}T FTESTER XTESTER FTESTER FTESTER ...}T ;
+
+//: RRRX}T XTESTER FTESTER FTESTER FTESTER ...}T ;
+
+//: RRRR}T FTESTER FTESTER FTESTER FTESTER ...}T ;
+
+//[THEN]
+
+//
+
+//\ Set the following flag to TRUE for more verbose output; this may
+
+//\ allow you to tell which test caused your system to hang.
+
+//VARIABLE VERBOSE
+
+	add	%al,(%rax)	# 43197E 0 0 
+	add	%al,(%rax)	# 431980 0 0 
+	add	%ch,%al	# 431982 0 E8 
+	cwtl		# 431984 98 
+	sub	$0xFFFD,%eax	# 431985 2F FD FF 0 0 
+	add	%al,(%rax)	# 43198A 0 0 
+	add	%al,(%rax)	# 43198C 0 0 
+	add	%al,(%rax)	# 43198E 0 0 
+//   FALSE VERBOSE !
+
+//
+
+//: TESTING   \ ( -- ) TALKING COMMENT.
+
+//   SOURCE VERBOSE @
+
+TESTING:
+	mov	%rax,-0x08(%rbp)	# 431990 48 89 45 F8 
+	mov	 ( TIB+5  ) (%rip),%rax	# 431994 48 8B 5 A3 B7 FD FF 
+	mov	%rax,-0x10(%rbp)	# 43199B 48 89 45 F0 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 43199F 48 8B 5 D3 32 FD FF 
+	mov	%rax,-0x18(%rbp)	# 4319A6 48 89 45 E8 
+	mov	 ( VERBOSE+5  ) (%rip),%rax	# 4319AA 48 8B 5 D7 FF FF FF 
+	test	%rax,%rax	# 4319B1 48 85 C0 
+	mov	-0x18(%rbp),%rax	# 4319B4 48 8B 45 E8 
+//   IF DUP >R TYPE CR R> >IN !
+
+	lea	-0x10(%rbp),%rbp	# 4319B8 48 8D 6D F0 
+	jz	 ( TESTING+61  ) 	# 4319BC F 84 2F 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4319C2 48 89 45 F8 
+	Push	%rax	# 4319C6 50 
+	mov	-0x08(%rbp),%rax	# 4319C7 48 8B 45 F8 
+	call	 ( TYPE ) 	# 4319CB E8 E6 35 FD FF 
+	call	 ( CR ) 	# 4319D0 E8 2E 36 FD FF 
+	mov	%rax,-0x08(%rbp)	# 4319D5 48 89 45 F8 
+	pop	-0x10(%rbp)	# 4319D9 8F 45 F0 
+	mov	$0x404C49,%eax	# 4319DC B8 49 4C 40 0 
+	mov	-0x10(%rbp),%rdx	# 4319E1 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 4319E5 48 89 10 
+	mov	-0x08(%rbp),%rax	# 4319E8 48 8B 45 F8 
+//   ELSE >IN ! DROP
+
+	jmp	 ( TESTING+74  ) 	# 4319EC E9 13 0 0 0 
+	mov	%rax,%rdx	# 4319F1 48 89 C2 
+	mov	$0x404C49,%eax	# 4319F4 B8 49 4C 40 0 
+	mov	%rdx,(%rax)	# 4319F9 48 89 10 
+	mov	0x08(%rbp),%rax	# 4319FC 48 8B 45 8 
+	lea	0x10(%rbp),%rbp	# 431A00 48 8D 6D 10 
+//   THEN ;
+
+	ret		# 431A04 C3 
+//
+
+//BASE !
+
+//\ end of ttester.fs
+

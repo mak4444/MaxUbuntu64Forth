@@ -1,0 +1,416 @@
+//\ To test the ANS Forth Memory-Allocation word set
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.11 25 April 2015 Now checks memory region is unchanged following a
+
+//\              RESIZE. @ and ! in allocated memory.
+
+//\         0.8 10 January 2013, Added CHARS and CHAR+ where necessary to correct
+
+//\             the assumption that 1 CHARS = 1
+
+//\         0.7 1 April 2012  Tests placed in the public domain.
+
+//\         0.6 30 January 2011 CHECKMEM modified to work with ttester.fs
+
+//\         0.5 30 November 2009 <FALSE> replaced with FALSE
+
+//\         0.4 9 March 2009 Aligned test improved and data space pointer tested
+
+//\         0.3 6 March 2009 { and } replaced with T{ and }T
+
+//\         0.2 20 April 2007  ANS Forth words changed to upper case
+
+//\         0.1 October 2006 First version released
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//
+
+//\ Words tested in this file are:
+
+//\     ALLOCATE FREE RESIZE
+
+//\     
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions, dependencies and notes:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set is available and tested
+
+//\     - that 'addr -1 ALLOCATE' and 'addr -1 RESIZE' will return an error
+
+//\     - testing FREE failing is not done as it is likely to crash the system
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//TESTING Memory-Allocation word set
+
+//
+
+//DECIMAL
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING ALLOCATE FREE RESIZE
+
+//
+
+//VARIABLE ADDR1
+
+	add	%al,(%rax)	# 435C85 0 0 
+	add	%al,(%rax)	# 435C87 0 0 
+	add	%al,(%rax)	# 435C89 0 0 
+ADDR1:
+	call	 ( DOCREATE ) 	# 435C8B E8 90 EC FC FF 
+	jo	 ( WRITEMEM+4  ) 	# 435C90 70 1A 
+	test	(%rcx),%al	# 435C92 84 1 
+	add	%al,(%rax)	# 435C94 0 0 
+	add	%al,(%rax)	# 435C96 0 0 
+//VARIABLE DATSP
+
+	add	%al,(%rax)	# 435C98 0 0 
+	add	%ch,%al	# 435C9A 0 E8 
+	sub	$-0x04,%ah	# 435C9C 80 EC FC 
+	jmpf	*0x435C(%rax)	# 435C9F FF A8 5C 43 0 0 
+	add	%al,(%rax)	# 435CA5 0 0 
+	add	%cl,-0x77(%rax)	# 435CA7 0 48 89 
+//
+
+//HERE DATSP !
+
+//T{ 100 ALLOCATE SWAP ADDR1 ! -> 0 }T
+
+//T{ ADDR1 @ ALIGNED -> ADDR1 @ }T   \ Test address is aligned
+
+//T{ HERE -> DATSP @ }T            \ Check data space pointer is unchanged
+
+//T{ ADDR1 @ FREE -> 0 }T
+
+//
+
+//T{ 99 ALLOCATE SWAP ADDR1 ! -> 0 }T
+
+//T{ ADDR1 @ ALIGNED -> ADDR1 @ }T
+
+//T{ ADDR1 @ FREE -> 0 }T
+
+//
+
+//T{ 50 CHARS ALLOCATE SWAP ADDR1 ! -> 0 }T
+
+//
+
+//: WRITEMEM 0 DO I 1+ OVER C! CHAR+ LOOP DROP ;   ( ad n -- )
+
+clC	# 435CAA 45 F8 
+	mov	$0x0,%eax	# 435CAC B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435CB1 48 8D 6D F8 
+	call	 ( (DO) ) 	# 435CB5 E8 2F ED FC FF 
+	.quad  ( WRITEMEM+47  ) 
+	mov	%rax,-0x08(%rbp)	# 435CC2 48 89 45 F8 
+	mov	%r14,%rax	# 435CC6 4C 89 F0 
+	lea	0x01(%rax),%rax	# 435CC9 48 8D 40 1 
+	mov	%rax,-0x10(%rbp)	# 435CCD 48 89 45 F0 
+	mov	-0x08(%rbp),%rax	# 435CD1 48 8B 45 F8 
+	mov	-0x10(%rbp),%dl	# 435CD5 8A 55 F0 
+	mov	%dl,(%rax)	# 435CD8 88 10 
+	mov	-0x08(%rbp),%rax	# 435CDA 48 8B 45 F8 
+	lea	0x01(%rax),%rax	# 435CDE 48 8D 40 1 
+	inc	%r14	# 435CE2 49 FF C6 
+	inc	%r15	# 435CE5 49 FF C7 
+	jNo	 ( WRITEMEM+1A  ) 	# 435CE8 71 D8 
+	pop	%r14	# 435CEA 41 5E 
+	pop	%r15	# 435CEC 41 5F 
+	pop	%rcx	# 435CEE 59 
+	mov	0x00(%rbp),%rax	# 435CEF 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435CF3 48 8D 6D 8 
+	ret		# 435CF7 C3 
+//
+
+//\ CHECKMEM is defined this way to maintain compatibility with both
+
+//\ tester.fr and ttester.fs which differ in their definitions of T{
+
+//
+
+//: CHECKMEM  ( ad n --- )
+
+//   0
+
+CHECKMEM:
+	mov	%rax,-0x08(%rbp)	# 435CF8 48 89 45 F8 
+	mov	$0x0,%eax	# 435CFC B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435D01 48 8D 6D F8 
+//   DO
+
+	call	 ( (DO) ) 	# 435D05 E8 DF EC FC FF 
+	.quad  ( CHECKMEM+7D  ) 
+//      >R
+
+	Push	%rax	# 435D12 50 
+	mov	0x00(%rbp),%rax	# 435D13 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435D17 48 8D 6D 8 
+//      T{ R@ C@ -> R> I 1+ SWAP >R }T
+
+	call	 ( T{ ) 	# 435D1B E8 39 B8 FF FF 
+	mov	%rax,-0x08(%rbp)	# 435D20 48 89 45 F8 
+	mov	(%rsp),%rax	# 435D24 48 8B 4 24 
+	movzb	(%rax),%eax	# 435D28 F B6 0 
+	lea	-0x08(%rbp),%rbp	# 435D2B 48 8D 6D F8 
+	call	 ( -> ) 	# 435D2F E8 45 B8 FF FF 
+	mov	%rax,-0x08(%rbp)	# 435D34 48 89 45 F8 
+	pop	-0x10(%rbp)	# 435D38 8F 45 F0 
+	mov	%r14,%rax	# 435D3B 4C 89 F0 
+	lea	0x01(%rax),%rax	# 435D3E 48 8D 40 1 
+	mov	-0x10(%rbp),%rdx	# 435D42 48 8B 55 F0 
+	mov	%rax,-0x10(%rbp)	# 435D46 48 89 45 F0 
+	mov	%rdx,%rax	# 435D4A 48 89 D0 
+	Push	%rax	# 435D4D 50 
+	mov	-0x10(%rbp),%rax	# 435D4E 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 435D52 48 8D 6D F8 
+	call	 ( }T ) 	# 435D56 E8 BA B8 FF FF 
+//      R> CHAR+
+
+	mov	%rax,-0x08(%rbp)	# 435D5B 48 89 45 F8 
+	pop	%rax	# 435D5F 58 
+	lea	0x01(%rax),%rax	# 435D60 48 8D 40 1 
+	lea	-0x08(%rbp),%rbp	# 435D64 48 8D 6D F8 
+//   LOOP
+
+	inc	%r14	# 435D68 49 FF C6 
+	inc	%r15	# 435D6B 49 FF C7 
+	jNo	 ( CHECKMEM+1A  ) 	# 435D6E 71 A2 
+	pop	%r14	# 435D70 41 5E 
+	pop	%r15	# 435D72 41 5F 
+	pop	%rcx	# 435D74 59 
+//   DROP
+
+	mov	0x00(%rbp),%rax	# 435D75 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435D79 48 8D 6D 8 
+//;
+
+	ret		# 435D7D C3 
+//
+
+//ADDR1 @ 50 WRITEMEM ADDR1 @ 50 CHECKMEM
+
+//
+
+//T{ ADDR1 @ 28 CHARS RESIZE SWAP ADDR1 ! -> 0 }T
+
+//ADDR1 @ 28 CHECKMEM
+
+//
+
+//T{ ADDR1 @ 200 CHARS RESIZE SWAP ADDR1 ! -> 0 }T
+
+//ADDR1 @ 28 CHECKMEM
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING failure of RESIZE and ALLOCATE (unlikely to be enough memory)
+
+//
+
+//\ This test relies on the previous test having passed
+
+//
+
+//VARIABLE RESIZE-OK
+
+	add	%al,(%rax)	# 435D7E 0 0 
+	add	%al,(%rax)	# 435D80 0 0 
+	add	%ch,%al	# 435D82 0 E8 
+	cwtl		# 435D84 98 
+	jmp	 ( RESIZE-OK ) 	# 435D85 EB FC 
+	inc	(%rax)	# 435D87 FF 0 
+	add	%al,(%rax)	# 435D89 0 0 
+	add	%al,(%rax)	# 435D8B 0 0 
+	add	%al,(%rax)	# 435D8D 0 0 
+	add	%cl,-0x77(%rax)	# 435D8F 0 48 89 
+//
+
+//T{ ADDR1 @ -1 CHARS RESIZE 0= DUP RESIZE-OK ! -> ADDR1 @ FALSE }T
+
+//
+
+//\ Check unRESIZEd allocation is unchanged following RESIZE failure 
+
+//: MEM?  RESIZE-OK @ 0= IF ADDR1 @ 28 CHECKMEM THEN ;   \ Avoid using [IF]
+
+clC	# 435D92 45 F8 
+	mov	 ( RESIZE-OK+5  ) (%rip),%rax	# 435D94 48 8B 5 ED FF FF FF 
+	sub	$0x01,%rax	# 435D9B 48 83 E8 1 
+	sbb	%rax,%rax	# 435D9F 48 19 C0 
+	test	%rax,%rax	# 435DA2 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 435DA5 48 8B 45 F8 
+	jz	 ( MEM?+3C  ) 	# 435DA9 F 84 1D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 435DAF 48 89 45 F8 
+	mov	 ( ADDR1+5  ) (%rip),%rax	# 435DB3 48 8B 5 D6 FE FF FF 
+	mov	%rax,-0x10(%rbp)	# 435DBA 48 89 45 F0 
+	mov	$0x1C,%eax	# 435DBE B8 1C 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 435DC3 48 8D 6D F0 
+	call	 ( CHECKMEM ) 	# 435DC7 E8 2C FF FF FF 
+	ret		# 435DCC C3 
+//MEM?
+
+//
+
+//T{ ADDR1 @ FREE -> 0 }T   \ Tidy up
+
+//
+
+//T{ -1 ALLOCATE SWAP DROP 0= -> FALSE }T      \ Memory allocate failed
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING @  and ! work in ALLOCATEd memory (provided by Peter Knaggs)
+
+//
+
+//: WRITE-CELL-MEM ( ADDR N -- )
+
+//  1+ 1 DO I OVER ! CELL+ LOOP DROP
+
+WRITEsubCELLsubMEM:
+	lea	0x01(%rax),%rax	# 435DCD 48 8D 40 1 
+	mov	%rax,-0x08(%rbp)	# 435DD1 48 89 45 F8 
+	mov	$0x1,%eax	# 435DD5 B8 1 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435DDA 48 8D 6D F8 
+	call	 ( (DO) ) 	# 435DDE E8 6 EC FC FF 
+	.quad  ( WRITE-CELL-MEM+42  ) 
+	mov	%rax,-0x08(%rbp)	# 435DEB 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 435DEF 4C 89 75 F0 
+	mov	-0x10(%rbp),%rdx	# 435DF3 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 435DF7 48 89 10 
+	mov	-0x08(%rbp),%rax	# 435DFA 48 8B 45 F8 
+	lea	0x08(%rax),%rax	# 435DFE 48 8D 40 8 
+	inc	%r14	# 435E02 49 FF C6 
+	inc	%r15	# 435E05 49 FF C7 
+	jNo	 ( WRITE-CELL-MEM+1E  ) 	# 435E08 71 E1 
+	pop	%r14	# 435E0A 41 5E 
+	pop	%r15	# 435E0C 41 5F 
+	pop	%rcx	# 435E0E 59 
+	mov	0x00(%rbp),%rax	# 435E0F 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435E13 48 8D 6D 8 
+//;
+
+	ret		# 435E17 C3 
+//
+
+//: CHECK-CELL-MEM ( ADDR N -- )
+
+//  1+ 1 DO
+
+CHECKsubCELLsubMEM:
+	lea	0x01(%rax),%rax	# 435E18 48 8D 40 1 
+	mov	%rax,-0x08(%rbp)	# 435E1C 48 89 45 F8 
+	mov	$0x1,%eax	# 435E20 B8 1 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435E25 48 8D 6D F8 
+	call	 ( (DO) ) 	# 435E29 E8 BB EB FC FF 
+	.quad  ( CHECK-CELL-MEM+75  ) 
+//    I SWAP >R >R
+
+	mov	%rax,-0x08(%rbp)	# 435E36 48 89 45 F8 
+	mov	%r14,-0x08(%rbp)	# 435E3A 4C 89 75 F8 
+	Push	%rax	# 435E3E 50 
+	mov	-0x08(%rbp),%rax	# 435E3F 48 8B 45 F8 
+	Push	%rax	# 435E43 50 
+	mov	0x00(%rbp),%rax	# 435E44 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435E48 48 8D 6D 8 
+//    T{ R> ( I ) -> R@ ( ADDR ) @ }T
+
+	call	 ( T{ ) 	# 435E4C E8 8 B7 FF FF 
+	mov	%rax,-0x08(%rbp)	# 435E51 48 89 45 F8 
+	pop	%rax	# 435E55 58 
+	lea	-0x08(%rbp),%rbp	# 435E56 48 8D 6D F8 
+	call	 ( -> ) 	# 435E5A E8 1A B7 FF FF 
+	mov	%rax,-0x08(%rbp)	# 435E5F 48 89 45 F8 
+	mov	(%rsp),%rax	# 435E63 48 8B 4 24 
+	mov	(%rax),%rax	# 435E67 48 8B 0 
+	lea	-0x08(%rbp),%rbp	# 435E6A 48 8D 6D F8 
+	call	 ( }T ) 	# 435E6E E8 A2 B7 FF FF 
+//    R> CELL+
+
+	mov	%rax,-0x08(%rbp)	# 435E73 48 89 45 F8 
+	pop	%rax	# 435E77 58 
+	lea	0x08(%rax),%rax	# 435E78 48 8D 40 8 
+	lea	-0x08(%rbp),%rbp	# 435E7C 48 8D 6D F8 
+//  LOOP DROP
+
+	inc	%r14	# 435E80 49 FF C6 
+	inc	%r15	# 435E83 49 FF C7 
+	jNo	 ( CHECK-CELL-MEM+1E  ) 	# 435E86 71 AE 
+	pop	%r14	# 435E88 41 5E 
+	pop	%r15	# 435E8A 41 5F 
+	pop	%rcx	# 435E8C 59 
+	mov	0x00(%rbp),%rax	# 435E8D 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435E91 48 8D 6D 8 
+//;
+
+	ret		# 435E95 C3 
+//
+
+//\ Cell based access to the heap
+
+//
+
+//T{ 50 CELLS ALLOCATE SWAP ADDR1 ! -> 0 }T
+
+//ADDR1 @ 50 WRITE-CELL-MEM
+
+//ADDR1 @ 50 CHECK-CELL-MEM
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//MEMORY-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of Memory-Allocation word tests) CR
+

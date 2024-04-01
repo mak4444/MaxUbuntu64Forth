@@ -1,0 +1,3533 @@
+//\ From: John Hayes S1I
+
+//\ Subject: core.fr
+
+//\ Date: Mon, 27 Nov 95 13:10
+
+//
+
+//\ (C) 1995 JOHNS HOPKINS UNIVERSITY / APPLIED PHYSICS LABORATORY
+
+//\ MAY BE DISTRIBUTED FREELY AS LONG AS THIS COPYRIGHT NOTICE REMAINS.
+
+//\ VERSION 1.2
+
+//\ THIS PROGRAM TESTS THE CORE WORDS OF AN ANS FORTH SYSTEM.
+
+//\ THE PROGRAM ASSUMES A TWO'S COMPLEMENT IMPLEMENTATION WHERE
+
+//\ THE RANGE OF SIGNED NUMBERS IS -2^(N-1) ... 2^(N-1)-1 AND
+
+//\ THE RANGE OF UNSIGNED NUMBERS IS 0 ... 2^(N)-1.
+
+//\ I HAVEN'T FIGURED OUT HOW TO TEST KEY, QUIT, ABORT, OR ABORT"...
+
+//\ I ALSO HAVEN'T THOUGHT OF A WAY TO TEST ENVIRONMENT?...
+
+//
+
+//CR
+
+//TESTING CORE WORDS
+
+//HEX
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING BASIC ASSUMPTIONS
+
+//
+
+//T{ -> }T               \ START WITH CLEAN SLATE
+
+//( TEST IF ANY BITS ARE SET; ANSWER IN BASE 1 )
+
+//T{ : BITSSET? IF 0 0 ELSE 0 THEN ; -> }T
+
+BITSSETque:
+	test	%rax,%rax	# 431A05 48 85 C0 
+	mov	0x00(%rbp),%rax	# 431A08 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431A0C 48 8D 6D 8 
+	jz	 ( BITSSET?+2B  ) 	# 431A10 F 84 1A 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431A16 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 431A1A 48 C7 45 F0 0 0 0 0 
+	mov	$0x0,%eax	# 431A22 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 431A27 48 8D 6D F0 
+	jmp	 ( BITSSET?+38  ) 	# 431A2B E9 D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431A30 48 89 45 F8 
+	mov	$0x0,%eax	# 431A34 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431A39 48 8D 6D F8 
+	ret		# 431A3D C3 
+//T{  0 BITSSET? -> 0 }T      ( ZERO IS ALL BITS CLEAR )
+
+//T{  1 BITSSET? -> 0 0 }T      ( OTHER NUMBER HAVE AT LEAST ONE BIT )
+
+//T{ -1 BITSSET? -> 0 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING BOOLEANS: INVERT AND OR XOR
+
+//
+
+//T{ 0 0 AND -> 0 }T
+
+//T{ 0 1 AND -> 0 }T
+
+//T{ 1 0 AND -> 0 }T
+
+//T{ 1 1 AND -> 1 }T
+
+//
+
+//T{ 0 INVERT 1 AND -> 1 }T
+
+//T{ 1 INVERT 1 AND -> 0 }T
+
+//
+
+//0    CONSTANT 0S
+
+_0S:
+	call	 ( DOCONSTANT ) 	# 431A3E E8 D0 2E FD FF 
+	add	%al,(%rax)	# 431A43 0 0 
+	add	%al,(%rax)	# 431A45 0 0 
+	add	%al,(%rax)	# 431A47 0 0 
+	add	%al,(%rax)	# 431A49 0 0 
+//0 INVERT CONSTANT 1S
+
+_1S:
+	call	 ( DOCONSTANT ) 	# 431A4B E8 C3 2E FD FF 
+	g4??	%edi	# 431A50 FF FF 
+	g4??	%edi	# 431A52 FF FF 
+	g4??	%edi	# 431A54 FF FF 
+	g4??	%edi	# 431A56 FF FF 
+//
+
+//T{ 0S INVERT -> 1S }T
+
+//T{ 1S INVERT -> 0S }T
+
+//
+
+//T{ 0S 0S AND -> 0S }T
+
+//T{ 0S 1S AND -> 0S }T
+
+//T{ 1S 0S AND -> 0S }T
+
+//T{ 1S 1S AND -> 1S }T
+
+//
+
+//T{ 0S 0S OR -> 0S }T
+
+//T{ 0S 1S OR -> 1S }T
+
+//T{ 1S 0S OR -> 1S }T
+
+//T{ 1S 1S OR -> 1S }T
+
+//
+
+//T{ 0S 0S XOR -> 0S }T
+
+//T{ 0S 1S XOR -> 1S }T
+
+//T{ 1S 0S XOR -> 1S }T
+
+//T{ 1S 1S XOR -> 0S }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING 2* 2/ LSHIFT RSHIFT
+
+//
+
+//( WE TRUST 1S, INVERT, AND BITSSET?; WE WILL CONFIRM RSHIFT LATER )
+
+//1S 1 RSHIFT INVERT CONSTANT MSB
+
+MSB:
+	call	 ( DOCONSTANT ) 	# 431A58 E8 B6 2E FD FF 
+	add	%al,(%rax)	# 431A5D 0 0 
+	add	%al,(%rax)	# 431A5F 0 0 
+	add	%al,(%rax)	# 431A61 0 0 
+	add	%al,-0x2D15618(%rax)	# 431A63 0 80 E8 A9 2E FD 
+//T{ MSB BITSSET? -> 0 0 }T
+
+//
+
+//T{ 0S 2* -> 0S }T
+
+//T{ 1 2* -> 2 }T
+
+//T{ 4000 2* -> 8000 }T
+
+//T{ 1S 2* 1 XOR -> 1S }T
+
+//T{ MSB 2* -> 0S }T
+
+//
+
+//T{ 0S 2/ -> 0S }T
+
+//T{ 1 2/ -> 0 }T
+
+//T{ 4000 2/ -> 2000 }T
+
+//T{ 1S 2/ -> 1S }T            \ MSB PROPOGATED
+
+//T{ 1S 1 XOR 2/ -> 1S }T
+
+//T{ MSB 2/ MSB AND -> MSB }T
+
+//
+
+//T{ 1 0 LSHIFT -> 1 }T
+
+//T{ 1 1 LSHIFT -> 2 }T
+
+//T{ 1 2 LSHIFT -> 4 }T
+
+//T{ 1 F LSHIFT -> 8000 }T         \ BIGGEST GUARANTEED SHIFT
+
+//T{ 1S 1 LSHIFT 1 XOR -> 1S }T
+
+//T{ MSB 1 LSHIFT -> 0 }T
+
+//
+
+//T{ 1 0 RSHIFT -> 1 }T
+
+//T{ 1 1 RSHIFT -> 0 }T
+
+//T{ 2 1 RSHIFT -> 1 }T
+
+//T{ 4 2 RSHIFT -> 1 }T
+
+//T{ 8000 F RSHIFT -> 1 }T         \ BIGGEST
+
+//T{ MSB 1 RSHIFT MSB AND -> 0 }T      \ RSHIFT ZERO FILLS MSBS
+
+//T{ MSB 1 RSHIFT 2* -> MSB }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING COMPARISONS: 0= = 0< < > U< MIN MAX
+
+//0 INVERT         CONSTANT MAX-UINT
+
+	g4??	%edi	# 431A69 FF FF 
+	g4??	%edi	# 431A6B FF FF 
+	g4??	%edi	# 431A6D FF FF 
+	g4??	%edi	# 431A6F FF FF 
+	jmpf	*%rax	# 431A71 FF E8 
+//0 INVERT 1 RSHIFT      CONSTANT MAX-INT
+
+	pushf		# 431A73 9C 
+	sub	$-0x03,%al	# 431A74 2E FD 
+	g4??	%edi	# 431A76 FF FF 
+	g4??	%edi	# 431A78 FF FF 
+	g4??	%edi	# 431A7A FF FF 
+	g4??	%edi	# 431A7C FF FF 
+	jNle	 ( MAX-UINT+3  ) 	# 431A7E 7F E8 
+//0 INVERT 1 RSHIFT INVERT   CONSTANT MIN-INT
+
+	.byte	0x8F	# 431A80 8F 
+	sub	$-0x03,%al	# 431A81 2E FD 
+	inc	(%rax)	# 431A83 FF 0 
+	add	%al,(%rax)	# 431A85 0 0 
+	add	%al,(%rax)	# 431A87 0 0 
+	add	%al,(%rax)	# 431A89 0 0 
+	sub	$-0x7E,%al	# 431A8B 80 E8 82 
+//0 INVERT 1 RSHIFT      CONSTANT MID-UINT
+
+	sub	$-0x03,%al	# 431A8E 2E FD 
+	g4??	%edi	# 431A90 FF FF 
+	g4??	%edi	# 431A92 FF FF 
+	g4??	%edi	# 431A94 FF FF 
+	g4??	%edi	# 431A96 FF FF 
+	jNle	 ( MIN-INT+3  ) 	# 431A98 7F E8 
+//0 INVERT 1 RSHIFT INVERT   CONSTANT MID-UINT+1
+
+	jNz	 ( GR2+7  ) 	# 431A9A 75 2E 
+stD	# 431A9C FD 
+	inc	(%rax)	# 431A9D FF 0 
+	add	%al,(%rax)	# 431A9F 0 0 
+	add	%al,(%rax)	# 431AA1 0 0 
+	add	%al,(%rax)	# 431AA3 0 0 
+	sub	$0x68,%al	# 431AA5 80 E8 68 
+//
+
+//0S CONSTANT <FALSE>
+
+	sub	$-0x03,%al	# 431AA8 2E FD 
+	inc	(%rax)	# 431AAA FF 0 
+	add	%al,(%rax)	# 431AAC 0 0 
+	add	%al,(%rax)	# 431AAE 0 0 
+	add	%al,(%rax)	# 431AB0 0 0 
+	add	%ch,%al	# 431AB2 0 E8 
+//1S CONSTANT <TRUE>
+
+	pop	%rbx	# 431AB4 5B 
+	sub	$-0x03,%al	# 431AB5 2E FD 
+	g4??	%edi	# 431AB7 FF FF 
+	g4??	%edi	# 431AB9 FF FF 
+	g4??	%edi	# 431ABB FF FF 
+	g4??	%edi	# 431ABD FF FF 
+	call	*0x58(%rax)	# 431ABF FF 50 58 
+//
+
+//T{ 0 0= -> <TRUE> }T
+
+//T{ 1 0= -> <FALSE> }T
+
+//T{ 2 0= -> <FALSE> }T
+
+//T{ -1 0= -> <FALSE> }T
+
+//T{ MAX-UINT 0= -> <FALSE> }T
+
+//T{ MIN-INT 0= -> <FALSE> }T
+
+//T{ MAX-INT 0= -> <FALSE> }T
+
+//
+
+//T{ 0 0 = -> <TRUE> }T
+
+//T{ 1 1 = -> <TRUE> }T
+
+//T{ -1 -1 = -> <TRUE> }T
+
+//T{ 1 0 = -> <FALSE> }T
+
+//T{ -1 0 = -> <FALSE> }T
+
+//T{ 0 1 = -> <FALSE> }T
+
+//T{ 0 -1 = -> <FALSE> }T
+
+//
+
+//T{ 0 0< -> <FALSE> }T
+
+//T{ -1 0< -> <TRUE> }T
+
+//T{ MIN-INT 0< -> <TRUE> }T
+
+//T{ 1 0< -> <FALSE> }T
+
+//T{ MAX-INT 0< -> <FALSE> }T
+
+//
+
+//T{ 0 1 < -> <TRUE> }T
+
+//T{ 1 2 < -> <TRUE> }T
+
+//T{ -1 0 < -> <TRUE> }T
+
+//T{ -1 1 < -> <TRUE> }T
+
+//T{ MIN-INT 0 < -> <TRUE> }T
+
+//T{ MIN-INT MAX-INT < -> <TRUE> }T
+
+//T{ 0 MAX-INT < -> <TRUE> }T
+
+//T{ 0 0 < -> <FALSE> }T
+
+//T{ 1 1 < -> <FALSE> }T
+
+//T{ 1 0 < -> <FALSE> }T
+
+//T{ 2 1 < -> <FALSE> }T
+
+//T{ 0 -1 < -> <FALSE> }T
+
+//T{ 1 -1 < -> <FALSE> }T
+
+//T{ 0 MIN-INT < -> <FALSE> }T
+
+//T{ MAX-INT MIN-INT < -> <FALSE> }T
+
+//T{ MAX-INT 0 < -> <FALSE> }T
+
+//
+
+//T{ 0 1 > -> <FALSE> }T
+
+//T{ 1 2 > -> <FALSE> }T
+
+//T{ -1 0 > -> <FALSE> }T
+
+//T{ -1 1 > -> <FALSE> }T
+
+//T{ MIN-INT 0 > -> <FALSE> }T
+
+//T{ MIN-INT MAX-INT > -> <FALSE> }T
+
+//T{ 0 MAX-INT > -> <FALSE> }T
+
+//T{ 0 0 > -> <FALSE> }T
+
+//T{ 1 1 > -> <FALSE> }T
+
+//T{ 1 0 > -> <TRUE> }T
+
+//T{ 2 1 > -> <TRUE> }T
+
+//T{ 0 -1 > -> <TRUE> }T
+
+//T{ 1 -1 > -> <TRUE> }T
+
+//T{ 0 MIN-INT > -> <TRUE> }T
+
+//T{ MAX-INT MIN-INT > -> <TRUE> }T
+
+//T{ MAX-INT 0 > -> <TRUE> }T
+
+//
+
+//T{ 0 1 U< -> <TRUE> }T
+
+//T{ 1 2 U< -> <TRUE> }T
+
+//T{ 0 MID-UINT U< -> <TRUE> }T
+
+//T{ 0 MAX-UINT U< -> <TRUE> }T
+
+//T{ MID-UINT MAX-UINT U< -> <TRUE> }T
+
+//T{ 0 0 U< -> <FALSE> }T
+
+//T{ 1 1 U< -> <FALSE> }T
+
+//T{ 1 0 U< -> <FALSE> }T
+
+//T{ 2 1 U< -> <FALSE> }T
+
+//T{ MID-UINT 0 U< -> <FALSE> }T
+
+//T{ MAX-UINT 0 U< -> <FALSE> }T
+
+//T{ MAX-UINT MID-UINT U< -> <FALSE> }T
+
+//
+
+//T{ 0 1 MIN -> 0 }T
+
+//T{ 1 2 MIN -> 1 }T
+
+//T{ -1 0 MIN -> -1 }T
+
+//T{ -1 1 MIN -> -1 }T
+
+//T{ MIN-INT 0 MIN -> MIN-INT }T
+
+//T{ MIN-INT MAX-INT MIN -> MIN-INT }T
+
+//T{ 0 MAX-INT MIN -> 0 }T
+
+//T{ 0 0 MIN -> 0 }T
+
+//T{ 1 1 MIN -> 1 }T
+
+//T{ 1 0 MIN -> 0 }T
+
+//T{ 2 1 MIN -> 1 }T
+
+//T{ 0 -1 MIN -> -1 }T
+
+//T{ 1 -1 MIN -> -1 }T
+
+//T{ 0 MIN-INT MIN -> MIN-INT }T
+
+//T{ MAX-INT MIN-INT MIN -> MIN-INT }T
+
+//T{ MAX-INT 0 MIN -> 0 }T
+
+//
+
+//T{ 0 1 MAX -> 1 }T
+
+//T{ 1 2 MAX -> 2 }T
+
+//T{ -1 0 MAX -> 0 }T
+
+//T{ -1 1 MAX -> 1 }T
+
+//T{ MIN-INT 0 MAX -> 0 }T
+
+//T{ MIN-INT MAX-INT MAX -> MAX-INT }T
+
+//T{ 0 MAX-INT MAX -> MAX-INT }T
+
+//T{ 0 0 MAX -> 0 }T
+
+//T{ 1 1 MAX -> 1 }T
+
+//T{ 1 0 MAX -> 1 }T
+
+//T{ 2 1 MAX -> 2 }T
+
+//T{ 0 -1 MAX -> 0 }T
+
+//T{ 1 -1 MAX -> 1 }T
+
+//T{ 0 MIN-INT MAX -> 0 }T
+
+//T{ MAX-INT MIN-INT MAX -> MAX-INT }T
+
+//T{ MAX-INT 0 MAX -> MAX-INT }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING STACK OPS: 2DROP 2DUP 2OVER 2SWAP ?DUP DEPTH DROP DUP OVER ROT SWAP
+
+//
+
+//T{ 1 2 2DROP -> }T
+
+//T{ 1 2 2DUP -> 1 2 1 2 }T
+
+//T{ 1 2 3 4 2OVER -> 1 2 3 4 1 2 }T
+
+//T{ 1 2 3 4 2SWAP -> 3 4 1 2 }T
+
+//T{ 0 ?DUP -> 0 }T
+
+//T{ 1 ?DUP -> 1 1 }T
+
+//T{ -1 ?DUP -> -1 -1 }T
+
+//T{ DEPTH -> 0 }T
+
+//T{ 0 DEPTH -> 0 1 }T
+
+//T{ 0 1 DEPTH -> 0 1 2 }T
+
+//T{ 0 DROP -> }T
+
+//T{ 1 2 DROP -> 1 }T
+
+//T{ 1 DUP -> 1 1 }T
+
+//T{ 1 2 OVER -> 1 2 1 }T
+
+//T{ 1 2 3 ROT -> 2 3 1 }T
+
+//T{ 1 2 SWAP -> 2 1 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING >R R> R@
+
+//T{ : GR1 >R R> ; -> }T
+
+	ret		# 431AC2 C3 
+//T{ : GR2 >R R@ R> DROP ; -> }T
+
+GR2:
+	Push	%rax	# 431AC3 50 
+	mov	0x00(%rbp),%rax	# 431AC4 48 8B 45 0 
+	mov	(%rsp),%rax	# 431AC8 48 8B 4 24 
+	mov	%rax,-0x08(%rbp)	# 431ACC 48 89 45 F8 
+	pop	%rax	# 431AD0 58 
+	mov	-0x08(%rbp),%rax	# 431AD1 48 8B 45 F8 
+	ret		# 431AD5 C3 
+//T{ 123 GR1 -> 123 }T
+
+//T{ 123 GR2 -> 123 }T
+
+//T{ 1S GR1 -> 1S }T   ( RETURN STACK HOLDS CELLS )
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING ADD/SUBTRACT: + - 1+ 1- ABS NEGATE
+
+//
+
+//T{ 0 5 + -> 5 }T
+
+//T{ 5 0 + -> 5 }T
+
+//T{ 0 -5 + -> -5 }T
+
+//T{ -5 0 + -> -5 }T
+
+//T{ 1 2 + -> 3 }T
+
+//T{ 1 -2 + -> -1 }T
+
+//T{ -1 2 + -> 1 }T
+
+//T{ -1 -2 + -> -3 }T
+
+//T{ -1 1 + -> 0 }T
+
+//T{ MID-UINT 1 + -> MID-UINT+1 }T
+
+//
+
+//T{ 0 5 - -> -5 }T
+
+//T{ 5 0 - -> 5 }T
+
+//T{ 0 -5 - -> 5 }T
+
+//T{ -5 0 - -> -5 }T
+
+//T{ 1 2 - -> -1 }T
+
+//T{ 1 -2 - -> 3 }T
+
+//T{ -1 2 - -> -3 }T
+
+//T{ -1 -2 - -> 1 }T
+
+//T{ 0 1 - -> -1 }T
+
+//T{ MID-UINT+1 1 - -> MID-UINT }T
+
+//
+
+//T{ 0 1+ -> 1 }T
+
+//T{ -1 1+ -> 0 }T
+
+//T{ 1 1+ -> 2 }T
+
+//T{ MID-UINT 1+ -> MID-UINT+1 }T
+
+//
+
+//T{ 2 1- -> 1 }T
+
+//T{ 1 1- -> 0 }T
+
+//T{ 0 1- -> -1 }T
+
+//T{ MID-UINT+1 1- -> MID-UINT }T
+
+//
+
+//T{ 0 NEGATE -> 0 }T
+
+//T{ 1 NEGATE -> -1 }T
+
+//T{ -1 NEGATE -> 1 }T
+
+//T{ 2 NEGATE -> -2 }T
+
+//T{ -2 NEGATE -> 2 }T
+
+//
+
+//T{ 0 ABS -> 0 }T
+
+//T{ 1 ABS -> 1 }T
+
+//T{ -1 ABS -> 1 }T
+
+//T{ MIN-INT ABS -> MID-UINT+1 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING MULTIPLY: S>D * M* UM*
+
+//
+
+//T{ 0 S>D -> 0 0 }T
+
+//T{ 1 S>D -> 1 0 }T
+
+//T{ 2 S>D -> 2 0 }T
+
+//T{ -1 S>D -> -1 -1 }T
+
+//T{ -2 S>D -> -2 -1 }T
+
+//T{ MIN-INT S>D -> MIN-INT -1 }T
+
+//T{ MAX-INT S>D -> MAX-INT 0 }T
+
+//
+
+//T{ 0 0 M* -> 0 S>D }T
+
+//T{ 0 1 M* -> 0 S>D }T
+
+//T{ 1 0 M* -> 0 S>D }T
+
+//T{ 1 2 M* -> 2 S>D }T
+
+//T{ 2 1 M* -> 2 S>D }T
+
+//T{ 3 3 M* -> 9 S>D }T
+
+//T{ -3 3 M* -> -9 S>D }T
+
+//T{ 3 -3 M* -> -9 S>D }T
+
+//T{ -3 -3 M* -> 9 S>D }T
+
+//T{ 0 MIN-INT M* -> 0 S>D }T
+
+//T{ 1 MIN-INT M* -> MIN-INT S>D }T
+
+//T{ 2 MIN-INT M* -> 0 1S }T
+
+//T{ 0 MAX-INT M* -> 0 S>D }T
+
+//T{ 1 MAX-INT M* -> MAX-INT S>D }T
+
+//T{ 2 MAX-INT M* -> MAX-INT 1 LSHIFT 0 }T
+
+//T{ MIN-INT MIN-INT M* -> 0 MSB 1 RSHIFT }T
+
+//T{ MAX-INT MIN-INT M* -> MSB MSB 2/ }T
+
+//T{ MAX-INT MAX-INT M* -> 1 MSB 2/ INVERT }T
+
+//
+
+//T{ 0 0 * -> 0 }T            \ TEST IDENTITIES
+
+//T{ 0 1 * -> 0 }T
+
+//T{ 1 0 * -> 0 }T
+
+//T{ 1 2 * -> 2 }T
+
+//T{ 2 1 * -> 2 }T
+
+//T{ 3 3 * -> 9 }T
+
+//T{ -3 3 * -> -9 }T
+
+//T{ 3 -3 * -> -9 }T
+
+//T{ -3 -3 * -> 9 }T
+
+//
+
+//T{ MID-UINT+1 1 RSHIFT 2 * -> MID-UINT+1 }T
+
+//T{ MID-UINT+1 2 RSHIFT 4 * -> MID-UINT+1 }T
+
+//T{ MID-UINT+1 1 RSHIFT MID-UINT+1 OR 2 * -> MID-UINT+1 }T
+
+//
+
+//T{ 0 0 UM* -> 0 0 }T
+
+//T{ 0 1 UM* -> 0 0 }T
+
+//T{ 1 0 UM* -> 0 0 }T
+
+//T{ 1 2 UM* -> 2 0 }T
+
+//T{ 2 1 UM* -> 2 0 }T
+
+//T{ 3 3 UM* -> 9 0 }T
+
+//
+
+//T{ MID-UINT+1 1 RSHIFT 2 UM* -> MID-UINT+1 0 }T
+
+//T{ MID-UINT+1 2 UM* -> 0 1 }T
+
+//T{ MID-UINT+1 4 UM* -> 0 2 }T
+
+//T{ 1S 2 UM* -> 1S 1 LSHIFT 1 }T
+
+//T{ MAX-UINT MAX-UINT UM* -> 1 1 INVERT }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING DIVIDE: FM/MOD SM/REM UM/MOD */ */MOD / /MOD MOD
+
+//
+
+//T{ 0 S>D 1 FM/MOD -> 0 0 }T
+
+//T{ 1 S>D 1 FM/MOD -> 0 1 }T
+
+//T{ 2 S>D 1 FM/MOD -> 0 2 }T
+
+//T{ -1 S>D 1 FM/MOD -> 0 -1 }T
+
+//T{ -2 S>D 1 FM/MOD -> 0 -2 }T
+
+//T{ 0 S>D -1 FM/MOD -> 0 0 }T
+
+//T{ 1 S>D -1 FM/MOD -> 0 -1 }T
+
+//T{ 2 S>D -1 FM/MOD -> 0 -2 }T
+
+//T{ -1 S>D -1 FM/MOD -> 0 1 }T
+
+//T{ -2 S>D -1 FM/MOD -> 0 2 }T
+
+//T{ 2 S>D 2 FM/MOD -> 0 1 }T
+
+//T{ -1 S>D -1 FM/MOD -> 0 1 }T
+
+//T{ -2 S>D -2 FM/MOD -> 0 1 }T
+
+//T{  7 S>D  3 FM/MOD -> 1 2 }T
+
+//T{  7 S>D -3 FM/MOD -> -2 -3 }T
+
+//T{ -7 S>D  3 FM/MOD -> 2 -3 }T
+
+//T{ -7 S>D -3 FM/MOD -> -1 2 }T
+
+//T{ MAX-INT S>D 1 FM/MOD -> 0 MAX-INT }T
+
+//T{ MIN-INT S>D 1 FM/MOD -> 0 MIN-INT }T
+
+//T{ MAX-INT S>D MAX-INT FM/MOD -> 0 1 }T
+
+//T{ MIN-INT S>D MIN-INT FM/MOD -> 0 1 }T
+
+//T{ 1S 1 4 FM/MOD -> 3 MAX-INT }T
+
+//T{ 1 MIN-INT M* 1 FM/MOD -> 0 MIN-INT }T
+
+//T{ 1 MIN-INT M* MIN-INT FM/MOD -> 0 1 }T
+
+//T{ 2 MIN-INT M* 2 FM/MOD -> 0 MIN-INT }T
+
+//T{ 2 MIN-INT M* MIN-INT FM/MOD -> 0 2 }T
+
+//T{ 1 MAX-INT M* 1 FM/MOD -> 0 MAX-INT }T
+
+//T{ 1 MAX-INT M* MAX-INT FM/MOD -> 0 1 }T
+
+//T{ 2 MAX-INT M* 2 FM/MOD -> 0 MAX-INT }T
+
+//T{ 2 MAX-INT M* MAX-INT FM/MOD -> 0 2 }T
+
+//T{ MIN-INT MIN-INT M* MIN-INT FM/MOD -> 0 MIN-INT }T
+
+//T{ MIN-INT MAX-INT M* MIN-INT FM/MOD -> 0 MAX-INT }T
+
+//T{ MIN-INT MAX-INT M* MAX-INT FM/MOD -> 0 MIN-INT }T
+
+//T{ MAX-INT MAX-INT M* MAX-INT FM/MOD -> 0 MAX-INT }T
+
+//
+
+//T{ 0 S>D 1 SM/REM -> 0 0 }T
+
+//T{ 1 S>D 1 SM/REM -> 0 1 }T
+
+//T{ 2 S>D 1 SM/REM -> 0 2 }T
+
+//T{ -1 S>D 1 SM/REM -> 0 -1 }T
+
+//T{ -2 S>D 1 SM/REM -> 0 -2 }T
+
+//T{ 0 S>D -1 SM/REM -> 0 0 }T
+
+//T{ 1 S>D -1 SM/REM -> 0 -1 }T
+
+//T{ 2 S>D -1 SM/REM -> 0 -2 }T
+
+//T{ -1 S>D -1 SM/REM -> 0 1 }T
+
+//T{ -2 S>D -1 SM/REM -> 0 2 }T
+
+//T{ 2 S>D 2 SM/REM -> 0 1 }T
+
+//T{ -1 S>D -1 SM/REM -> 0 1 }T
+
+//T{ -2 S>D -2 SM/REM -> 0 1 }T
+
+//T{  7 S>D  3 SM/REM -> 1 2 }T
+
+//T{  7 S>D -3 SM/REM -> 1 -2 }T
+
+//T{ -7 S>D  3 SM/REM -> -1 -2 }T
+
+//T{ -7 S>D -3 SM/REM -> -1 2 }T
+
+//T{ MAX-INT S>D 1 SM/REM -> 0 MAX-INT }T
+
+//T{ MIN-INT S>D 1 SM/REM -> 0 MIN-INT }T
+
+//T{ MAX-INT S>D MAX-INT SM/REM -> 0 1 }T
+
+//T{ MIN-INT S>D MIN-INT SM/REM -> 0 1 }T
+
+//T{ 1S 1 4 SM/REM -> 3 MAX-INT }T
+
+//T{ 2 MIN-INT M* 2 SM/REM -> 0 MIN-INT }T
+
+//T{ 2 MIN-INT M* MIN-INT SM/REM -> 0 2 }T
+
+//T{ 2 MAX-INT M* 2 SM/REM -> 0 MAX-INT }T
+
+//T{ 2 MAX-INT M* MAX-INT SM/REM -> 0 2 }T
+
+//T{ MIN-INT MIN-INT M* MIN-INT SM/REM -> 0 MIN-INT }T
+
+//T{ MIN-INT MAX-INT M* MIN-INT SM/REM -> 0 MAX-INT }T
+
+//T{ MIN-INT MAX-INT M* MAX-INT SM/REM -> 0 MIN-INT }T
+
+//T{ MAX-INT MAX-INT M* MAX-INT SM/REM -> 0 MAX-INT }T
+
+//
+
+//T{ 0 0 1 UM/MOD -> 0 0 }T
+
+//T{ 1 0 1 UM/MOD -> 0 1 }T
+
+//T{ 1 0 2 UM/MOD -> 1 0 }T
+
+//T{ 3 0 2 UM/MOD -> 1 1 }T
+
+//T{ MAX-UINT 2 UM* 2 UM/MOD -> 0 MAX-UINT }T
+
+//T{ MAX-UINT 2 UM* MAX-UINT UM/MOD -> 0 2 }T
+
+//T{ MAX-UINT MAX-UINT UM* MAX-UINT UM/MOD -> 0 MAX-UINT }T
+
+//
+
+//: IFFLOORED
+
+//   [ -3 2 / -2 = INVERT ] LITERAL IF POSTPONE \ THEN ;
+
+IFFLOORED:
+	mov	%rax,-0x08(%rbp)	# 431AD6 48 89 45 F8 
+	movq	$-0x1,%rax	# 431ADA 48 C7 C0 FF FF FF FF 
+	test	%rax,%rax	# 431AE1 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431AE4 48 8B 45 F8 
+	jz	 ( IFFLOORED+2E  ) 	# 431AE8 F 84 16 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431AEE 48 89 45 F8 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 431AF2 48 8B 5 80 31 FD FF 
+	mov	%rax, ( UNLOOP+226  ) (%rip)	# 431AF9 48 89 5 49 31 FD FF 
+	mov	-0x08(%rbp),%rax	# 431B00 48 8B 45 F8 
+	ret		# 431B04 C3 
+//
+
+//: IFSYM
+
+//   [ -3 2 / -1 = INVERT ] LITERAL IF POSTPONE \ THEN ;
+
+IFSYM:
+	mov	%rax,-0x08(%rbp)	# 431B05 48 89 45 F8 
+	mov	$0x0,%eax	# 431B09 B8 0 0 0 0 
+	test	%rax,%rax	# 431B0E 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431B11 48 8B 45 F8 
+	jz	 ( IFSYM+2C  ) 	# 431B15 F 84 16 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431B1B 48 89 45 F8 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 431B1F 48 8B 5 53 31 FD FF 
+	mov	%rax, ( UNLOOP+226  ) (%rip)	# 431B26 48 89 5 1C 31 FD FF 
+	mov	-0x08(%rbp),%rax	# 431B2D 48 8B 45 F8 
+	ret		# 431B31 C3 
+//
+
+//\ THE SYSTEM MIGHT DO EITHER FLOORED OR SYMMETRIC DIVISION.
+
+//\ SINCE WE HAVE ALREADY TESTED M*, FM/MOD, AND SM/REM WE CAN USE THEM IN TEST.
+
+//
+
+//IFFLOORED : T/MOD  >R S>D R> FM/MOD ;
+
+//IFFLOORED : T/     T/MOD SWAP DROP ;
+
+//IFFLOORED : TMOD   T/MOD DROP ;
+
+//IFFLOORED : T*/MOD >R M* R> FM/MOD ;
+
+//IFFLOORED : T*/    T*/MOD SWAP DROP ;
+
+//IFSYM     : T/MOD  >R S>D R> SM/REM ;
+
+TrslMOD:
+	Push	%rax	# 431B32 50 
+	mov	0x00(%rbp),%rax	# 431B33 48 8B 45 0 
+	sar	$0x3F,%rax	# 431B37 48 C1 F8 3F 
+	mov	%rax,-0x08(%rbp)	# 431B3B 48 89 45 F8 
+	pop	%rax	# 431B3F 58 
+	mov	%rax,%rcx	# 431B40 48 89 C1 
+	mov	-0x08(%rbp),%rdx	# 431B43 48 8B 55 F8 
+	mov	0x00(%rbp),%rax	# 431B47 48 8B 45 0 
+		idivq	%rcx	# 431B4B 48 F7 F9 
+	mov	%rdx,0x00(%rbp)	# 431B4E 48 89 55 0 
+	ret		# 431B52 C3 
+//IFSYM     : T/     T/MOD SWAP DROP ;
+
+Trsl:
+	call	 ( T/MOD ) 	# 431B53 E8 DA FF FF FF 
+	mov	0x00(%rbp),%rdx	# 431B58 48 8B 55 0 
+	lea	0x08(%rbp),%rbp	# 431B5C 48 8D 6D 8 
+	ret		# 431B60 C3 
+//IFSYM     : TMOD   T/MOD DROP ;
+
+TMOD:
+	call	 ( T/MOD ) 	# 431B61 E8 CC FF FF FF 
+	mov	0x00(%rbp),%rax	# 431B66 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431B6A 48 8D 6D 8 
+	ret		# 431B6E C3 
+//IFSYM     : T*/MOD >R M* R> SM/REM ;
+
+TmulrslMOD:
+	Push	%rax	# 431B6F 50 
+	mov	0x00(%rbp),%rax	# 431B70 48 8B 45 0 
+		imulq	0x08(%rbp)	# 431B74 48 F7 6D 8 
+	mov	%rax,0x08(%rbp)	# 431B78 48 89 45 8 
+	mov	%rdx,%rax	# 431B7C 48 89 D0 
+	mov	%rax,0x00(%rbp)	# 431B7F 48 89 45 0 
+	pop	%rax	# 431B83 58 
+	mov	%rax,%rcx	# 431B84 48 89 C1 
+	mov	0x00(%rbp),%rdx	# 431B87 48 8B 55 0 
+	mov	0x08(%rbp),%rax	# 431B8B 48 8B 45 8 
+		idivq	%rcx	# 431B8F 48 F7 F9 
+	mov	%rdx,0x08(%rbp)	# 431B92 48 89 55 8 
+	lea	0x08(%rbp),%rbp	# 431B96 48 8D 6D 8 
+	ret		# 431B9A C3 
+//IFSYM     : T*/    T*/MOD SWAP DROP ;
+
+Tmulrsl:
+	call	 ( T*/MOD ) 	# 431B9B E8 CF FF FF FF 
+	mov	0x00(%rbp),%rdx	# 431BA0 48 8B 55 0 
+	lea	0x08(%rbp),%rbp	# 431BA4 48 8D 6D 8 
+	ret		# 431BA8 C3 
+//
+
+//T{ 0 1 /MOD -> 0 1 T/MOD }T
+
+//T{ 1 1 /MOD -> 1 1 T/MOD }T
+
+//T{ 2 1 /MOD -> 2 1 T/MOD }T
+
+//T{ -1 1 /MOD -> -1 1 T/MOD }T
+
+//T{ -2 1 /MOD -> -2 1 T/MOD }T
+
+//T{ 0 -1 /MOD -> 0 -1 T/MOD }T
+
+//T{ 1 -1 /MOD -> 1 -1 T/MOD }T
+
+//T{ 2 -1 /MOD -> 2 -1 T/MOD }T
+
+//T{ -1 -1 /MOD -> -1 -1 T/MOD }T
+
+//T{ -2 -1 /MOD -> -2 -1 T/MOD }T
+
+//T{ 2 2 /MOD -> 2 2 T/MOD }T
+
+//T{ -1 -1 /MOD -> -1 -1 T/MOD }T
+
+//T{ -2 -2 /MOD -> -2 -2 T/MOD }T
+
+//T{ 7 3 /MOD -> 7 3 T/MOD }T
+
+//T{ 7 -3 /MOD -> 7 -3 T/MOD }T
+
+//T{ -7 3 /MOD -> -7 3 T/MOD }T
+
+//T{ -7 -3 /MOD -> -7 -3 T/MOD }T
+
+//T{ MAX-INT 1 /MOD -> MAX-INT 1 T/MOD }T
+
+//T{ MIN-INT 1 /MOD -> MIN-INT 1 T/MOD }T
+
+//T{ MAX-INT MAX-INT /MOD -> MAX-INT MAX-INT T/MOD }T
+
+//T{ MIN-INT MIN-INT /MOD -> MIN-INT MIN-INT T/MOD }T
+
+//
+
+//T{ 0 1 / -> 0 1 T/ }T
+
+//T{ 1 1 / -> 1 1 T/ }T
+
+//T{ 2 1 / -> 2 1 T/ }T
+
+//T{ -1 1 / -> -1 1 T/ }T
+
+//T{ -2 1 / -> -2 1 T/ }T
+
+//T{ 0 -1 / -> 0 -1 T/ }T
+
+//T{ 1 -1 / -> 1 -1 T/ }T
+
+//T{ 2 -1 / -> 2 -1 T/ }T
+
+//T{ -1 -1 / -> -1 -1 T/ }T
+
+//T{ -2 -1 / -> -2 -1 T/ }T
+
+//T{ 2 2 / -> 2 2 T/ }T
+
+//T{ -1 -1 / -> -1 -1 T/ }T
+
+//T{ -2 -2 / -> -2 -2 T/ }T
+
+//T{ 7 3 / -> 7 3 T/ }T
+
+//T{ 7 -3 / -> 7 -3 T/ }T
+
+//T{ -7 3 / -> -7 3 T/ }T
+
+//T{ -7 -3 / -> -7 -3 T/ }T
+
+//T{ MAX-INT 1 / -> MAX-INT 1 T/ }T
+
+//T{ MIN-INT 1 / -> MIN-INT 1 T/ }T
+
+//T{ MAX-INT MAX-INT / -> MAX-INT MAX-INT T/ }T
+
+//T{ MIN-INT MIN-INT / -> MIN-INT MIN-INT T/ }T
+
+//
+
+//T{ 0 1 MOD -> 0 1 TMOD }T
+
+//T{ 1 1 MOD -> 1 1 TMOD }T
+
+//T{ 2 1 MOD -> 2 1 TMOD }T
+
+//T{ -1 1 MOD -> -1 1 TMOD }T
+
+//T{ -2 1 MOD -> -2 1 TMOD }T
+
+//T{ 0 -1 MOD -> 0 -1 TMOD }T
+
+//T{ 1 -1 MOD -> 1 -1 TMOD }T
+
+//T{ 2 -1 MOD -> 2 -1 TMOD }T
+
+//T{ -1 -1 MOD -> -1 -1 TMOD }T
+
+//T{ -2 -1 MOD -> -2 -1 TMOD }T
+
+//T{ 2 2 MOD -> 2 2 TMOD }T
+
+//T{ -1 -1 MOD -> -1 -1 TMOD }T
+
+//T{ -2 -2 MOD -> -2 -2 TMOD }T
+
+//T{ 7 3 MOD -> 7 3 TMOD }T
+
+//T{ 7 -3 MOD -> 7 -3 TMOD }T
+
+//T{ -7 3 MOD -> -7 3 TMOD }T
+
+//T{ -7 -3 MOD -> -7 -3 TMOD }T
+
+//T{ MAX-INT 1 MOD -> MAX-INT 1 TMOD }T
+
+//T{ MIN-INT 1 MOD -> MIN-INT 1 TMOD }T
+
+//T{ MAX-INT MAX-INT MOD -> MAX-INT MAX-INT TMOD }T
+
+//T{ MIN-INT MIN-INT MOD -> MIN-INT MIN-INT TMOD }T
+
+//
+
+//T{ 0 2 1 */ -> 0 2 1 T*/ }T
+
+//T{ 1 2 1 */ -> 1 2 1 T*/ }T
+
+//T{ 2 2 1 */ -> 2 2 1 T*/ }T
+
+//T{ -1 2 1 */ -> -1 2 1 T*/ }T
+
+//T{ -2 2 1 */ -> -2 2 1 T*/ }T
+
+//T{ 0 2 -1 */ -> 0 2 -1 T*/ }T
+
+//T{ 1 2 -1 */ -> 1 2 -1 T*/ }T
+
+//T{ 2 2 -1 */ -> 2 2 -1 T*/ }T
+
+//T{ -1 2 -1 */ -> -1 2 -1 T*/ }T
+
+//T{ -2 2 -1 */ -> -2 2 -1 T*/ }T
+
+//T{ 2 2 2 */ -> 2 2 2 T*/ }T
+
+//T{ -1 2 -1 */ -> -1 2 -1 T*/ }T
+
+//T{ -2 2 -2 */ -> -2 2 -2 T*/ }T
+
+//T{ 7 2 3 */ -> 7 2 3 T*/ }T
+
+//T{ 7 2 -3 */ -> 7 2 -3 T*/ }T
+
+//T{ -7 2 3 */ -> -7 2 3 T*/ }T
+
+//T{ -7 2 -3 */ -> -7 2 -3 T*/ }T
+
+//T{ MAX-INT 2 MAX-INT */ -> MAX-INT 2 MAX-INT T*/ }T
+
+//T{ MIN-INT 2 MIN-INT */ -> MIN-INT 2 MIN-INT T*/ }T
+
+//
+
+//T{ 0 2 1 */MOD -> 0 2 1 T*/MOD }T
+
+//T{ 1 2 1 */MOD -> 1 2 1 T*/MOD }T
+
+//T{ 2 2 1 */MOD -> 2 2 1 T*/MOD }T
+
+//T{ -1 2 1 */MOD -> -1 2 1 T*/MOD }T
+
+//T{ -2 2 1 */MOD -> -2 2 1 T*/MOD }T
+
+//T{ 0 2 -1 */MOD -> 0 2 -1 T*/MOD }T
+
+//T{ 1 2 -1 */MOD -> 1 2 -1 T*/MOD }T
+
+//T{ 2 2 -1 */MOD -> 2 2 -1 T*/MOD }T
+
+//T{ -1 2 -1 */MOD -> -1 2 -1 T*/MOD }T
+
+//T{ -2 2 -1 */MOD -> -2 2 -1 T*/MOD }T
+
+//T{ 2 2 2 */MOD -> 2 2 2 T*/MOD }T
+
+//T{ -1 2 -1 */MOD -> -1 2 -1 T*/MOD }T
+
+//T{ -2 2 -2 */MOD -> -2 2 -2 T*/MOD }T
+
+//T{ 7 2 3 */MOD -> 7 2 3 T*/MOD }T
+
+//T{ 7 2 -3 */MOD -> 7 2 -3 T*/MOD }T
+
+//T{ -7 2 3 */MOD -> -7 2 3 T*/MOD }T
+
+//T{ -7 2 -3 */MOD -> -7 2 -3 T*/MOD }T
+
+//T{ MAX-INT 2 MAX-INT */MOD -> MAX-INT 2 MAX-INT T*/MOD }T
+
+//T{ MIN-INT 2 MIN-INT */MOD -> MIN-INT 2 MIN-INT T*/MOD }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING HERE , @ ! CELL+ CELLS C, C@ C! CHARS 2@ 2! ALIGN ALIGNED +! ALLOT
+
+//
+
+//HERE 1 ALLOT
+
+	mov	%eax,%ebp	# 431BA9 8B E8 
+//HERE
+
+//CONSTANT 2NDA
+
+	sub	$0x1BAAFFFD,%eax	# 431BAB 64 2D FD FF AA 1B 
+	add	%al,(%r8)	# 431BB1 43 0 0 
+	add	%al,(%rax)	# 431BB4 0 0 
+	add	%ch,%al	# 431BB6 0 E8 
+//CONSTANT 1STA
+
+	Push	%rdi	# 431BB8 57 
+	sub	$0x1BA9FFFD,%eax	# 431BB9 2D FD FF A9 1B 
+	add	%al,(%r8)	# 431BBE 43 0 0 
+	add	%al,(%rax)	# 431BC1 0 0 
+	add	%ch,%al	# 431BC3 0 E8 
+//T{ 1STA 2NDA U< -> <TRUE> }T      \ HERE MUST GROW WITH ALLOT
+
+//T{ 1STA 1+ -> 2NDA }T         \ ... BY ONE ADDRESS UNIT
+
+//( MISSING TEST: NEGATIVE ALLOT )
+
+//
+
+//\ Added by GWJ so that ALIGN can be used before , (comma) is tested
+
+//1 ALIGNED CONSTANT ALMNT   \ -- 1|2|4|8 for 8|16|32|64 bit alignment
+
+	sub	$0x8FFFD,%rax	# 431BC5 4A 2D FD FF 8 0 
+	add	%al,(%rax)	# 431BCB 0 0 
+	add	%al,(%rax)	# 431BCD 0 0 
+	add	%al,(%rax)	# 431BCF 0 0 
+//ALIGN
+
+	add	%al,(%rax)	# 431BD1 0 0 
+	add	%al,(%rax)	# 431BD3 0 0 
+	add	%al,(%rax)	# 431BD5 0 0 
+	add	%al,(%rax)	# 431BD7 0 0 
+//T{ HERE 1 ALLOT ALIGN HERE SWAP - ALMNT = -> <TRUE> }T
+
+	add	%al,(%rax)	# 431BD9 0 0 
+	add	%al,(%rax)	# 431BDB 0 0 
+	add	%al,(%rax)	# 431BDD 0 0 
+	add	%al,(%rax)	# 431BDF 0 0 
+//\ End of extra test
+
+//
+
+//HERE 1 ,
+
+	add	%al,(%rax)	# 431BE1 0 0 
+	add	%al,(%rax)	# 431BE3 0 0 
+	add	%al,(%rax)	# 431BE5 0 0 
+	add	%al,(%rdx)	# 431BE7 0 2 
+//HERE 2 ,
+
+	add	%al,(%rax)	# 431BE9 0 0 
+	add	%al,(%rax)	# 431BEB 0 0 
+	add	%al,(%rax)	# 431BED 0 0 
+	add	%ch,%al	# 431BEF 0 E8 
+//CONSTANT 2ND
+
+	sbb	$0x2D,%al	# 431BF1 1E 2D 
+stD	# 431BF3 FD 
+	jmpf	*%rax	# 431BF4 FF E8 
+	sbb	0x00(%rbx),%eax	# 431BF6 1B 43 0 
+	add	%al,(%rax)	# 431BF9 0 0 
+	add	%al,(%rax)	# 431BFB 0 0 
+//CONSTANT 1ST
+
+_1ST:
+	call	 ( DOCONSTANT ) 	# 431BFD E8 11 2D FD FF 
+	loopne	 ( 1STC+6  ) 	# 431C02 E0 1B 
+	add	%al,(%r8)	# 431C04 43 0 0 
+	add	%al,(%rax)	# 431C07 0 0 
+	add	%al,(%rbx)	# 431C09 0 3 
+//T{ 1ST 2ND U< -> <TRUE> }T         \ HERE MUST GROW WITH ALLOT
+
+//T{ 1ST CELL+ -> 2ND }T         \ ... BY ONE CELL
+
+//T{ 1ST 1 CELLS + -> 2ND }T
+
+//T{ 1ST @ 2ND @ -> 1 2 }T
+
+//T{ 5 1ST ! -> }T
+
+//T{ 1ST @ 2ND @ -> 5 2 }T
+
+//T{ 6 2ND ! -> }T
+
+//T{ 1ST @ 2ND @ -> 5 6 }T
+
+//T{ 1ST 2@ -> 6 5 }T
+
+//T{ 2 1 1ST 2! -> }T
+
+//T{ 1ST 2@ -> 2 1 }T
+
+//T{ 1S 1ST !  1ST @ -> 1S }T      \ CAN STORE CELL-WIDE VALUE
+
+//
+
+//HERE 1 C,
+
+//HERE 2 C,
+
+	add	$-0x18,%al	# 431C0B 4 E8 
+//CONSTANT 2NDC
+
+	add	 ( _STEKC+1BFDC3A0  ) (%rip),%ch	# 431C0D 2 2D FD FF B 1C 
+	add	%al,(%r8)	# 431C13 43 0 0 
+	add	%al,(%rax)	# 431C16 0 0 
+	add	%ch,%al	# 431C18 0 E8 
+//CONSTANT 1STC
+
+	cmc		# 431C1A F5 
+	sub	$-0x03,%al	# 431C1B 2C FD 
+	dec	(%rdx)	# 431C1D FF A 
+	sbb	$0x43,%al	# 431C1F 1C 43 
+	add	%al,(%rax)	# 431C21 0 0 
+	add	%al,(%rax)	# 431C23 0 0 
+	add	%al,(%rax)	# 431C25 0 0 
+//T{ 1STC 2NDC U< -> <TRUE> }T      \ HERE MUST GROW WITH ALLOT
+
+//T{ 1STC CHAR+ -> 2NDC }T         \ ... BY ONE CHAR
+
+//T{ 1STC 1 CHARS + -> 2NDC }T
+
+//T{ 1STC C@ 2NDC C@ -> 1 2 }T
+
+//T{ 3 1STC C! -> }T
+
+//T{ 1STC C@ 2NDC C@ -> 3 2 }T
+
+//T{ 4 2NDC C! -> }T
+
+//T{ 1STC C@ 2NDC C@ -> 3 4 }T
+
+//
+
+//ALIGN 1 ALLOT HERE ALIGN HERE 3 CELLS ALLOT
+
+	add	%al,(%rax)	# 431C27 0 0 
+	add	%al,(%rax)	# 431C29 0 0 
+	add	%al,(%rax)	# 431C2B 0 0 
+	add	%al,(%rax)	# 431C2D 0 0 
+	add	%dl,0x02(%rsi)	# 431C2F 0 56 2 
+	add	%al,(%rax)	# 431C32 0 0 
+	add	%al,(%rax)	# 431C34 0 0 
+	add	%al,(%rax)	# 431C36 0 0 
+	Push	%rsi	# 431C38 56 
+	add	$0x00,%al	# 431C39 4 0 
+	add	%al,(%rax)	# 431C3B 0 0 
+	add	%al,(%rax)	# 431C3D 0 0 
+	add	%ah,(%rbx)	# 431C3F 0 23 
+	add	%eax,(%rax)	# 431C41 1 0 
+	add	%al,(%rax)	# 431C43 0 0 
+	add	%al,(%rax)	# 431C45 0 0 
+	add	%ch,%al	# 431C47 0 E8 
+//CONSTANT A-ADDR  CONSTANT UA-ADDR
+
+	movb	$-0x01,0x431C30FF(,%rdi,8)	# 431C49 C6 2C FD FF 
+	xor	%bl,(%rbx,%rax,2)	# 431C4D 30 1C 43 
+	add	%al,(%rax)	# 431C50 0 0 
+	add	%al,(%rax)	# 431C52 0 0 
+	add	%ch,%al	# 431C54 0 E8 
+	mov	$0x29FFFD2C,%ecx	# 431C56 B9 2C FD FF 29 
+	sbb	$0x43,%al	# 431C5B 1C 43 
+	add	%al,(%rax)	# 431C5D 0 0 
+	add	%al,(%rax)	# 431C5F 0 0 
+	add	%cl,-0x39(%rax)	# 431C61 0 48 C7 
+//T{ UA-ADDR ALIGNED -> A-ADDR }T
+
+//T{    1 A-ADDR C!  A-ADDR C@ ->    1 }T
+
+//T{ 1234 A-ADDR  !  A-ADDR  @ -> 1234 }T
+
+//T{ 123 456 A-ADDR 2!  A-ADDR 2@ -> 123 456 }T
+
+//T{ 2 A-ADDR CHAR+ C!  A-ADDR CHAR+ C@ -> 2 }T
+
+//T{ 3 A-ADDR CELL+ C!  A-ADDR CELL+ C@ -> 3 }T
+
+//T{ 1234 A-ADDR CELL+ !  A-ADDR CELL+ @ -> 1234 }T
+
+//T{ 123 456 A-ADDR CELL+ 2!  A-ADDR CELL+ 2@ -> 123 456 }T
+
+//
+
+//: BITS ( X -- U )
+
+//   0 SWAP BEGIN DUP WHILE DUP MSB AND IF >R 1+ R> THEN 2* REPEAT DROP ;
+
+clC	# 431C64 45 F8 
+	add	%al,(%rax)	# 431C66 0 0 
+	add	%al,(%rax)	# 431C68 0 0 
+	lea	-0x08(%rbp),%rbp	# 431C6A 48 8D 6D F8 
+	mov	%rax,-0x08(%rbp)	# 431C6E 48 89 45 F8 
+	test	%rax,%rax	# 431C72 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431C75 48 8B 45 F8 
+	jz	 ( BITS+57  ) 	# 431C79 F 84 3A 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431C7F 48 89 45 F8 
+	mov	%rax,-0x10(%rbp)	# 431C83 48 89 45 F0 
+	movabs	$-0x8000000000000000,%rax	# 431C87 48 B8 0 0 0 0 0 0 0 80 
+	and	-0x10(%rbp),%rax	# 431C91 48 23 45 F0 
+	test	%rax,%rax	# 431C95 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431C98 48 8B 45 F8 
+	jz	 ( BITS+4E  ) 	# 431C9C F 84 E 0 0 0 
+	Push	%rax	# 431CA2 50 
+	mov	0x00(%rbp),%rax	# 431CA3 48 8B 45 0 
+	lea	0x01(%rax),%rax	# 431CA7 48 8D 40 1 
+	mov	%rax,0x00(%rbp)	# 431CAB 48 89 45 0 
+	pop	%rax	# 431CAF 58 
+	lea	(%rax,%rax,1),%rax	# 431CB0 48 8D 4 0 
+	jmp	 ( BITS+C  ) 	# 431CB4 E9 B5 FF FF FF 
+	mov	0x00(%rbp),%rax	# 431CB9 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431CBD 48 8D 6D 8 
+	ret		# 431CC1 C3 
+//( CHARACTERS >= 1 AU, <= SIZE OF CELL, >= 8 BITS )
+
+//T{ 1 CHARS 1 < -> <FALSE> }T
+
+//T{ 1 CHARS 1 CELLS > -> <FALSE> }T
+
+//( TBD: HOW TO FIND NUMBER OF BITS? )
+
+//
+
+//( CELLS >= 1 AU, INTEGRAL MULTIPLE OF CHAR SIZE, >= 16 BITS )
+
+//T{ 1 CELLS 1 < -> <FALSE> }T
+
+//T{ 1 CELLS 1 CHARS MOD -> 0 }T
+
+//T{ 1S BITS 10 < -> <FALSE> }T
+
+//
+
+//T{ 0 1ST ! -> }T
+
+//T{ 1 1ST +! -> }T
+
+//T{ 1ST @ -> 1 }T
+
+//T{ -1 1ST +! 1ST @ -> 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING CHAR [CHAR] [ ] BL S"
+
+//
+
+//T{ BL -> 20 }T
+
+//T{ CHAR X -> 58 }T
+
+//T{ CHAR HELLO -> 48 }T
+
+//T{ : GC1 [CHAR] X ; -> }T
+
+GC1:
+	mov	%rax,-0x08(%rbp)	# 431CC2 48 89 45 F8 
+	mov	$0x58,%eax	# 431CC6 B8 58 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431CCB 48 8D 6D F8 
+	ret		# 431CCF C3 
+//T{ : GC2 [CHAR] HELLO ; -> }T
+
+GC2:
+	mov	%rax,-0x08(%rbp)	# 431CD0 48 89 45 F8 
+	mov	$0x48,%eax	# 431CD4 B8 48 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431CD9 48 8D 6D F8 
+	ret		# 431CDD C3 
+//T{ GC1 -> 58 }T
+
+//T{ GC2 -> 48 }T
+
+//T{ : GC3 [ GC1 ] LITERAL ; -> }T
+
+GC3:
+	mov	%rax,-0x08(%rbp)	# 431CDE 48 89 45 F8 
+	mov	$0x58,%eax	# 431CE2 B8 58 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 431CE7 48 8D 6D F8 
+	ret		# 431CEB C3 
+//T{ GC3 -> 58 }T
+
+//T{ : GC4 S" XY" ; -> }T
+
+GC4:
+	call	 ( (S") ) 	# 431CEC E8 51 33 FD FF 
+	.byte 0x2,0x58,0x59
+	ret		# 431CF4 C3 
+//T{ GC4 SWAP DROP -> 2 }T
+
+//T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING ' ['] FIND EXECUTE IMMEDIATE COUNT LITERAL POSTPONE STATE
+
+//
+
+//T{ : GT1 123 ; -> }T
+
+GT1:
+	mov	%rax,-0x08(%rbp)	# 431CF5 48 89 45 F8 
+	mov	$0x123,%eax	# 431CF9 B8 23 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 431CFE 48 8D 6D F8 
+	ret		# 431D02 C3 
+//T{ ' GT1 EXECUTE -> 123 }T
+
+//T{ : GT2 ['] GT1 ; IMMEDIATE -> }T
+
+GT2:
+	mov	%rax,-0x08(%rbp)	# 431D03 48 89 45 F8 
+	mov	$0x431CF5,%eax	# 431D07 B8 F5 1C 43 0 
+	lea	-0x08(%rbp),%rbp	# 431D0C 48 8D 6D F8 
+	ret		# 431D10 C3 
+//T{ GT2 EXECUTE -> 123 }T
+
+//HERE 3 C, CHAR G C, CHAR T C, CHAR 1 C, CONSTANT GT1STRING
+
+	add	0x54(%rdi),%eax	# 431D11 3 47 54 
+	xor	%ebp,%eax	# 431D14 31 E8 
+stC	# 431D16 F9 
+	sub	%ebp,%edi	# 431D17 2B FD 
+	call	*(%rcx)	# 431D19 FF 11 
+	sbb	$0x43,%eax	# 431D1B 1D 43 0 0 0 
+	add	%al,(%rax)	# 431D20 0 0 
+//HERE 3 C, CHAR G C, CHAR T C, CHAR 2 C, CONSTANT GT2STRING
+
+	add	0x54(%rdi),%eax	# 431D22 3 47 54 
+	xor	%al,%ch	# 431D25 32 E8 
+	call	 ( _STEKC+22F1C1E7  ) 	# 431D27 E8 2B FD FF 22 
+	sbb	$0x43,%eax	# 431D2C 1D 43 0 0 0 
+	add	%al,(%rax)	# 431D31 0 0 
+//T{ GT1STRING FIND -> ' GT1 -1 }T
+
+//T{ GT2STRING FIND -> ' GT2 1 }T
+
+//( HOW TO SEARCH FOR NON-EXISTENT WORD? )
+
+//T{ : GT3 GT2 LITERAL ; -> }T
+
+GT3:
+	mov	%rax,-0x08(%rbp)	# 431D33 48 89 45 F8 
+	mov	$0x431CF5,%eax	# 431D37 B8 F5 1C 43 0 
+	lea	-0x08(%rbp),%rbp	# 431D3C 48 8D 6D F8 
+	ret		# 431D40 C3 
+//T{ GT3 -> ' GT1 }T
+
+//T{ GT1STRING COUNT -> GT1STRING CHAR+ 3 }T
+
+//
+
+//T{ : GT4 POSTPONE GT1 ; IMMEDIATE -> }T
+
+GT4:
+	mov	%rax,-0x08(%rbp)	# 431D41 48 89 45 F8 
+	mov	$0x431CF5,%eax	# 431D45 B8 F5 1C 43 0 
+	lea	-0x08(%rbp),%rbp	# 431D4A 48 8D 6D F8 
+	call	 ( COMPILE, ) 	# 431D4E E8 66 AD FD FF 
+	ret		# 431D53 C3 
+//T{ : GT5 GT4 ; -> }T
+
+GT5:
+	mov	%rax,-0x08(%rbp)	# 431D54 48 89 45 F8 
+	mov	$0x123,%eax	# 431D58 B8 23 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 431D5D 48 8D 6D F8 
+	ret		# 431D61 C3 
+//T{ GT5 -> 123 }T
+
+//T{ : GT6 345 ; IMMEDIATE -> }T
+
+GT6:
+	mov	%rax,-0x08(%rbp)	# 431D62 48 89 45 F8 
+	mov	$0x345,%eax	# 431D66 B8 45 3 0 0 
+	lea	-0x08(%rbp),%rbp	# 431D6B 48 8D 6D F8 
+	ret		# 431D6F C3 
+//T{ : GT7 POSTPONE GT6 ; -> }T
+
+GT7:
+	mov	%rax,-0x08(%rbp)	# 431D70 48 89 45 F8 
+	mov	$0x345,%eax	# 431D74 B8 45 3 0 0 
+	lea	-0x08(%rbp),%rbp	# 431D79 48 8D 6D F8 
+	ret		# 431D7D C3 
+//T{ GT7 -> 345 }T
+
+//
+
+//T{ : GT8 STATE @ ; IMMEDIATE -> }T
+
+GT8:
+	mov	%rax,-0x08(%rbp)	# 431D7E 48 89 45 F8 
+	mov	$0x404A33,%eax	# 431D82 B8 33 4A 40 0 
+	mov	(%rax),%rax	# 431D87 48 8B 0 
+	lea	-0x08(%rbp),%rbp	# 431D8A 48 8D 6D F8 
+	ret		# 431D8E C3 
+//T{ GT8 -> 0 }T
+
+//T{ : GT9 GT8 LITERAL ; -> }T
+
+GT9:
+	mov	%rax,-0x08(%rbp)	# 431D8F 48 89 45 F8 
+	movq	$-0x1,%rax	# 431D93 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 431D9A 48 8D 6D F8 
+	ret		# 431D9E C3 
+//T{ GT9 0= -> <FALSE> }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING IF ELSE THEN BEGIN WHILE REPEAT UNTIL RECURSE
+
+//
+
+//T{ : GI1 IF 123 THEN ; -> }T
+
+GI1:
+	test	%rax,%rax	# 431D9F 48 85 C0 
+	mov	0x00(%rbp),%rax	# 431DA2 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431DA6 48 8D 6D 8 
+	jz	 ( GI1+1E  ) 	# 431DAA F 84 D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431DB0 48 89 45 F8 
+	mov	$0x123,%eax	# 431DB4 B8 23 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 431DB9 48 8D 6D F8 
+	ret		# 431DBD C3 
+//T{ : GI2 IF 123 ELSE 234 THEN ; -> }T
+
+GI2:
+	test	%rax,%rax	# 431DBE 48 85 C0 
+	mov	0x00(%rbp),%rax	# 431DC1 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431DC5 48 8D 6D 8 
+	jz	 ( GI2+23  ) 	# 431DC9 F 84 12 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431DCF 48 89 45 F8 
+	mov	$0x123,%eax	# 431DD3 B8 23 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 431DD8 48 8D 6D F8 
+	jmp	 ( GI2+30  ) 	# 431DDC E9 D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431DE1 48 89 45 F8 
+	mov	$0x234,%eax	# 431DE5 B8 34 2 0 0 
+	lea	-0x08(%rbp),%rbp	# 431DEA 48 8D 6D F8 
+	ret		# 431DEE C3 
+//T{ 0 GI1 -> }T
+
+//T{ 1 GI1 -> 123 }T
+
+//T{ -1 GI1 -> 123 }T
+
+//T{ 0 GI2 -> 234 }T
+
+//T{ 1 GI2 -> 123 }T
+
+//T{ -1 GI1 -> 123 }T
+
+//
+
+//T{ : GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ; -> }T
+
+GI3:
+	mov	%rax,-0x08(%rbp)	# 431DEF 48 89 45 F8 
+	mov	%rax,-0x10(%rbp)	# 431DF3 48 89 45 F0 
+	mov	$0x5,%eax	# 431DF7 B8 5 0 0 0 
+	cmp	-0x10(%rbp),%rax	# 431DFC 48 3B 45 F0 
+	setNle	%al	# 431E00 F 9F C0 
+		neg	%al	# 431E03 F6 D8 
+	movsbq	%al,%rax	# 431E05 48 F BE C0 
+	test	%rax,%rax	# 431E09 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431E0C 48 8B 45 F8 
+	jz	 ( GI3+38  ) 	# 431E10 F 84 11 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431E16 48 89 45 F8 
+	lea	0x01(%rax),%rax	# 431E1A 48 8D 40 1 
+	lea	-0x08(%rbp),%rbp	# 431E1E 48 8D 6D F8 
+	jmp	 ( GI3 ) 	# 431E22 E9 C8 FF FF FF 
+	ret		# 431E27 C3 
+//T{ 0 GI3 -> 0 1 2 3 4 5 }T
+
+//T{ 4 GI3 -> 4 5 }T
+
+//T{ 5 GI3 -> 5 }T
+
+//T{ 6 GI3 -> 6 }T
+
+//
+
+//T{ : GI4 BEGIN DUP 1+ DUP 5 > UNTIL ; -> }T
+
+GI4:
+	mov	%rax,-0x08(%rbp)	# 431E28 48 89 45 F8 
+	lea	0x01(%rax),%rax	# 431E2C 48 8D 40 1 
+	mov	%rax,-0x10(%rbp)	# 431E30 48 89 45 F0 
+	mov	%rax,-0x18(%rbp)	# 431E34 48 89 45 E8 
+	mov	$0x5,%eax	# 431E38 B8 5 0 0 0 
+	cmp	-0x18(%rbp),%rax	# 431E3D 48 3B 45 E8 
+	setl	%al	# 431E41 F 9C C0 
+		neg	%al	# 431E44 F6 D8 
+	movsbq	%al,%rax	# 431E46 48 F BE C0 
+	test	%rax,%rax	# 431E4A 48 85 C0 
+	mov	-0x10(%rbp),%rax	# 431E4D 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 431E51 48 8D 6D F8 
+	jz	 ( GI4 ) 	# 431E55 F 84 CD FF FF FF 
+	ret		# 431E5B C3 
+//T{ 3 GI4 -> 3 4 5 6 }T
+
+//T{ 5 GI4 -> 5 6 }T
+
+//T{ 6 GI4 -> 6 7 }T
+
+//
+
+//T{ : GI5 BEGIN DUP 2 >
+
+GI5:
+	mov	%rax,-0x08(%rbp)	# 431E5C 48 89 45 F8 
+	mov	%rax,-0x10(%rbp)	# 431E60 48 89 45 F0 
+	mov	$0x2,%eax	# 431E64 B8 2 0 0 0 
+	cmp	-0x10(%rbp),%rax	# 431E69 48 3B 45 F0 
+	setl	%al	# 431E6D F 9C C0 
+		neg	%al	# 431E70 F6 D8 
+	movsbq	%al,%rax	# 431E72 48 F BE C0 
+	test	%rax,%rax	# 431E76 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431E79 48 8B 45 F8 
+//         WHILE DUP 5 < WHILE DUP 1+ REPEAT 123 ELSE 345 THEN ; -> }T
+
+	jz	 ( GI5+71  ) 	# 431E7D F 84 4A 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431E83 48 89 45 F8 
+	mov	%rax,-0x10(%rbp)	# 431E87 48 89 45 F0 
+	mov	$0x5,%eax	# 431E8B B8 5 0 0 0 
+	cmp	-0x10(%rbp),%rax	# 431E90 48 3B 45 F0 
+	setNle	%al	# 431E94 F 9F C0 
+		neg	%al	# 431E97 F6 D8 
+	movsbq	%al,%rax	# 431E99 48 F BE C0 
+	test	%rax,%rax	# 431E9D 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431EA0 48 8B 45 F8 
+	jz	 ( GI5+5F  ) 	# 431EA4 F 84 11 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431EAA 48 89 45 F8 
+	lea	0x01(%rax),%rax	# 431EAE 48 8D 40 1 
+	lea	-0x08(%rbp),%rbp	# 431EB2 48 8D 6D F8 
+	jmp	 ( GI5 ) 	# 431EB6 E9 A1 FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 431EBB 48 89 45 F8 
+	mov	$0x123,%eax	# 431EBF B8 23 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 431EC4 48 8D 6D F8 
+	jmp	 ( GI5+7E  ) 	# 431EC8 E9 D 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431ECD 48 89 45 F8 
+	mov	$0x345,%eax	# 431ED1 B8 45 3 0 0 
+	lea	-0x08(%rbp),%rbp	# 431ED6 48 8D 6D F8 
+	ret		# 431EDA C3 
+//T{ 1 GI5 -> 1 345 }T
+
+//T{ 2 GI5 -> 2 345 }T
+
+//T{ 3 GI5 -> 3 4 5 123 }T
+
+//T{ 4 GI5 -> 4 5 123 }T
+
+//T{ 5 GI5 -> 5 123 }T
+
+//
+
+//T{ : GI6 ( N -- 0,1,..N ) DUP IF DUP >R 1- RECURSE R> THEN ; -> }T
+
+GI6:
+	mov	%rax,-0x08(%rbp)	# 431EDB 48 89 45 F8 
+	test	%rax,%rax	# 431EDF 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 431EE2 48 8B 45 F8 
+	jz	 ( GI6+2C  ) 	# 431EE6 F 84 1B 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 431EEC 48 89 45 F8 
+	Push	%rax	# 431EF0 50 
+	mov	-0x08(%rbp),%rax	# 431EF1 48 8B 45 F8 
+	lea	-0x01(%rax),%rax	# 431EF5 48 8D 40 FF 
+	call	 ( GI6 ) 	# 431EF9 E8 DD FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 431EFE 48 89 45 F8 
+	pop	%rax	# 431F02 58 
+	lea	-0x08(%rbp),%rbp	# 431F03 48 8D 6D F8 
+	ret		# 431F07 C3 
+//T{ 0 GI6 -> 0 }T
+
+//T{ 1 GI6 -> 0 1 }T
+
+//T{ 2 GI6 -> 0 1 2 }T
+
+//T{ 3 GI6 -> 0 1 2 3 }T
+
+//T{ 4 GI6 -> 0 1 2 3 4 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING DO LOOP +LOOP I J UNLOOP LEAVE EXIT
+
+//
+
+//T{ : GD1 DO I LOOP ; -> }T
+
+GD1:
+	call	 ( (DO) ) 	# 431F08 E8 DC 2A FD FF 
+	.quad  ( GD1+25  ) 
+	mov	%rax,-0x08(%rbp)	# 431F15 48 89 45 F8 
+	mov	%r14,%rax	# 431F19 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 431F1C 48 8D 6D F8 
+	inc	%r14	# 431F20 49 FF C6 
+	inc	%r15	# 431F23 49 FF C7 
+	jNo	 ( GD1+D  ) 	# 431F26 71 ED 
+	pop	%r14	# 431F28 41 5E 
+	pop	%r15	# 431F2A 41 5F 
+	pop	%rcx	# 431F2C 59 
+	ret		# 431F2D C3 
+//T{ 4 1 GD1 -> 1 2 3 }T
+
+//T{ 2 -1 GD1 -> -1 0 1 }T
+
+//T{ MID-UINT+1 MID-UINT GD1 -> MID-UINT }T
+
+//
+
+//T{ : GD2 DO I -1 +LOOP ; -> }T
+
+GD2:
+	call	 ( (DO) ) 	# 431F2E E8 B6 2A FD FF 
+	.quad  ( GD2+35  ) 
+	mov	%rax,-0x08(%rbp)	# 431F3B 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 431F3F 4C 89 75 F0 
+	movq	$-0x1,%rax	# 431F43 48 C7 C0 FF FF FF FF 
+	lea	-0x10(%rbp),%rbp	# 431F4A 48 8D 6D F0 
+	add	%rax,%r14	# 431F4E 49 1 C6 
+	add	%rax,%r15	# 431F51 49 1 C7 
+	mov	0x00(%rbp),%rax	# 431F54 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 431F58 48 8D 6D 8 
+	jNo	 ( GD2+D  ) 	# 431F5C 71 DD 
+	pop	%r14	# 431F5E 41 5E 
+	pop	%r15	# 431F60 41 5F 
+	pop	%rcx	# 431F62 59 
+	ret		# 431F63 C3 
+//T{ 1 4 GD2 -> 4 3 2 1 }T
+
+//T{ -1 2 GD2 -> 2 1 0 -1 }T
+
+//T{ MID-UINT MID-UINT+1 GD2 -> MID-UINT+1 MID-UINT }T
+
+//
+
+//T{ : GD3 DO 1 0 DO J LOOP LOOP ; -> }T
+
+GD3:
+	call	 ( (DO) ) 	# 431F64 E8 80 2A FD FF 
+	.quad  ( GD3+55  ) 
+	mov	%rax,-0x08(%rbp)	# 431F71 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 431F75 48 C7 45 F0 1 0 0 0 
+	mov	$0x0,%eax	# 431F7D B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 431F82 48 8D 6D F0 
+	call	 ( (DO) ) 	# 431F86 E8 5E 2A FD FF 
+	.quad  ( GD3+48  ) 
+	mov	%rax,-0x08(%rbp)	# 431F93 48 89 45 F8 
+	mov	(%rsp),%rax	# 431F97 48 8B 4 24 
+	lea	-0x08(%rbp),%rbp	# 431F9B 48 8D 6D F8 
+	inc	%r14	# 431F9F 49 FF C6 
+	inc	%r15	# 431FA2 49 FF C7 
+	jNo	 ( GD3+2F  ) 	# 431FA5 71 EC 
+	pop	%r14	# 431FA7 41 5E 
+	pop	%r15	# 431FA9 41 5F 
+	pop	%rcx	# 431FAB 59 
+	inc	%r14	# 431FAC 49 FF C6 
+	inc	%r15	# 431FAF 49 FF C7 
+	jNo	 ( GD3+D  ) 	# 431FB2 71 BD 
+	pop	%r14	# 431FB4 41 5E 
+	pop	%r15	# 431FB6 41 5F 
+	pop	%rcx	# 431FB8 59 
+	ret		# 431FB9 C3 
+//T{ 4 1 GD3 -> 1 2 3 }T
+
+//T{ 2 -1 GD3 -> -1 0 1 }T
+
+//T{ MID-UINT+1 MID-UINT GD3 -> MID-UINT }T
+
+//
+
+//T{ : GD4 DO 1 0 DO J LOOP -1 +LOOP ; -> }T
+
+GD4:
+	call	 ( (DO) ) 	# 431FBA E8 2A 2A FD FF 
+	.quad  ( GD4+6C  ) 
+	mov	%rax,-0x08(%rbp)	# 431FC7 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 431FCB 48 C7 45 F0 1 0 0 0 
+	mov	$0x0,%eax	# 431FD3 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 431FD8 48 8D 6D F0 
+	call	 ( (DO) ) 	# 431FDC E8 8 2A FD FF 
+	.quad  ( GD4+48  ) 
+	mov	%rax,-0x08(%rbp)	# 431FE9 48 89 45 F8 
+	mov	(%rsp),%rax	# 431FED 48 8B 4 24 
+	lea	-0x08(%rbp),%rbp	# 431FF1 48 8D 6D F8 
+	inc	%r14	# 431FF5 49 FF C6 
+	inc	%r15	# 431FF8 49 FF C7 
+	jNo	 ( GD4+2F  ) 	# 431FFB 71 EC 
+	pop	%r14	# 431FFD 41 5E 
+	pop	%r15	# 431FFF 41 5F 
+	pop	%rcx	# 432001 59 
+	mov	%rax,-0x08(%rbp)	# 432002 48 89 45 F8 
+	movq	$-0x1,%rax	# 432006 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 43200D 48 8D 6D F8 
+	add	%rax,%r14	# 432011 49 1 C6 
+	add	%rax,%r15	# 432014 49 1 C7 
+	mov	0x00(%rbp),%rax	# 432017 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43201B 48 8D 6D 8 
+	jNo	 ( GD4+D  ) 	# 43201F 71 A6 
+	pop	%r14	# 432021 41 5E 
+	pop	%r15	# 432023 41 5F 
+	pop	%rcx	# 432025 59 
+	ret		# 432026 C3 
+//T{ 1 4 GD4 -> 4 3 2 1 }T
+
+//T{ -1 2 GD4 -> 2 1 0 -1 }T
+
+//T{ MID-UINT MID-UINT+1 GD4 -> MID-UINT+1 MID-UINT }T
+
+//
+
+//T{ : GD5 123 SWAP 0 DO I 4 > IF DROP 234 LEAVE THEN LOOP ; -> }T
+
+GD5:
+	movq	$0x123,-0x08(%rbp)	# 432027 48 C7 45 F8 23 1 0 0 
+	mov	%rax,-0x10(%rbp)	# 43202F 48 89 45 F0 
+	mov	$0x0,%eax	# 432033 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432038 48 8D 6D F0 
+	call	 ( (DO) ) 	# 43203C E8 A8 29 FD FF 
+	.quad  ( GD5+60  ) 
+	mov	%rax,-0x08(%rbp)	# 432049 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 43204D 4C 89 75 F0 
+	mov	$0x4,%eax	# 432051 B8 4 0 0 0 
+	cmp	-0x10(%rbp),%rax	# 432056 48 3B 45 F0 
+	setl	%al	# 43205A F 9C C0 
+		neg	%al	# 43205D F6 D8 
+	movsbq	%al,%rax	# 43205F 48 F BE C0 
+	test	%rax,%rax	# 432063 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 432066 48 8B 45 F8 
+	jz	 ( GD5+53  ) 	# 43206A F 84 A 0 0 0 
+	mov	$0x234,%eax	# 432070 B8 34 2 0 0 
+	call	 ( LEAVE ) 	# 432075 E8 A3 29 FD FF 
+	inc	%r14	# 43207A 49 FF C6 
+	inc	%r15	# 43207D 49 FF C7 
+	jNo	 ( GD5+22  ) 	# 432080 71 C7 
+	pop	%r14	# 432082 41 5E 
+	pop	%r15	# 432084 41 5F 
+	pop	%rcx	# 432086 59 
+	ret		# 432087 C3 
+//T{ 1 GD5 -> 123 }T
+
+//T{ 5 GD5 -> 123 }T
+
+//T{ 6 GD5 -> 234 }T
+
+//
+
+//T{ : GD6  ( PAT: T{0 0},{0 0}{1 0}{1 1},{0 0}{1 0}{1 1}{2 0}{2 1}{2 2} )
+
+//   0 SWAP 0 DO
+
+GD6:
+	movq	$0x0,-0x08(%rbp)	# 432088 48 C7 45 F8 0 0 0 0 
+	mov	%rax,-0x10(%rbp)	# 432090 48 89 45 F0 
+	mov	$0x0,%eax	# 432094 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432099 48 8D 6D F0 
+	call	 ( (DO) ) 	# 43209D E8 47 29 FD FF 
+	.quad  ( GD6+B7  ) 
+//      I 1+ 0 DO I J + 3 = IF I UNLOOP I UNLOOP EXIT THEN 1+ LOOP
+
+	mov	%rax,-0x08(%rbp)	# 4320AA 48 89 45 F8 
+	mov	%r14,%rax	# 4320AE 4C 89 F0 
+	lea	0x01(%rax),%rax	# 4320B1 48 8D 40 1 
+	mov	%rax,-0x10(%rbp)	# 4320B5 48 89 45 F0 
+	mov	$0x0,%eax	# 4320B9 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4320BE 48 8D 6D F0 
+	call	 ( (DO) ) 	# 4320C2 E8 22 29 FD FF 
+	.quad  ( GD6+A6  ) 
+	mov	%rax,-0x08(%rbp)	# 4320CF 48 89 45 F8 
+	mov	%r14,%rax	# 4320D3 4C 89 F0 
+	mov	%r14,-0x10(%rbp)	# 4320D6 4C 89 75 F0 
+	mov	(%rsp),%rax	# 4320DA 48 8B 4 24 
+	add	-0x10(%rbp),%rax	# 4320DE 48 3 45 F0 
+	xor	$0x3,%rax	# 4320E2 48 35 3 0 0 0 
+	sub	$0x01,%rax	# 4320E8 48 83 E8 1 
+	sbb	%rax,%rax	# 4320EC 48 19 C0 
+	test	%rax,%rax	# 4320EF 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4320F2 48 8B 45 F8 
+	jz	 ( GD6+95  ) 	# 4320F6 F 84 21 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4320FC 48 89 45 F8 
+	mov	%r14,%rax	# 432100 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 432103 48 8D 6D F8 
+	call	 ( UNLOOP ) 	# 432107 E8 17 29 FD FF 
+	mov	%rax,-0x08(%rbp)	# 43210C 48 89 45 F8 
+	mov	%r14,%rax	# 432110 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 432113 48 8D 6D F8 
+	call	 ( UNLOOP ) 	# 432117 E8 7 29 FD FF 
+	ret		# 43211C C3 
+	lea	0x01(%rax),%rax	# 43211D 48 8D 40 1 
+	inc	%r14	# 432121 49 FF C6 
+	inc	%r15	# 432124 49 FF C7 
+	jNo	 ( GD6+47  ) 	# 432127 71 A6 
+	pop	%r14	# 432129 41 5E 
+	pop	%r15	# 43212B 41 5F 
+	pop	%rcx	# 43212D 59 
+//    LOOP ; -> }T
+
+	inc	%r14	# 43212E 49 FF C6 
+	inc	%r15	# 432131 49 FF C7 
+	jNo	 ( GD6+22  ) 	# 432134 F 81 70 FF FF FF 
+	pop	%r14	# 43213A 41 5E 
+	pop	%r15	# 43213C 41 5F 
+	pop	%rcx	# 43213E 59 
+	ret		# 43213F C3 
+//T{ 1 GD6 -> 1 }T
+
+//T{ 2 GD6 -> 3 }T
+
+//T{ 3 GD6 -> 4 1 2 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING DEFINING WORDS: : ; CONSTANT VARIABLE CREATE DOES> >BODY
+
+//
+
+//T{ 123 CONSTANT X123 -> }T
+
+X123:
+	call	 ( DOCONSTANT ) 	# 432140 E8 CE 27 FD FF 
+	and	(%rcx),%eax	# 432145 23 1 
+	add	%al,(%rax)	# 432147 0 0 
+	add	%al,(%rax)	# 432149 0 0 
+	add	%al,(%rax)	# 43214B 0 0 
+//T{ X123 -> 123 }T
+
+//T{ : EQU CONSTANT ; -> }T
+
+EQU:
+	call	 ( CONSTANT ) 	# 43214D E8 BA CF FD FF 
+	ret		# 432152 C3 
+//T{ X123 EQU Y123 -> }T
+
+Y123:
+	call	 ( DOCONSTANT ) 	# 432153 E8 BB 27 FD FF 
+	and	(%rcx),%eax	# 432158 23 1 
+	add	%al,(%rax)	# 43215A 0 0 
+	add	%al,(%rax)	# 43215C 0 0 
+	add	%al,(%rax)	# 43215E 0 0 
+//T{ Y123 -> 123 }T
+
+//
+
+//T{ VARIABLE V1 -> }T
+
+	add	%al,(%rax)	# 432160 0 0 
+	add	%ch,%al	# 432162 0 E8 
+	mov	$0x23FFFD27,%eax	# 432164 B8 27 FD FF 23 
+	add	%eax,(%rax)	# 432169 1 0 
+	add	%al,(%rax)	# 43216B 0 0 
+	add	%al,(%rax)	# 43216D 0 0 
+	add	%ch,%al	# 43216F 0 E8 
+//T{ 123 V1 ! -> }T
+
+//T{ V1 @ -> 123 }T
+
+//
+
+//T{ : NOP : POSTPONE ; ; -> }T
+
+		not	%edi	# 432171 F7 D7 
+stD	# 432173 FD 
+	jmpf	*%rax	# 432174 FF E8 
+	add	%al,%bl	# 432176 2 D8 
+stD	# 432178 FD 
+	inc	%ebx	# 432179 FF C3 
+//T{ NOP NOP1 NOP NOP2 -> }T
+
+NOP1:
+	ret		# 43217B C3 
+NOP2:
+	ret		# 43217C C3 
+//T{ NOP1 -> }T
+
+//T{ NOP2 -> }T
+
+//
+
+//T{ : DOES1 DOES> @ 1 + ; -> }T
+
+DOES1:
+	call	 ( (DOES>) ) 	# 43217D E8 5 D1 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432182 48 89 45 F8 
+	pop	%rax	# 432186 58 
+	mov	(%rax),%rax	# 432187 48 8B 0 
+	lea	0x01(%rax),%rax	# 43218A 48 8D 40 1 
+	lea	-0x08(%rbp),%rbp	# 43218E 48 8D 6D F8 
+	ret		# 432192 C3 
+//T{ : DOES2 DOES> @ 2 + ; -> }T
+
+DOES2:
+	call	 ( (DOES>) ) 	# 432193 E8 EF D0 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432198 48 89 45 F8 
+	pop	%rax	# 43219C 58 
+	mov	(%rax),%rax	# 43219D 48 8B 0 
+	lea	0x02(%rax),%rax	# 4321A0 48 8D 40 2 
+	lea	-0x08(%rbp),%rbp	# 4321A4 48 8D 6D F8 
+	ret		# 4321A8 C3 
+//T{ CREATE CR1 -> }T
+
+	add	%al, ( S\"+B8  ) (%rip)	# 4321A9 0 5 E8 E8 FF FF 
+	inc	(%rcx)	# 4321AF FF 1 
+//T{ CR1 -> HERE }T
+
+//T{ ' CR1 >BODY -> HERE }T
+
+//T{ 1 , -> }T
+
+	add	%al,(%rax)	# 4321B1 0 0 
+	add	%al,(%rax)	# 4321B3 0 0 
+	add	%al,(%rax)	# 4321B5 0 0 
+	add	%ch,%al	# 4321B7 0 E8 
+//T{ CR1 @ -> 1 }T
+
+//T{ DOES1 -> }T
+
+//T{ CR1 -> 2 }T
+
+//T{ DOES2 -> }T
+
+//T{ CR1 -> 3 }T
+
+//
+
+//T{ : WEIRD: CREATE DOES> 1 + DOES> 2 + ; -> }T
+
+	.byte	0xE3	# 4321B9 E3 
+	iret		# 4321BA CF 
+stD	# 4321BB FD 
+	jmpf	*%rax	# 4321BC FF E8 
+	.byte	0xC5	# 4321BE C5 
+	sar	$1,%ch	# 4321BF D0 FD 
+	dec	-0x77(%rax)	# 4321C1 FF 48 89 
+clC	# 4321C4 45 F8 
+	pop	-0x10(%rbp)	# 4321C6 8F 45 F0 
+	mov	$0x1,%eax	# 4321C9 B8 1 0 0 0 
+	add	-0x10(%rbp),%rax	# 4321CE 48 3 45 F0 
+	lea	-0x08(%rbp),%rbp	# 4321D2 48 8D 6D F8 
+	call	 ( (DOES>) ) 	# 4321D6 E8 AC D0 FD FF 
+	mov	%rax,-0x08(%rbp)	# 4321DB 48 89 45 F8 
+	pop	-0x10(%rbp)	# 4321DF 8F 45 F0 
+	mov	$0x2,%eax	# 4321E2 B8 2 0 0 0 
+	add	-0x10(%rbp),%rax	# 4321E7 48 3 45 F0 
+	lea	-0x08(%rbp),%rbp	# 4321EB 48 8D 6D F8 
+	ret		# 4321EF C3 
+//T{ WEIRD: W1 -> }T
+
+	add	%al,(%rax)	# 4321F0 0 0 
+	add	%ch,%al	# 4321F2 0 E8 
+	.byte	0xE3	# 4321F4 E3 
+	g4??	%edi	# 4321F5 FF FF 
+	jmpf	*%rax	# 4321F7 FF E8 
+//T{ ' W1 >BODY -> HERE }T
+
+//T{ W1 -> HERE 1 + }T
+
+//T{ W1 -> HERE 2 + }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING EVALUATE
+
+//
+
+//: GE1 S" 123" ; IMMEDIATE
+
+	sub	$-0x03,%r8lB	# 4321F9 45 2E FD 
+	inc	(%rbx)	# 4321FC FF 3 
+	xor	%esi,(%rdx)	# 4321FE 31 32 
+	xor	%ebx,%eax	# 432200 33 C3 
+//: GE2 S" 123 1+" ; IMMEDIATE
+
+GE2:
+	call	 ( (S") ) 	# 432202 E8 3B 2E FD FF 
+	.byte 0x6,0x31,0x32,0x33,0x20,0x31,0x2B
+	ret		# 43220E C3 
+//: GE3 S" : GE4 345 ;" ;
+
+GE3:
+	call	 ( (S") ) 	# 43220F E8 2E 2E FD FF 
+	.byte 0xB,0x3A,0x20,0x47,0x45,0x34,0x20,0x33,0x34,0x35,0x20,0x3B
+	ret		# 432220 C3 
+//: GE5 EVALUATE ; IMMEDIATE
+
+GE5:
+	call	 ( EVALUATE ) 	# 432221 E8 8 BE FD FF 
+	ret		# 432226 C3 
+//
+
+//T{ GE1 EVALUATE -> 123 }T         ( TEST EVALUATE IN INTERP. STATE )
+
+//T{ GE2 EVALUATE -> 124 }T
+
+//T{ GE3 EVALUATE -> }T
+
+GE4:
+	mov	%rax,-0x08(%rbp)	# 432227 48 89 45 F8 
+	mov	$0x345,%eax	# 43222B B8 45 3 0 0 
+	lea	-0x08(%rbp),%rbp	# 432230 48 8D 6D F8 
+	ret		# 432234 C3 
+//T{ GE4 -> 345 }T
+
+//
+
+//T{ : GE6 GE1 GE5 ; -> }T         ( TEST EVALUATE IN COMPILE STATE )
+
+GE6:
+	mov	%rax,-0x08(%rbp)	# 432235 48 89 45 F8 
+	mov	$0x123,%eax	# 432239 B8 23 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 43223E 48 8D 6D F8 
+	ret		# 432242 C3 
+//T{ GE6 -> 123 }T
+
+//T{ : GE7 GE2 GE5 ; -> }T
+
+GE7:
+	mov	%rax,-0x08(%rbp)	# 432243 48 89 45 F8 
+	mov	$0x124,%eax	# 432247 B8 24 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 43224C 48 8D 6D F8 
+	ret		# 432250 C3 
+//T{ GE7 -> 124 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING SOURCE >IN WORD
+
+//
+
+//: GS1 S" SOURCE" 2DUP EVALUATE
+
+GS1:
+	call	 ( (S") ) 	# 432251 E8 EC 2D FD FF 
+	.byte 0x6,0x53,0x4F,0x55,0x52,0x43,0x45
+	mov	0x00(%rbp),%rdx	# 43225D 48 8B 55 0 
+	mov	%rax,-0x08(%rbp)	# 432261 48 89 45 F8 
+	mov	%rdx,-0x10(%rbp)	# 432265 48 89 55 F0 
+	lea	-0x10(%rbp),%rbp	# 432269 48 8D 6D F0 
+	call	 ( EVALUATE ) 	# 43226D E8 BC BD FD FF 
+//       >R SWAP >R = R> R> = ;
+
+	Push	%rax	# 432272 50 
+	mov	0x00(%rbp),%rax	# 432273 48 8B 45 0 
+	mov	0x08(%rbp),%rdx	# 432277 48 8B 55 8 
+	mov	%rax,0x08(%rbp)	# 43227B 48 89 45 8 
+	mov	%rdx,%rax	# 43227F 48 89 D0 
+	Push	%rax	# 432282 50 
+	mov	0x08(%rbp),%rax	# 432283 48 8B 45 8 
+	xor	0x10(%rbp),%rax	# 432287 48 33 45 10 
+	sub	$0x01,%rax	# 43228B 48 83 E8 1 
+	sbb	%rax,%rax	# 43228F 48 19 C0 
+	mov	%rax,0x10(%rbp)	# 432292 48 89 45 10 
+	pop	0x08(%rbp)	# 432296 8F 45 8 
+	pop	%rax	# 432299 58 
+	xor	0x08(%rbp),%rax	# 43229A 48 33 45 8 
+	sub	$0x01,%rax	# 43229E 48 83 E8 1 
+	sbb	%rax,%rax	# 4322A2 48 19 C0 
+	lea	0x10(%rbp),%rbp	# 4322A5 48 8D 6D 10 
+	ret		# 4322A9 C3 
+//T{ GS1 -> <TRUE> <TRUE> }T
+
+//
+
+//VARIABLE SCANS
+
+	add	%ch,%al	# 4322AA 0 E8 
+	jo	 ( RESCAN?+1C  ) 	# 4322AC 70 26 
+stD	# 4322AE FD 
+	inc	(%rax)	# 4322AF FF 0 
+	add	%al,(%rax)	# 4322B1 0 0 
+	add	%al,(%rax)	# 4322B3 0 0 
+	add	%al,(%rax)	# 4322B5 0 0 
+	add	%cl,-0x77(%rax)	# 4322B7 0 48 89 
+//: RESCAN?  -1 SCANS +! SCANS @ IF 0 >IN ! THEN ;
+
+clC	# 4322BA 45 F8 
+	lea	 ( SCANS+5  ) (%rip),%rax	# 4322BC 48 8D 5 ED FF FF FF 
+	movq	$-0x1,%rdx	# 4322C3 48 C7 C2 FF FF FF FF 
+	add	%rdx,(%rax)	# 4322CA 48 1 10 
+	mov	 ( SCANS+5  ) (%rip),%rax	# 4322CD 48 8B 5 DC FF FF FF 
+	test	%rax,%rax	# 4322D4 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4322D7 48 8B 45 F8 
+	jz	 ( RESCAN?+45  ) 	# 4322DB F 84 1C 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 4322E1 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 4322E5 48 C7 45 F0 0 0 0 0 
+	mov	$0x404C49,%eax	# 4322ED B8 49 4C 40 0 
+	mov	-0x10(%rbp),%rdx	# 4322F2 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 4322F6 48 89 10 
+	mov	-0x08(%rbp),%rax	# 4322F9 48 8B 45 F8 
+	ret		# 4322FD C3 
+//
+
+//T{ 2 SCANS !
+
+//345 RESCAN?
+
+//-> 345 345 }T
+
+//
+
+//: GS2  5 SCANS ! S" 123 RESCAN?" EVALUATE ;
+
+GS2:
+	movq	$0x5, ( SCANS+5  ) (%rip)	# 4322FE 48 C7 5 A7 FF FF FF 5 0 0 0 
+	call	 ( (S") ) 	# 432309 E8 34 2D FD FF 
+	.byte 0xB,0x31,0x32,0x33,0x20,0x52,0x45,0x53,0x43,0x41,0x4E,0x3F
+	call	 ( EVALUATE ) 	# 43231A E8 F BD FD FF 
+	ret		# 43231F C3 
+//T{ GS2 -> 123 123 123 123 123 }T
+
+//
+
+//: GS3 WORD COUNT SWAP C@ ;
+
+GS3:
+	call	 ( WORD ) 	# 432320 E8 3D C4 FD FF 
+	lea	0x01(%rax),%rdx	# 432325 48 8D 50 1 
+	movzbq	(%rax),%rax	# 432329 48 F B6 0 
+	mov	%rax,-0x08(%rbp)	# 43232D 48 89 45 F8 
+	movzb	(%rdx),%eax	# 432331 F B6 2 
+	lea	-0x08(%rbp),%rbp	# 432334 48 8D 6D F8 
+	ret		# 432338 C3 
+//T{ BL GS3 HELLO -> 5 CHAR H }T
+
+//T{ CHAR " GS3 GOODBYE" -> 7 CHAR G }T
+
+//T{ BL GS3
+
+//DROP -> 0 }T            \ BLANK LINE RETURN ZERO-LENGTH STRING
+
+//
+
+//: GS4 SOURCE >IN ! DROP ;
+
+GS4:
+	mov	%rax,-0x08(%rbp)	# 432339 48 89 45 F8 
+	mov	 ( TIB+5  ) (%rip),%rax	# 43233D 48 8B 5 FA AD FD FF 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 432344 48 8B 5 2E 29 FD FF 
+	mov	%rax,%rdx	# 43234B 48 89 C2 
+	mov	$0x404C49,%eax	# 43234E B8 49 4C 40 0 
+	mov	%rdx,(%rax)	# 432353 48 89 10 
+	mov	-0x08(%rbp),%rax	# 432356 48 8B 45 F8 
+	ret		# 43235A C3 
+//T{ GS4 123 456
+
+//-> }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING <# # #S #> HOLD SIGN BASE >NUMBER HEX DECIMAL
+
+//
+
+//: S=  \ ( ADDR1 C1 ADDR2 C2 -- T/F ) COMPARE TWO STRINGS.
+
+//   >R SWAP R@ = IF         \ MAKE SURE STRINGS HAVE SAME LENGTH
+
+Sequ:
+	Push	%rax	# 43235B 50 
+	mov	0x00(%rbp),%rax	# 43235C 48 8B 45 0 
+	mov	0x08(%rbp),%rdx	# 432360 48 8B 55 8 
+	mov	%rax,0x08(%rbp)	# 432364 48 89 45 8 
+	mov	%rdx,%rax	# 432368 48 89 D0 
+	xor	(%rsp),%rax	# 43236B 48 33 4 24 
+	sub	$0x01,%rax	# 43236F 48 83 E8 1 
+	sbb	%rax,%rax	# 432373 48 19 C0 
+	test	%rax,%rax	# 432376 48 85 C0 
+	mov	0x08(%rbp),%rax	# 432379 48 8B 45 8 
+	lea	0x10(%rbp),%rbp	# 43237D 48 8D 6D 10 
+	jz	 ( S=+D3  ) 	# 432381 F 84 A7 0 0 0 
+//      R> ?DUP IF         \ IF NON-EMPTY STRINGS
+
+	mov	%rax,-0x08(%rbp)	# 432387 48 89 45 F8 
+	pop	%rax	# 43238B 58 
+	lea	-0x08(%rbp),%rbp	# 43238C 48 8D 6D F8 
+	call	 ( ?DUP ) 	# 432390 E8 9F 23 FD FF 
+	test	%rax,%rax	# 432395 48 85 C0 
+	mov	0x00(%rbp),%rax	# 432398 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43239C 48 8D 6D 8 
+	jz	 ( S=+C3  ) 	# 4323A0 F 84 78 0 0 0 
+//    0 DO
+
+	mov	%rax,-0x08(%rbp)	# 4323A6 48 89 45 F8 
+	mov	$0x0,%eax	# 4323AA B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4323AF 48 8D 6D F8 
+	call	 ( (DO) ) 	# 4323B3 E8 31 26 FD FF 
+	.quad  ( S=+C3  ) 
+//       OVER C@ OVER C@ - IF 2DROP <FALSE> UNLOOP EXIT THEN
+
+	mov	%rax,-0x08(%rbp)	# 4323C0 48 89 45 F8 
+	mov	0x00(%rbp),%rax	# 4323C4 48 8B 45 0 
+	movzb	(%rax),%eax	# 4323C8 F B6 0 
+	mov	%rax,-0x10(%rbp)	# 4323CB 48 89 45 F0 
+	mov	-0x08(%rbp),%rax	# 4323CF 48 8B 45 F8 
+	movzb	(%rax),%eax	# 4323D3 F B6 0 
+		negq	%rax	# 4323D6 48 F7 D8 
+	add	-0x10(%rbp),%rax	# 4323D9 48 3 45 F0 
+	test	%rax,%rax	# 4323DD 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4323E0 48 8B 45 F8 
+	jz	 ( S=+9E  ) 	# 4323E4 F 84 F 0 0 0 
+	mov	$0x0,%eax	# 4323EA B8 0 0 0 0 
+	lea	0x08(%rbp),%rbp	# 4323EF 48 8D 6D 8 
+	call	 ( UNLOOP ) 	# 4323F3 E8 2B 26 FD FF 
+	ret		# 4323F8 C3 
+//       SWAP CHAR+ SWAP CHAR+
+
+	mov	0x00(%rbp),%rdx	# 4323F9 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 4323FD 48 89 45 0 
+	lea	0x01(%rdx),%rax	# 432401 48 8D 42 1 
+	mov	0x00(%rbp),%rdx	# 432405 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 432409 48 89 45 0 
+	lea	0x01(%rdx),%rax	# 43240D 48 8D 42 1 
+//         LOOP
+
+	inc	%r14	# 432411 49 FF C6 
+	inc	%r15	# 432414 49 FF C7 
+	jNo	 ( S=+65  ) 	# 432417 71 A7 
+	pop	%r14	# 432419 41 5E 
+	pop	%r15	# 43241B 41 5F 
+	pop	%rcx	# 43241D 59 
+//      THEN
+
+//      2DROP <TRUE>         \ IF WE GET HERE, STRINGS MATCH
+
+	movq	$-0x1,%rax	# 43241E 48 C7 C0 FF FF FF FF 
+	lea	0x08(%rbp),%rbp	# 432425 48 8D 6D 8 
+//   ELSE
+
+	jmp	 ( S=+DD  ) 	# 432429 E9 A 0 0 0 
+//      R> DROP 2DROP <FALSE>      \ LENGTHS MISMATCH
+
+	pop	%rax	# 43242E 58 
+	mov	$0x0,%eax	# 43242F B8 0 0 0 0 
+	lea	0x08(%rbp),%rbp	# 432434 48 8D 6D 8 
+//   THEN ;
+
+	ret		# 432438 C3 
+//
+
+//: GP1  <# 41 HOLD 42 HOLD 0 0 #> S" BA" S= ;
+
+GP1:
+	call	 ( <# ) 	# 432439 E8 92 4C FE FF 
+	mov	%rax,-0x08(%rbp)	# 43243E 48 89 45 F8 
+	mov	$0x41,%eax	# 432442 B8 41 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 432447 48 8D 6D F8 
+	call	 ( HOLD ) 	# 43244B E8 40 4C FE FF 
+	mov	%rax,-0x08(%rbp)	# 432450 48 89 45 F8 
+	mov	$0x42,%eax	# 432454 B8 42 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 432459 48 8D 6D F8 
+	call	 ( HOLD ) 	# 43245D E8 2E 4C FE FF 
+	mov	%rax,-0x08(%rbp)	# 432462 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 432466 48 C7 45 F0 0 0 0 0 
+	mov	$0x0,%eax	# 43246E B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432473 48 8D 6D F0 
+	call	 ( #> ) 	# 432477 E8 6C 4D FE FF 
+	call	 ( (S") ) 	# 43247C E8 C1 2B FD FF 
+	.byte 0x2,0x42,0x41
+	call	 ( S= ) 	# 432484 E8 D2 FE FF FF 
+	ret		# 432489 C3 
+//T{ GP1 -> <TRUE> }T
+
+//
+
+//: GP2  <# -1 SIGN 0 SIGN -1 SIGN 0 0 #> S" --" S= ;
+
+GP2:
+	call	 ( <# ) 	# 43248A E8 41 4C FE FF 
+	mov	%rax,-0x08(%rbp)	# 43248F 48 89 45 F8 
+	movq	$-0x1,%rax	# 432493 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 43249A 48 8D 6D F8 
+	call	 ( SIGN ) 	# 43249E E8 85 4D FE FF 
+	mov	%rax,-0x08(%rbp)	# 4324A3 48 89 45 F8 
+	mov	$0x0,%eax	# 4324A7 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4324AC 48 8D 6D F8 
+	call	 ( SIGN ) 	# 4324B0 E8 73 4D FE FF 
+	mov	%rax,-0x08(%rbp)	# 4324B5 48 89 45 F8 
+	movq	$-0x1,%rax	# 4324B9 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 4324C0 48 8D 6D F8 
+	call	 ( SIGN ) 	# 4324C4 E8 5F 4D FE FF 
+	mov	%rax,-0x08(%rbp)	# 4324C9 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 4324CD 48 C7 45 F0 0 0 0 0 
+	mov	$0x0,%eax	# 4324D5 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4324DA 48 8D 6D F0 
+	call	 ( #> ) 	# 4324DE E8 5 4D FE FF 
+	call	 ( (S") ) 	# 4324E3 E8 5A 2B FD FF 
+	.byte 0x2,0x2D,0x2D
+	call	 ( S= ) 	# 4324EB E8 6B FE FF FF 
+	ret		# 4324F0 C3 
+//T{ GP2 -> <TRUE> }T
+
+//
+
+//: GP3  <# 1 0 # # #> S" 01" S= ;
+
+GP3:
+	call	 ( <# ) 	# 4324F1 E8 DA 4B FE FF 
+	mov	%rax,-0x08(%rbp)	# 4324F6 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 4324FA 48 C7 45 F0 1 0 0 0 
+	mov	$0x0,%eax	# 432502 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432507 48 8D 6D F0 
+	call	 ( # ) 	# 43250B E8 F8 4B FE FF 
+	call	 ( # ) 	# 432510 E8 F3 4B FE FF 
+	call	 ( #> ) 	# 432515 E8 CE 4C FE FF 
+	call	 ( (S") ) 	# 43251A E8 23 2B FD FF 
+	.byte 0x2,0x30,0x31
+	call	 ( S= ) 	# 432522 E8 34 FE FF FF 
+	ret		# 432527 C3 
+//T{ GP3 -> <TRUE> }T
+
+//
+
+//: GP4  <# 1 0 #S #> S" 1" S= ;
+
+GP4:
+	call	 ( <# ) 	# 432528 E8 A3 4B FE FF 
+	mov	%rax,-0x08(%rbp)	# 43252D 48 89 45 F8 
+	movq	$0x1,-0x10(%rbp)	# 432531 48 C7 45 F0 1 0 0 0 
+	mov	$0x0,%eax	# 432539 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 43253E 48 8D 6D F0 
+	call	 ( #S ) 	# 432542 E8 61 4C FE FF 
+	call	 ( #> ) 	# 432547 E8 9C 4C FE FF 
+	call	 ( (S") ) 	# 43254C E8 F1 2A FD FF 
+	.byte 0x1,0x31
+	call	 ( S= ) 	# 432553 E8 3 FE FF FF 
+	ret		# 432558 C3 
+//T{ GP4 -> <TRUE> }T
+
+//
+
+//24 CONSTANT MAX-BASE         \ BASE 2 .. 36
+
+MAXsubBASE:
+	call	 ( DOCONSTANT ) 	# 432559 E8 B5 23 FD FF 
+	and	$0x00,%al	# 43255E 24 0 
+	add	%al,(%rax)	# 432560 0 0 
+	add	%al,(%rax)	# 432562 0 0 
+	add	%al,(%rax)	# 432564 0 0 
+//: COUNT-BITS
+
+//   0 0 INVERT BEGIN DUP WHILE >R 1+ R> 2* REPEAT DROP ;
+
+COUNTsubBITS:
+	mov	%rax,-0x08(%rbp)	# 432566 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 43256A 48 C7 45 F0 0 0 0 0 
+	movq	$-0x1,%rax	# 432572 48 C7 C0 FF FF FF FF 
+	lea	-0x10(%rbp),%rbp	# 432579 48 8D 6D F0 
+	mov	%rax,-0x08(%rbp)	# 43257D 48 89 45 F8 
+	test	%rax,%rax	# 432581 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 432584 48 8B 45 F8 
+	jz	 ( COUNT-BITS+3F  ) 	# 432588 F 84 17 0 0 0 
+	Push	%rax	# 43258E 50 
+	mov	0x00(%rbp),%rax	# 43258F 48 8B 45 0 
+	lea	0x01(%rax),%rax	# 432593 48 8D 40 1 
+	mov	%rax,0x00(%rbp)	# 432597 48 89 45 0 
+	pop	%rax	# 43259B 58 
+	lea	(%rax,%rax,1),%rax	# 43259C 48 8D 4 0 
+	jmp	 ( COUNT-BITS+17  ) 	# 4325A0 E9 D8 FF FF FF 
+	mov	0x00(%rbp),%rax	# 4325A5 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4325A9 48 8D 6D 8 
+	ret		# 4325AD C3 
+//COUNT-BITS 2* CONSTANT #BITS-UD      \ NUMBER OF BITS IN UD
+
+hashBITSsubUD:
+	call	 ( DOCONSTANT ) 	# 4325AE E8 60 23 FD FF 
+	add	$0x00,(%rax)	# 4325B3 80 0 0 
+	add	%al,(%rax)	# 4325B6 0 0 
+	add	%al,(%rax)	# 4325B8 0 0 
+	add	%cl,-0x77(%rax)	# 4325BA 0 48 89 
+//
+
+//: GP5
+
+//   BASE @ <TRUE>
+
+clC	# 4325BD 45 F8 
+	mov	$0x404E89,%eax	# 4325BF B8 89 4E 40 0 
+	mov	(%rax),%rax	# 4325C4 48 8B 0 
+	mov	%rax,-0x10(%rbp)	# 4325C7 48 89 45 F0 
+	movq	$-0x1,-0x18(%rbp)	# 4325CB 48 C7 45 E8 FF FF FF FF 
+	movq	$0x25,-0x20(%rbp)	# 4325D3 48 C7 45 E0 25 0 0 0 
+//   MAX-BASE 1+ 2 DO         \ FOR EACH POSSIBLE BASE
+
+	mov	$0x2,%eax	# 4325DB B8 2 0 0 0 
+	lea	-0x20(%rbp),%rbp	# 4325E0 48 8D 6D E0 
+	call	 ( (DO) ) 	# 4325E4 E8 0 24 FD FF 
+	.quad  ( GP5+88  ) 
+//      I BASE !            \ TBD: ASSUMES BASE WORKS
+
+	mov	%rax,-0x08(%rbp)	# 4325F1 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 4325F5 4C 89 75 F0 
+	mov	$0x404E89,%eax	# 4325F9 B8 89 4E 40 0 
+	mov	-0x10(%rbp),%rdx	# 4325FE 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 432602 48 89 10 
+	mov	%r14,-0x10(%rbp)	# 432605 4C 89 75 F0 
+//      I 0 <# #S #> S" 10" S= AND
+
+	mov	$0x0,%eax	# 432609 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 43260E 48 8D 6D F0 
+	call	 ( <# ) 	# 432612 E8 B9 4A FE FF 
+	call	 ( #S ) 	# 432617 E8 8C 4B FE FF 
+	call	 ( #> ) 	# 43261C E8 C7 4B FE FF 
+	call	 ( (S") ) 	# 432621 E8 1C 2A FD FF 
+	.byte 0x2,0x31,0x30
+	call	 ( S= ) 	# 432629 E8 2D FD FF FF 
+	and	0x00(%rbp),%rax	# 43262E 48 23 45 0 
+	lea	0x08(%rbp),%rbp	# 432632 48 8D 6D 8 
+//   LOOP
+
+	inc	%r14	# 432636 49 FF C6 
+	inc	%r15	# 432639 49 FF C7 
+	jNo	 ( GP5+36  ) 	# 43263C 71 B3 
+	pop	%r14	# 43263E 41 5E 
+	pop	%r15	# 432640 41 5F 
+	pop	%rcx	# 432642 59 
+//   SWAP BASE ! ;
+
+	mov	0x00(%rbp),%rdx	# 432643 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 432647 48 89 45 0 
+	mov	$0x404E89,%eax	# 43264B B8 89 4E 40 0 
+	mov	%rdx,(%rax)	# 432650 48 89 10 
+	mov	0x00(%rbp),%rax	# 432653 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 432657 48 8D 6D 8 
+	ret		# 43265B C3 
+//T{ GP5 -> <TRUE> }T
+
+//
+
+//: GP6
+
+//   BASE @ >R  2 BASE !
+
+GP6:
+	mov	%rax,-0x08(%rbp)	# 43265C 48 89 45 F8 
+	mov	$0x404E89,%eax	# 432660 B8 89 4E 40 0 
+	mov	(%rax),%rax	# 432665 48 8B 0 
+	Push	%rax	# 432668 50 
+	movq	$0x2,-0x10(%rbp)	# 432669 48 C7 45 F0 2 0 0 0 
+	mov	$0x404E89,%eax	# 432671 B8 89 4E 40 0 
+	mov	-0x10(%rbp),%rdx	# 432676 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 43267A 48 89 10 
+	movq	$-0x1,-0x10(%rbp)	# 43267D 48 C7 45 F0 FF FF FF FF 
+//   MAX-UINT MAX-UINT <# #S #>      \ MAXIMUM UD TO BINARY
+
+	movq	$-0x1,%rax	# 432685 48 C7 C0 FF FF FF FF 
+	lea	-0x10(%rbp),%rbp	# 43268C 48 8D 6D F0 
+	call	 ( <# ) 	# 432690 E8 3B 4A FE FF 
+	call	 ( #S ) 	# 432695 E8 E 4B FE FF 
+	call	 ( #> ) 	# 43269A E8 49 4B FE FF 
+//   R> BASE !            \ S: C-ADDR U
+
+	mov	%rax,-0x08(%rbp)	# 43269F 48 89 45 F8 
+	pop	-0x10(%rbp)	# 4326A3 8F 45 F0 
+	mov	$0x404E89,%eax	# 4326A6 B8 89 4E 40 0 
+	mov	-0x10(%rbp),%rdx	# 4326AB 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 4326AF 48 89 10 
+	mov	-0x08(%rbp),%rax	# 4326B2 48 8B 45 F8 
+//   DUP #BITS-UD = SWAP
+
+	xor	$0x80,%rax	# 4326B6 48 35 80 0 0 0 
+	sub	$0x01,%rax	# 4326BC 48 83 E8 1 
+	sbb	%rax,%rax	# 4326C0 48 19 C0 
+	mov	-0x08(%rbp),%rdx	# 4326C3 48 8B 55 F8 
+	mov	%rax,-0x08(%rbp)	# 4326C7 48 89 45 F8 
+	mov	%rdx,-0x10(%rbp)	# 4326CB 48 89 55 F0 
+	mov	$0x0,%eax	# 4326CF B8 0 0 0 0 
+//   0 DO               \ S: C-ADDR FLAG
+
+	lea	-0x10(%rbp),%rbp	# 4326D4 48 8D 6D F0 
+	call	 ( (DO) ) 	# 4326D8 E8 C 23 FD FF 
+	.quad  ( GP6+C0  ) 
+//      OVER C@ [CHAR] 1 = AND      \ ALL ONES
+
+	mov	%rax,-0x08(%rbp)	# 4326E5 48 89 45 F8 
+	mov	0x00(%rbp),%rax	# 4326E9 48 8B 45 0 
+	movzb	(%rax),%eax	# 4326ED F B6 0 
+	xor	$0x31,%rax	# 4326F0 48 35 31 0 0 0 
+	sub	$0x01,%rax	# 4326F6 48 83 E8 1 
+	sbb	%rax,%rax	# 4326FA 48 19 C0 
+	and	-0x08(%rbp),%rax	# 4326FD 48 23 45 F8 
+//      >R CHAR+ R>
+
+	Push	%rax	# 432701 50 
+	mov	0x00(%rbp),%rax	# 432702 48 8B 45 0 
+	lea	0x01(%rax),%rax	# 432706 48 8D 40 1 
+	mov	%rax,0x00(%rbp)	# 43270A 48 89 45 0 
+	pop	%rax	# 43270E 58 
+//   LOOP SWAP DROP ;
+
+	inc	%r14	# 43270F 49 FF C6 
+	inc	%r15	# 432712 49 FF C7 
+	jNo	 ( GP6+89  ) 	# 432715 71 CE 
+	pop	%r14	# 432717 41 5E 
+	pop	%r15	# 432719 41 5F 
+	pop	%rcx	# 43271B 59 
+	mov	0x00(%rbp),%rdx	# 43271C 48 8B 55 0 
+	lea	0x08(%rbp),%rbp	# 432720 48 8D 6D 8 
+	ret		# 432724 C3 
+//T{ GP6 -> <TRUE> }T
+
+//
+
+//: GP7
+
+//   BASE @ >R    MAX-BASE BASE !
+
+GP7:
+	mov	%rax,-0x08(%rbp)	# 432725 48 89 45 F8 
+	mov	$0x404E89,%eax	# 432729 B8 89 4E 40 0 
+	mov	(%rax),%rax	# 43272E 48 8B 0 
+	Push	%rax	# 432731 50 
+	movq	$0x24,-0x10(%rbp)	# 432732 48 C7 45 F0 24 0 0 0 
+	mov	$0x404E89,%eax	# 43273A B8 89 4E 40 0 
+	mov	-0x10(%rbp),%rdx	# 43273F 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 432743 48 89 10 
+	movq	$-0x1,-0x10(%rbp)	# 432746 48 C7 45 F0 FF FF FF FF 
+//   <TRUE>
+
+	movq	$0xA,-0x18(%rbp)	# 43274E 48 C7 45 E8 A 0 0 0 
+//   A 0 DO
+
+	mov	$0x0,%eax	# 432756 B8 0 0 0 0 
+	lea	-0x18(%rbp),%rbp	# 43275B 48 8D 6D E8 
+	call	 ( (DO) ) 	# 43275F E8 85 22 FD FF 
+	.quad  ( GP7+B4  ) 
+//      I 0 <# #S #>
+
+	mov	%rax,-0x08(%rbp)	# 43276C 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 432770 4C 89 75 F0 
+	mov	$0x0,%eax	# 432774 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432779 48 8D 6D F0 
+	call	 ( <# ) 	# 43277D E8 4E 49 FE FF 
+	call	 ( #S ) 	# 432782 E8 21 4A FE FF 
+	call	 ( #> ) 	# 432787 E8 5C 4A FE FF 
+//      1 = SWAP C@ I 30 + = AND AND
+
+	xor	$0x1,%rax	# 43278C 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 432792 48 83 E8 1 
+	sbb	%rax,%rax	# 432796 48 19 C0 
+	mov	0x00(%rbp),%rdx	# 432799 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 43279D 48 89 45 0 
+	movzb	(%rdx),%eax	# 4327A1 F B6 2 
+	mov	%rax,-0x08(%rbp)	# 4327A4 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 4327A8 4C 89 75 F0 
+	mov	$0x30,%eax	# 4327AC B8 30 0 0 0 
+	add	-0x10(%rbp),%rax	# 4327B1 48 3 45 F0 
+	xor	-0x08(%rbp),%rax	# 4327B5 48 33 45 F8 
+	sub	$0x01,%rax	# 4327B9 48 83 E8 1 
+	sbb	%rax,%rax	# 4327BD 48 19 C0 
+	and	0x00(%rbp),%rax	# 4327C0 48 23 45 0 
+	and	0x08(%rbp),%rax	# 4327C4 48 23 45 8 
+	lea	0x10(%rbp),%rbp	# 4327C8 48 8D 6D 10 
+//   LOOP
+
+	inc	%r14	# 4327CC 49 FF C6 
+	inc	%r15	# 4327CF 49 FF C7 
+	jNo	 ( GP7+47  ) 	# 4327D2 71 98 
+	pop	%r14	# 4327D4 41 5E 
+	pop	%r15	# 4327D6 41 5F 
+	pop	%rcx	# 4327D8 59 
+//   MAX-BASE A DO
+
+	mov	%rax,-0x08(%rbp)	# 4327D9 48 89 45 F8 
+	movq	$0x24,-0x10(%rbp)	# 4327DD 48 C7 45 F0 24 0 0 0 
+	mov	$0xA,%eax	# 4327E5 B8 A 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4327EA 48 8D 6D F0 
+	call	 ( (DO) ) 	# 4327EE E8 F6 21 FD FF 
+	.quad  ( GP7+151  ) 
+//      I 0 <# #S #>
+
+	mov	%rax,-0x08(%rbp)	# 4327FB 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 4327FF 4C 89 75 F0 
+	mov	$0x0,%eax	# 432803 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432808 48 8D 6D F0 
+	call	 ( <# ) 	# 43280C E8 BF 48 FE FF 
+	call	 ( #S ) 	# 432811 E8 92 49 FE FF 
+	call	 ( #> ) 	# 432816 E8 CD 49 FE FF 
+//      1 = SWAP C@ 41 I A - + = AND AND
+
+	xor	$0x1,%rax	# 43281B 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 432821 48 83 E8 1 
+	sbb	%rax,%rax	# 432825 48 19 C0 
+	mov	0x00(%rbp),%rdx	# 432828 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 43282C 48 89 45 0 
+	movzb	(%rdx),%eax	# 432830 F B6 2 
+	mov	%rax,-0x08(%rbp)	# 432833 48 89 45 F8 
+	movq	$0x41,-0x10(%rbp)	# 432837 48 C7 45 F0 41 0 0 0 
+	mov	%r14,-0x18(%rbp)	# 43283F 4C 89 75 E8 
+	movq	$-0xA,%rax	# 432843 48 C7 C0 F6 FF FF FF 
+	add	-0x18(%rbp),%rax	# 43284A 48 3 45 E8 
+	add	-0x10(%rbp),%rax	# 43284E 48 3 45 F0 
+	xor	-0x08(%rbp),%rax	# 432852 48 33 45 F8 
+	sub	$0x01,%rax	# 432856 48 83 E8 1 
+	sbb	%rax,%rax	# 43285A 48 19 C0 
+	and	0x00(%rbp),%rax	# 43285D 48 23 45 0 
+	and	0x08(%rbp),%rax	# 432861 48 23 45 8 
+	lea	0x10(%rbp),%rbp	# 432865 48 8D 6D 10 
+//   LOOP
+
+	inc	%r14	# 432869 49 FF C6 
+	inc	%r15	# 43286C 49 FF C7 
+	jNo	 ( GP7+D6  ) 	# 43286F 71 8A 
+	pop	%r14	# 432871 41 5E 
+	pop	%r15	# 432873 41 5F 
+	pop	%rcx	# 432875 59 
+//   R> BASE ! ;
+
+	mov	%rax,-0x08(%rbp)	# 432876 48 89 45 F8 
+	pop	-0x10(%rbp)	# 43287A 8F 45 F0 
+	mov	$0x404E89,%eax	# 43287D B8 89 4E 40 0 
+	mov	-0x10(%rbp),%rdx	# 432882 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 432886 48 89 10 
+	mov	-0x08(%rbp),%rax	# 432889 48 8B 45 F8 
+	ret		# 43288D C3 
+//
+
+//T{ GP7 -> <TRUE> }T
+
+//
+
+//\ >NUMBER TESTS
+
+//CREATE GN-BUF 0 C,
+
+	add	%al,(%rax)	# 43288E 0 0 
+	add	%al,(%rax)	# 432890 0 0 
+	add	%ch,%al	# 432892 0 E8 
+	mov	%ah,(%rax)	# 432894 88 20 
+stD	# 432896 FD 
+	callf	*0x48(%rdx)	# 432897 FF 5A 48 
+//: GN-STRING   GN-BUF 1 ;
+
+	mov	%eax,-0x08(%rbp)	# 43289A 89 45 F8 
+	lea	 ( GN-BUF+5  ) (%rip),%rax	# 43289D 48 8D 5 F4 FF FF FF 
+	mov	%rax,-0x10(%rbp)	# 4328A4 48 89 45 F0 
+	mov	$0x1,%eax	# 4328A8 B8 1 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4328AD 48 8D 6D F0 
+	ret		# 4328B1 C3 
+//: GN-CONSUMED   GN-BUF CHAR+ 0 ;
+
+GNsubCONSUMED:
+	mov	%rax,-0x08(%rbp)	# 4328B2 48 89 45 F8 
+	lea	 ( GN-STRING ) (%rip),%rax	# 4328B6 48 8D 5 DC FF FF FF 
+	mov	%rax,-0x10(%rbp)	# 4328BD 48 89 45 F0 
+	mov	$0x0,%eax	# 4328C1 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 4328C6 48 8D 6D F0 
+	ret		# 4328CA C3 
+//: GN'      [CHAR] ' WORD CHAR+ C@ GN-BUF C!  GN-STRING ;
+
+GNtic:
+	mov	%rax,-0x08(%rbp)	# 4328CB 48 89 45 F8 
+	mov	$0x27,%eax	# 4328CF B8 27 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4328D4 48 8D 6D F8 
+	call	 ( WORD ) 	# 4328D8 E8 85 BE FD FF 
+	movzb	0x01(%rax),%eax	# 4328DD F B6 40 1 
+	mov	%rax,-0x08(%rbp)	# 4328E1 48 89 45 F8 
+	lea	 ( GN-BUF+5  ) (%rip),%rax	# 4328E5 48 8D 5 AC FF FF FF 
+	mov	-0x08(%rbp),%dl	# 4328EC 8A 55 F8 
+	mov	%dl,(%rax)	# 4328EF 88 10 
+	mov	0x00(%rbp),%rax	# 4328F1 48 8B 45 0 
+	lea	 ( GN-BUF+5  ) (%rip),%rax	# 4328F5 48 8D 5 9C FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 4328FC 48 89 45 F8 
+	mov	$0x1,%eax	# 432900 B8 1 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 432905 48 8D 6D F8 
+	ret		# 432909 C3 
+//
+
+//T{ 0 0 GN' 0' >NUMBER -> 0 0 GN-CONSUMED }T
+
+//T{ 0 0 GN' 1' >NUMBER -> 1 0 GN-CONSUMED }T
+
+//T{ 1 0 GN' 1' >NUMBER -> BASE @ 1+ 0 GN-CONSUMED }T
+
+//T{ 0 0 GN' -' >NUMBER -> 0 0 GN-STRING }T   \ SHOULD FAIL TO CONVERT THESE
+
+//T{ 0 0 GN' +' >NUMBER -> 0 0 GN-STRING }T
+
+//T{ 0 0 GN' .' >NUMBER -> 0 0 GN-STRING }T
+
+//
+
+//: >NUMBER-BASED
+
+//   BASE @ >R BASE ! >NUMBER R> BASE ! ;
+
+greatNUMBERsubBASED:
+	mov	%rax,-0x08(%rbp)	# 43290A 48 89 45 F8 
+	mov	$0x404E89,%eax	# 43290E B8 89 4E 40 0 
+	mov	(%rax),%rax	# 432913 48 8B 0 
+	Push	%rax	# 432916 50 
+	mov	$0x404E89,%eax	# 432917 B8 89 4E 40 0 
+	mov	-0x08(%rbp),%rdx	# 43291C 48 8B 55 F8 
+	mov	%rdx,(%rax)	# 432920 48 89 10 
+	mov	0x00(%rbp),%rax	# 432923 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 432927 48 8D 6D 8 
+	call	 ( >NUMBER ) 	# 43292B E8 82 9B FD FF 
+	mov	%rax,-0x08(%rbp)	# 432930 48 89 45 F8 
+	pop	-0x10(%rbp)	# 432934 8F 45 F0 
+	mov	$0x404E89,%eax	# 432937 B8 89 4E 40 0 
+	mov	-0x10(%rbp),%rdx	# 43293C 48 8B 55 F0 
+	mov	%rdx,(%rax)	# 432940 48 89 10 
+	mov	-0x08(%rbp),%rax	# 432943 48 8B 45 F8 
+	ret		# 432947 C3 
+//
+
+//T{ 0 0 GN' 2' 10 >NUMBER-BASED -> 2 0 GN-CONSUMED }T
+
+//T{ 0 0 GN' 2'  2 >NUMBER-BASED -> 0 0 GN-STRING }T
+
+//T{ 0 0 GN' F' 10 >NUMBER-BASED -> F 0 GN-CONSUMED }T
+
+//T{ 0 0 GN' G' 10 >NUMBER-BASED -> 0 0 GN-STRING }T
+
+//T{ 0 0 GN' G' MAX-BASE >NUMBER-BASED -> 10 0 GN-CONSUMED }T
+
+//T{ 0 0 GN' Z' MAX-BASE >NUMBER-BASED -> 23 0 GN-CONSUMED }T
+
+//
+
+//: GN1   \ ( UD BASE -- UD' LEN ) UD SHOULD EQUAL UD' AND LEN SHOULD BE ZERO.
+
+//   BASE @ >R BASE !
+
+GN1:
+	mov	%rax,-0x08(%rbp)	# 432948 48 89 45 F8 
+	mov	$0x404E89,%eax	# 43294C B8 89 4E 40 0 
+	mov	(%rax),%rax	# 432951 48 8B 0 
+	Push	%rax	# 432954 50 
+	mov	$0x404E89,%eax	# 432955 B8 89 4E 40 0 
+	mov	-0x08(%rbp),%rdx	# 43295A 48 8B 55 F8 
+	mov	%rdx,(%rax)	# 43295E 48 89 10 
+	mov	0x00(%rbp),%rax	# 432961 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 432965 48 8D 6D 8 
+//   <# #S #>
+
+	call	 ( <# ) 	# 432969 E8 62 47 FE FF 
+	call	 ( #S ) 	# 43296E E8 35 48 FE FF 
+	call	 ( #> ) 	# 432973 E8 70 48 FE FF 
+//   0 0 2SWAP >NUMBER SWAP DROP      \ RETURN LENGTH ONLY
+
+	mov	%rax,-0x08(%rbp)	# 432978 48 89 45 F8 
+	movq	$0x0,-0x10(%rbp)	# 43297C 48 C7 45 F0 0 0 0 0 
+	mov	$0x0,%eax	# 432984 B8 0 0 0 0 
+	mov	-0x10(%rbp),%rcx	# 432989 48 8B 4D F0 
+	mov	-0x08(%rbp),%rdx	# 43298D 48 8B 55 F8 
+	mov	0x00(%rbp),%rbx	# 432991 48 8B 5D 0 
+	mov	%rcx,0x00(%rbp)	# 432995 48 89 4D 0 
+	mov	%rax,-0x08(%rbp)	# 432999 48 89 45 F8 
+	mov	%rbx,-0x10(%rbp)	# 43299D 48 89 5D F0 
+	mov	%rdx,%rax	# 4329A1 48 89 D0 
+	lea	-0x10(%rbp),%rbp	# 4329A4 48 8D 6D F0 
+	call	 ( >NUMBER ) 	# 4329A8 E8 5 9B FD FF 
+	mov	0x00(%rbp),%rdx	# 4329AD 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 4329B1 48 89 45 0 
+//   R> BASE ! ;
+
+	pop	-0x08(%rbp)	# 4329B5 8F 45 F8 
+	mov	$0x404E89,%eax	# 4329B8 B8 89 4E 40 0 
+	mov	-0x08(%rbp),%rdx	# 4329BD 48 8B 55 F8 
+	mov	%rdx,(%rax)	# 4329C1 48 89 10 
+	mov	0x00(%rbp),%rax	# 4329C4 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4329C8 48 8D 6D 8 
+	ret		# 4329CC C3 
+//T{ 0 0 2 GN1 -> 0 0 0 }T
+
+//T{ MAX-UINT 0 2 GN1 -> MAX-UINT 0 0 }T
+
+//T{ MAX-UINT DUP 2 GN1 -> MAX-UINT DUP 0 }T
+
+//T{ 0 0 MAX-BASE GN1 -> 0 0 0 }T
+
+//T{ MAX-UINT 0 MAX-BASE GN1 -> MAX-UINT 0 0 }T
+
+//T{ MAX-UINT DUP MAX-BASE GN1 -> MAX-UINT DUP 0 }T
+
+//
+
+//: GN2   \ ( -- 16 10 )
+
+//   BASE @ >R  HEX BASE @  DECIMAL BASE @  R> BASE ! ;
+
+GN2:
+	mov	%rax,-0x08(%rbp)	# 4329CD 48 89 45 F8 
+	mov	$0x404E89,%eax	# 4329D1 B8 89 4E 40 0 
+	mov	(%rax),%rax	# 4329D6 48 8B 0 
+	Push	%rax	# 4329D9 50 
+	mov	-0x08(%rbp),%rax	# 4329DA 48 8B 45 F8 
+	call	 ( HEX ) 	# 4329DE E8 54 CF FD FF 
+	mov	%rax,-0x08(%rbp)	# 4329E3 48 89 45 F8 
+	mov	$0x404E89,%eax	# 4329E7 B8 89 4E 40 0 
+	mov	(%rax),%rax	# 4329EC 48 8B 0 
+	lea	-0x08(%rbp),%rbp	# 4329EF 48 8D 6D F8 
+	call	 ( DECIMAL ) 	# 4329F3 E8 29 A6 FD FF 
+	mov	%rax,-0x08(%rbp)	# 4329F8 48 89 45 F8 
+	mov	$0x404E89,%eax	# 4329FC B8 89 4E 40 0 
+	mov	(%rax),%rax	# 432A01 48 8B 0 
+	mov	%rax,-0x10(%rbp)	# 432A04 48 89 45 F0 
+	pop	-0x18(%rbp)	# 432A08 8F 45 E8 
+	mov	$0x404E89,%eax	# 432A0B B8 89 4E 40 0 
+	mov	-0x18(%rbp),%rdx	# 432A10 48 8B 55 E8 
+	mov	%rdx,(%rax)	# 432A14 48 89 10 
+	mov	-0x10(%rbp),%rax	# 432A17 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 432A1B 48 8D 6D F8 
+	ret		# 432A1F C3 
+//T{ GN2 -> 10 A }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING FILL MOVE
+
+//
+
+//CREATE FBUF 00 C, 00 C, 00 C,
+
+	add	%al,(%rax)	# 432A20 0 0 
+	add	%ch,%al	# 432A22 0 E8 
+clC	# 432A24 F8 
+	sbb	$-0x03,%al	# 432A25 1E FD 
+	call	*(%rdx)	# 432A27 FF 12 
+	xor	$0x34,%al	# 432A29 34 34 
+//CREATE SBUF 12 C, 34 C, 56 C,
+
+SBUF:
+	call	 ( DOCREATE ) 	# 432A2B E8 F0 1E FD FF 
+	adc	(%rsi,%rdx,2),%dh	# 432A30 12 34 56 
+//: SEEBUF FBUF C@  FBUF CHAR+ C@  FBUF CHAR+ CHAR+ C@ ;
+
+SEEBUF:
+	mov	%rax,-0x08(%rbp)	# 432A33 48 89 45 F8 
+	lea	 ( FBUF+5  ) (%rip),%rax	# 432A37 48 8D 5 EA FF FF FF 
+	movzb	(%rax),%eax	# 432A3E F B6 0 
+	mov	%rax,-0x10(%rbp)	# 432A41 48 89 45 F0 
+	lea	 ( FBUF+6  ) (%rip),%rax	# 432A45 48 8D 5 DD FF FF FF 
+	movzb	(%rax),%eax	# 432A4C F B6 0 
+	mov	%rax,-0x18(%rbp)	# 432A4F 48 89 45 E8 
+	lea	 ( FBUF+7  ) (%rip),%rax	# 432A53 48 8D 5 D0 FF FF FF 
+	movzb	(%rax),%eax	# 432A5A F B6 0 
+	lea	-0x18(%rbp),%rbp	# 432A5D 48 8D 6D E8 
+	ret		# 432A61 C3 
+//
+
+//T{ FBUF 0 20 FILL -> }T
+
+//T{ SEEBUF -> 00 00 00 }T
+
+//
+
+//T{ FBUF 1 20 FILL -> }T
+
+//T{ SEEBUF -> 20 00 00 }T
+
+//
+
+//T{ FBUF 3 20 FILL -> }T
+
+//T{ SEEBUF -> 20 20 20 }T
+
+//
+
+//T{ FBUF FBUF 3 CHARS MOVE -> }T      \ BIZARRE SPECIAL CASE
+
+//T{ SEEBUF -> 20 20 20 }T
+
+//
+
+//T{ SBUF FBUF 0 CHARS MOVE -> }T
+
+//T{ SEEBUF -> 20 20 20 }T
+
+//
+
+//T{ SBUF FBUF 1 CHARS MOVE -> }T
+
+//T{ SEEBUF -> 12 20 20 }T
+
+//
+
+//T{ SBUF FBUF 3 CHARS MOVE -> }T
+
+//T{ SEEBUF -> 12 34 56 }T
+
+//
+
+//T{ FBUF FBUF CHAR+ 2 CHARS MOVE -> }T
+
+//T{ SEEBUF -> 12 12 34 }T
+
+//
+
+//T{ FBUF CHAR+ FBUF 2 CHARS MOVE -> }T
+
+//T{ SEEBUF -> 12 34 34 }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING OUTPUT: . ." CR EMIT SPACE SPACES TYPE U.
+
+//
+
+//: OUTPUT-TEST
+
+//   ." YOU SHOULD SEE THE STANDARD GRAPHIC CHARACTERS:" CR
+
+OUTPUTsubTEST:
+	call	 ( (S") ) 	# 432A62 E8 DB 25 FD FF 
+	.byte 0x2F,0x59,0x4F,0x55,0x20,0x53,0x48,0x4F,0x55,0x4C,0x44,0x20,0x53,0x45,0x45,0x20,0x54,0x48,0x45,0x20,0x53,0x54,0x41,0x4E,0x44,0x41,0x52,0x44,0x20,0x47,0x52,0x41,0x50,0x48,0x49,0x43,0x20,0x43,0x48,0x41,0x52,0x41,0x43,0x54,0x45,0x52,0x53,0x3A
+	call	 ( TYPE ) 	# 432A97 E8 1A 25 FD FF 
+	call	 ( CR ) 	# 432A9C E8 62 25 FD FF 
+//   41 BL DO I EMIT LOOP CR
+
+	mov	%rax,-0x08(%rbp)	# 432AA1 48 89 45 F8 
+	movq	$0x41,-0x10(%rbp)	# 432AA5 48 C7 45 F0 41 0 0 0 
+	mov	$0x20,%eax	# 432AAD B8 20 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432AB2 48 8D 6D F0 
+	call	 ( (DO) ) 	# 432AB6 E8 2E 1F FD FF 
+	.quad  ( OUTPUT-TEST+7E  ) 
+	mov	%rax,-0x08(%rbp)	# 432AC3 48 89 45 F8 
+	mov	%r14,%rax	# 432AC7 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 432ACA 48 8D 6D F8 
+	call	 ( EMIT ) 	# 432ACE E8 10 25 FD FF 
+	inc	%r14	# 432AD3 49 FF C6 
+	inc	%r15	# 432AD6 49 FF C7 
+	jNo	 ( OUTPUT-TEST+61  ) 	# 432AD9 71 E8 
+	pop	%r14	# 432ADB 41 5E 
+	pop	%r15	# 432ADD 41 5F 
+	pop	%rcx	# 432ADF 59 
+	call	 ( CR ) 	# 432AE0 E8 1E 25 FD FF 
+//   61 41 DO I EMIT LOOP CR
+
+	mov	%rax,-0x08(%rbp)	# 432AE5 48 89 45 F8 
+	movq	$0x61,-0x10(%rbp)	# 432AE9 48 C7 45 F0 61 0 0 0 
+	mov	$0x41,%eax	# 432AF1 B8 41 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432AF6 48 8D 6D F0 
+	call	 ( (DO) ) 	# 432AFA E8 EA 1E FD FF 
+	.quad  ( OUTPUT-TEST+C2  ) 
+	mov	%rax,-0x08(%rbp)	# 432B07 48 89 45 F8 
+	mov	%r14,%rax	# 432B0B 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 432B0E 48 8D 6D F8 
+	call	 ( EMIT ) 	# 432B12 E8 CC 24 FD FF 
+	inc	%r14	# 432B17 49 FF C6 
+	inc	%r15	# 432B1A 49 FF C7 
+	jNo	 ( OUTPUT-TEST+A5  ) 	# 432B1D 71 E8 
+	pop	%r14	# 432B1F 41 5E 
+	pop	%r15	# 432B21 41 5F 
+	pop	%rcx	# 432B23 59 
+	call	 ( CR ) 	# 432B24 E8 DA 24 FD FF 
+//   7F 61 DO I EMIT LOOP CR
+
+	mov	%rax,-0x08(%rbp)	# 432B29 48 89 45 F8 
+	movq	$0x7F,-0x10(%rbp)	# 432B2D 48 C7 45 F0 7F 0 0 0 
+	mov	$0x61,%eax	# 432B35 B8 61 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432B3A 48 8D 6D F0 
+	call	 ( (DO) ) 	# 432B3E E8 A6 1E FD FF 
+	.quad  ( OUTPUT-TEST+106  ) 
+	mov	%rax,-0x08(%rbp)	# 432B4B 48 89 45 F8 
+	mov	%r14,%rax	# 432B4F 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 432B52 48 8D 6D F8 
+	call	 ( EMIT ) 	# 432B56 E8 88 24 FD FF 
+	inc	%r14	# 432B5B 49 FF C6 
+	inc	%r15	# 432B5E 49 FF C7 
+	jNo	 ( OUTPUT-TEST+E9  ) 	# 432B61 71 E8 
+	pop	%r14	# 432B63 41 5E 
+	pop	%r15	# 432B65 41 5F 
+	pop	%rcx	# 432B67 59 
+	call	 ( CR ) 	# 432B68 E8 96 24 FD FF 
+//   ." YOU SHOULD SEE 0-9 SEPARATED BY A SPACE:" CR
+
+	call	 ( (S") ) 	# 432B6D E8 D0 24 FD FF 
+	.byte 0x28,0x59,0x4F,0x55,0x20,0x53,0x48,0x4F,0x55,0x4C,0x44,0x20,0x53,0x45,0x45,0x20,0x30,0x2D,0x39,0x20,0x53,0x45,0x50,0x41,0x52,0x41,0x54,0x45,0x44,0x20,0x42,0x59,0x20,0x41,0x20,0x53,0x50,0x41,0x43,0x45,0x3A
+	call	 ( TYPE ) 	# 432B9B E8 16 24 FD FF 
+	call	 ( CR ) 	# 432BA0 E8 5E 24 FD FF 
+//   9 1+ 0 DO I . LOOP CR
+
+	mov	%rax,-0x08(%rbp)	# 432BA5 48 89 45 F8 
+	movq	$0xA,-0x10(%rbp)	# 432BA9 48 C7 45 F0 A 0 0 0 
+	mov	$0x0,%eax	# 432BB1 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432BB6 48 8D 6D F0 
+	call	 ( (DO) ) 	# 432BBA E8 2A 1E FD FF 
+	.quad  ( OUTPUT-TEST+182  ) 
+	mov	%rax,-0x08(%rbp)	# 432BC7 48 89 45 F8 
+	mov	%r14,%rax	# 432BCB 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 432BCE 48 8D 6D F8 
+	call	 ( . ) 	# 432BD2 E8 5C 93 FD FF 
+	inc	%r14	# 432BD7 49 FF C6 
+	inc	%r15	# 432BDA 49 FF C7 
+	jNo	 ( OUTPUT-TEST+165  ) 	# 432BDD 71 E8 
+	pop	%r14	# 432BDF 41 5E 
+	pop	%r15	# 432BE1 41 5F 
+	pop	%rcx	# 432BE3 59 
+	call	 ( CR ) 	# 432BE4 E8 1A 24 FD FF 
+//   ." YOU SHOULD SEE 0-9 (WITH NO SPACES):" CR
+
+	call	 ( (S") ) 	# 432BE9 E8 54 24 FD FF 
+	.byte 0x24,0x59,0x4F,0x55,0x20,0x53,0x48,0x4F,0x55,0x4C,0x44,0x20,0x53,0x45,0x45,0x20,0x30,0x2D,0x39,0x20,0x28,0x57,0x49,0x54,0x48,0x20,0x4E,0x4F,0x20,0x53,0x50,0x41,0x43,0x45,0x53,0x29,0x3A
+	call	 ( TYPE ) 	# 432C13 E8 9E 23 FD FF 
+	call	 ( CR ) 	# 432C18 E8 E6 23 FD FF 
+//   [CHAR] 9 1+ [CHAR] 0 DO I 0 SPACES EMIT LOOP CR
+
+	mov	%rax,-0x08(%rbp)	# 432C1D 48 89 45 F8 
+	movq	$0x3A,-0x10(%rbp)	# 432C21 48 C7 45 F0 3A 0 0 0 
+	mov	$0x30,%eax	# 432C29 B8 30 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432C2E 48 8D 6D F0 
+	call	 ( (DO) ) 	# 432C32 E8 B2 1D FD FF 
+	.quad  ( OUTPUT-TEST+205  ) 
+	mov	%rax,-0x08(%rbp)	# 432C3F 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 432C43 4C 89 75 F0 
+	mov	$0x0,%eax	# 432C47 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432C4C 48 8D 6D F0 
+	call	 ( SPACES ) 	# 432C50 E8 F3 46 FE FF 
+	call	 ( EMIT ) 	# 432C55 E8 89 23 FD FF 
+	inc	%r14	# 432C5A 49 FF C6 
+	inc	%r15	# 432C5D 49 FF C7 
+	jNo	 ( OUTPUT-TEST+1DD  ) 	# 432C60 71 DD 
+	pop	%r14	# 432C62 41 5E 
+	pop	%r15	# 432C64 41 5F 
+	pop	%rcx	# 432C66 59 
+	call	 ( CR ) 	# 432C67 E8 97 23 FD FF 
+//   ." YOU SHOULD SEE A-G SEPARATED BY A SPACE:" CR
+
+	call	 ( (S") ) 	# 432C6C E8 D1 23 FD FF 
+	.byte 0x28,0x59,0x4F,0x55,0x20,0x53,0x48,0x4F,0x55,0x4C,0x44,0x20,0x53,0x45,0x45,0x20,0x41,0x2D,0x47,0x20,0x53,0x45,0x50,0x41,0x52,0x41,0x54,0x45,0x44,0x20,0x42,0x59,0x20,0x41,0x20,0x53,0x50,0x41,0x43,0x45,0x3A
+	call	 ( TYPE ) 	# 432C9A E8 17 23 FD FF 
+	call	 ( CR ) 	# 432C9F E8 5F 23 FD FF 
+//   [CHAR] G 1+ [CHAR] A DO I EMIT SPACE LOOP CR
+
+	mov	%rax,-0x08(%rbp)	# 432CA4 48 89 45 F8 
+	movq	$0x48,-0x10(%rbp)	# 432CA8 48 C7 45 F0 48 0 0 0 
+	mov	$0x41,%eax	# 432CB0 B8 41 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432CB5 48 8D 6D F0 
+	call	 ( (DO) ) 	# 432CB9 E8 2B 1D FD FF 
+	.quad  ( OUTPUT-TEST+286  ) 
+	mov	%rax,-0x08(%rbp)	# 432CC6 48 89 45 F8 
+	mov	%r14,%rax	# 432CCA 4C 89 F0 
+	lea	-0x08(%rbp),%rbp	# 432CCD 48 8D 6D F8 
+	call	 ( EMIT ) 	# 432CD1 E8 D 23 FD FF 
+	call	 ( SPACE ) 	# 432CD6 E8 E4 23 FD FF 
+	inc	%r14	# 432CDB 49 FF C6 
+	inc	%r15	# 432CDE 49 FF C7 
+	jNo	 ( OUTPUT-TEST+264  ) 	# 432CE1 71 E3 
+	pop	%r14	# 432CE3 41 5E 
+	pop	%r15	# 432CE5 41 5F 
+	pop	%rcx	# 432CE7 59 
+	call	 ( CR ) 	# 432CE8 E8 16 23 FD FF 
+//   ." YOU SHOULD SEE 0-5 SEPARATED BY TWO SPACES:" CR
+
+	call	 ( (S") ) 	# 432CED E8 50 23 FD FF 
+	.byte 0x2B,0x59,0x4F,0x55,0x20,0x53,0x48,0x4F,0x55,0x4C,0x44,0x20,0x53,0x45,0x45,0x20,0x30,0x2D,0x35,0x20,0x53,0x45,0x50,0x41,0x52,0x41,0x54,0x45,0x44,0x20,0x42,0x59,0x20,0x54,0x57,0x4F,0x20,0x53,0x50,0x41,0x43,0x45,0x53,0x3A
+	call	 ( TYPE ) 	# 432D1E E8 93 22 FD FF 
+	call	 ( CR ) 	# 432D23 E8 DB 22 FD FF 
+//   5 1+ 0 DO I [CHAR] 0 + EMIT 2 SPACES LOOP CR
+
+	mov	%rax,-0x08(%rbp)	# 432D28 48 89 45 F8 
+	movq	$0x6,-0x10(%rbp)	# 432D2C 48 C7 45 F0 6 0 0 0 
+	mov	$0x0,%eax	# 432D34 B8 0 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432D39 48 8D 6D F0 
+	call	 ( (DO) ) 	# 432D3D E8 A7 1C FD FF 
+	.quad  ( OUTPUT-TEST+321  ) 
+	mov	%rax,-0x08(%rbp)	# 432D4A 48 89 45 F8 
+	mov	%r14,-0x10(%rbp)	# 432D4E 4C 89 75 F0 
+	mov	$0x30,%eax	# 432D52 B8 30 0 0 0 
+	add	-0x10(%rbp),%rax	# 432D57 48 3 45 F0 
+	lea	-0x08(%rbp),%rbp	# 432D5B 48 8D 6D F8 
+	call	 ( EMIT ) 	# 432D5F E8 7F 22 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432D64 48 89 45 F8 
+	mov	$0x2,%eax	# 432D68 B8 2 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 432D6D 48 8D 6D F8 
+	call	 ( SPACES ) 	# 432D71 E8 D2 45 FE FF 
+	inc	%r14	# 432D76 49 FF C6 
+	inc	%r15	# 432D79 49 FF C7 
+	jNo	 ( OUTPUT-TEST+2E8  ) 	# 432D7C 71 CC 
+	pop	%r14	# 432D7E 41 5E 
+	pop	%r15	# 432D80 41 5F 
+	pop	%rcx	# 432D82 59 
+	call	 ( CR ) 	# 432D83 E8 7B 22 FD FF 
+//   ." YOU SHOULD SEE TWO SEPARATE LINES:" CR
+
+	call	 ( (S") ) 	# 432D88 E8 B5 22 FD FF 
+	.byte 0x22,0x59,0x4F,0x55,0x20,0x53,0x48,0x4F,0x55,0x4C,0x44,0x20,0x53,0x45,0x45,0x20,0x54,0x57,0x4F,0x20,0x53,0x45,0x50,0x41,0x52,0x41,0x54,0x45,0x20,0x4C,0x49,0x4E,0x45,0x53,0x3A
+	call	 ( TYPE ) 	# 432DB0 E8 1 22 FD FF 
+	call	 ( CR ) 	# 432DB5 E8 49 22 FD FF 
+//   S" LINE 1" TYPE CR S" LINE 2" TYPE CR
+
+	call	 ( (S") ) 	# 432DBA E8 83 22 FD FF 
+	.byte 0x6,0x4C,0x49,0x4E,0x45,0x20,0x31
+	call	 ( TYPE ) 	# 432DC6 E8 EB 21 FD FF 
+	call	 ( CR ) 	# 432DCB E8 33 22 FD FF 
+	call	 ( (S") ) 	# 432DD0 E8 6D 22 FD FF 
+	.byte 0x6,0x4C,0x49,0x4E,0x45,0x20,0x32
+	call	 ( TYPE ) 	# 432DDC E8 D5 21 FD FF 
+	call	 ( CR ) 	# 432DE1 E8 1D 22 FD FF 
+//   ." YOU SHOULD SEE THE NUMBER RANGES OF SIGNED AND UNSIGNED NUMBERS:" CR
+
+	call	 ( (S") ) 	# 432DE6 E8 57 22 FD FF 
+	.byte 0x40,0x59,0x4F,0x55,0x20,0x53,0x48,0x4F,0x55,0x4C,0x44,0x20,0x53,0x45,0x45,0x20,0x54,0x48,0x45,0x20,0x4E,0x55,0x4D,0x42,0x45,0x52,0x20,0x52,0x41,0x4E,0x47,0x45,0x53,0x20,0x4F,0x46,0x20,0x53,0x49,0x47,0x4E,0x45,0x44,0x20,0x41,0x4E,0x44,0x20,0x55,0x4E,0x53,0x49,0x47,0x4E,0x45,0x44,0x20,0x4E,0x55,0x4D,0x42,0x45,0x52,0x53,0x3A
+	call	 ( TYPE ) 	# 432E2C E8 85 21 FD FF 
+	call	 ( CR ) 	# 432E31 E8 CD 21 FD FF 
+//   ."   SIGNED: " MIN-INT . MAX-INT . CR
+
+	call	 ( (S") ) 	# 432E36 E8 7 22 FD FF 
+	.byte 0xA,0x20,0x20,0x53,0x49,0x47,0x4E,0x45,0x44,0x3A,0x20
+	call	 ( TYPE ) 	# 432E46 E8 6B 21 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432E4B 48 89 45 F8 
+	movabs	$-0x8000000000000000,%rax	# 432E4F 48 B8 0 0 0 0 0 0 0 80 
+	lea	-0x08(%rbp),%rbp	# 432E59 48 8D 6D F8 
+	call	 ( . ) 	# 432E5D E8 D1 90 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432E62 48 89 45 F8 
+	movabs	$0x7FFFFFFFFFFFFFFF,%rax	# 432E66 48 B8 FF FF FF FF FF FF FF 7F 
+	lea	-0x08(%rbp),%rbp	# 432E70 48 8D 6D F8 
+	call	 ( . ) 	# 432E74 E8 BA 90 FD FF 
+	call	 ( CR ) 	# 432E79 E8 85 21 FD FF 
+//   ." UNSIGNED: " 0 U. MAX-UINT U. CR
+
+	call	 ( (S") ) 	# 432E7E E8 BF 21 FD FF 
+	.byte 0xA,0x55,0x4E,0x53,0x49,0x47,0x4E,0x45,0x44,0x3A,0x20
+	call	 ( TYPE ) 	# 432E8E E8 23 21 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432E93 48 89 45 F8 
+	mov	$0x0,%eax	# 432E97 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 432E9C 48 8D 6D F8 
+	call	 ( U. ) 	# 432EA0 E8 A0 90 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432EA5 48 89 45 F8 
+	movq	$-0x1,%rax	# 432EA9 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 432EB0 48 8D 6D F8 
+	call	 ( U. ) 	# 432EB4 E8 8C 90 FD FF 
+	call	 ( CR ) 	# 432EB9 E8 45 21 FD FF 
+//;
+
+	ret		# 432EBE C3 
+//
+
+//T{ OUTPUT-TEST -> }T
+
+//
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING INPUT: ACCEPT
+
+//
+
+//CREATE ABUF 50 CHARS ALLOT
+
+	add	%al,(%rax)	# 432EBF 0 0 
+	add	%al,(%rax)	# 432EC1 0 0 
+ABUF:
+	call	 ( DOCREATE ) 	# 432EC3 E8 58 1A FD FF 
+	jNb	 ( ACCEPT-TEST+1A  ) 	# 432EC8 66 64 73 66 
+	jNb	 ( ACCEPT-TEST+1C  ) 	# 432ECC 73 66 
+	or	(%rax),%al	# 432ECE A 0 
+	add	%al,(%rax)	# 432ED0 0 0 
+	add	%al,(%rax)	# 432ED2 0 0 
+	add	%al,(%rax)	# 432ED4 0 0 
+	add	%al,(%rax)	# 432ED6 0 0 
+	add	%al,(%rax)	# 432ED8 0 0 
+	add	%al,(%rax)	# 432EDA 0 0 
+	add	%al,(%rax)	# 432EDC 0 0 
+	add	%al,(%rax)	# 432EDE 0 0 
+	add	%al,(%rax)	# 432EE0 0 0 
+	add	%al,(%rax)	# 432EE2 0 0 
+	add	%al,(%rax)	# 432EE4 0 0 
+	add	%al,(%rax)	# 432EE6 0 0 
+	add	%al,(%rax)	# 432EE8 0 0 
+	add	%al,(%rax)	# 432EEA 0 0 
+	add	%al,(%rax)	# 432EEC 0 0 
+	add	%al,(%rax)	# 432EEE 0 0 
+	add	%al,(%rax)	# 432EF0 0 0 
+	add	%al,(%rax)	# 432EF2 0 0 
+	add	%al,(%rax)	# 432EF4 0 0 
+	add	%al,(%rax)	# 432EF6 0 0 
+	add	%al,(%rax)	# 432EF8 0 0 
+	add	%al,(%rax)	# 432EFA 0 0 
+	add	%al,(%rax)	# 432EFC 0 0 
+	add	%al,(%rax)	# 432EFE 0 0 
+	add	%al,(%rax)	# 432F00 0 0 
+	add	%al,(%rax)	# 432F02 0 0 
+	add	%al,(%rax)	# 432F04 0 0 
+	add	%al,(%rax)	# 432F06 0 0 
+	add	%al,(%rax)	# 432F08 0 0 
+	add	%al,(%rax)	# 432F0A 0 0 
+	add	%al,(%rax)	# 432F0C 0 0 
+	add	%al,(%rax)	# 432F0E 0 0 
+	add	%al,(%rax)	# 432F10 0 0 
+	add	%al,(%rax)	# 432F12 0 0 
+	add	%al,(%rax)	# 432F14 0 0 
+	add	%al,(%rax)	# 432F16 0 0 
+//
+
+//: ACCEPT-TEST
+
+//   CR ." PLEASE TYPE UP TO 80 CHARACTERS:" CR
+
+ACCEPTsubTEST:
+	call	 ( CR ) 	# 432F18 E8 E6 20 FD FF 
+	call	 ( (S") ) 	# 432F1D E8 20 21 FD FF 
+	.byte 0x20,0x50,0x4C,0x45,0x41,0x53,0x45,0x20,0x54,0x59,0x50,0x45,0x20,0x55,0x50,0x20,0x54,0x4F,0x20,0x38,0x30,0x20,0x43,0x48,0x41,0x52,0x41,0x43,0x54,0x45,0x52,0x53,0x3A
+	call	 ( TYPE ) 	# 432F43 E8 6E 20 FD FF 
+	call	 ( CR ) 	# 432F48 E8 B6 20 FD FF 
+//   ABUF 50 ACCEPT
+
+	mov	%rax,-0x08(%rbp)	# 432F4D 48 89 45 F8 
+	lea	 ( ABUF+5  ) (%rip),%rax	# 432F51 48 8D 5 70 FF FF FF 
+	mov	%rax,-0x10(%rbp)	# 432F58 48 89 45 F0 
+	mov	$0x50,%eax	# 432F5C B8 50 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 432F61 48 8D 6D F0 
+	call	 ( ACCEPT ) 	# 432F65 E8 62 AF FD FF 
+//   CR ." RECEIVED: " [CHAR] " EMIT
+
+	call	 ( CR ) 	# 432F6A E8 94 20 FD FF 
+	call	 ( (S") ) 	# 432F6F E8 CE 20 FD FF 
+	.byte 0xA,0x52,0x45,0x43,0x45,0x49,0x56,0x45,0x44,0x3A,0x20
+	call	 ( TYPE ) 	# 432F7F E8 32 20 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432F84 48 89 45 F8 
+	mov	$0x22,%eax	# 432F88 B8 22 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 432F8D 48 8D 6D F8 
+	call	 ( EMIT ) 	# 432F91 E8 4D 20 FD FF 
+//   ABUF SWAP TYPE [CHAR] " EMIT CR
+
+	mov	%rax,%rdx	# 432F96 48 89 C2 
+	lea	 ( ABUF+5  ) (%rip),%rax	# 432F99 48 8D 5 28 FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 432FA0 48 89 45 F8 
+	mov	%rdx,%rax	# 432FA4 48 89 D0 
+	lea	-0x08(%rbp),%rbp	# 432FA7 48 8D 6D F8 
+	call	 ( TYPE ) 	# 432FAB E8 6 20 FD FF 
+	mov	%rax,-0x08(%rbp)	# 432FB0 48 89 45 F8 
+	mov	$0x22,%eax	# 432FB4 B8 22 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 432FB9 48 8D 6D F8 
+	call	 ( EMIT ) 	# 432FBD E8 21 20 FD FF 
+	call	 ( CR ) 	# 432FC2 E8 3C 20 FD FF 
+//;
+
+	ret		# 432FC7 C3 
+//
+
+//T{ ACCEPT-TEST -> }T
+
+//
+
+//\ ------------------------------------------------------------------------
+
+//TESTING DICTIONARY SEARCH RULES
+
+//
+
+//T{ : GDX   123 ; : GDX   GDX 234 ; -> }T
+
+GDX:
+	mov	%rax,-0x08(%rbp)	# 432FC8 48 89 45 F8 
+	mov	$0x123,%eax	# 432FCC B8 23 1 0 0 
+	lea	-0x08(%rbp),%rbp	# 432FD1 48 8D 6D F8 
+	ret		# 432FD5 C3 
+GDX:
+	mov	%rax,-0x08(%rbp)	# 432FD6 48 89 45 F8 
+	movq	$0x123,-0x10(%rbp)	# 432FDA 48 C7 45 F0 23 1 0 0 
+	mov	$0x234,%eax	# 432FE2 B8 34 2 0 0 
+	lea	-0x10(%rbp),%rbp	# 432FE7 48 8D 6D F0 
+	ret		# 432FEB C3 
+//
+
+//T{ GDX -> 123 234 }T
+
+//
+
+//CR .( End of Core word set tests) CR
+
+//
+
+//
+

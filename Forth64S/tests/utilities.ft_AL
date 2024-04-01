@@ -1,0 +1,520 @@
+//( The ANS/Forth 2012 test suite is being modified so that the test programs  )
+
+//( for the optional word sets only use standard words from the Core word set. )
+
+//( This file, which is included *after* the Core test programs, contains      )
+
+//( various definitions for use by the optional word set test programs to      )
+
+//( remove any dependencies between word sets.                                 )
+
+//
+
+//DECIMAL
+
+//
+
+//( First a definition to see if a word is already defined. Note that          )
+
+//( [DEFINED] [IF] [ELSE] and [THEN] are in the optional Programming Tools     )
+
+//( word set.                                                                  )
+
+//
+
+//VARIABLE (\?) 0 (\?) !     ( Flag: Word defined = 0 | word undefined = -1 )
+
+	add	%al,(%rax)	# 4339B0 0 0 
+	add	%ch,%al	# 4339B2 0 E8 
+	push	$-0x2F1	# 4339B4 68 F FD FF FF 
+	g4??	%edi	# 4339B9 FF FF 
+	g4??	%edi	# 4339BB FF FF 
+	g4??	%edi	# 4339BD FF FF 
+	dec	-0x77(%rax)	# 4339BF FF 48 89 
+//
+
+//( [?DEF]  followed by [?IF] cannot be used again until after [THEN] )
+
+//: [?DEF]  ( "name" -- )
+
+//   BL WORD FIND SWAP DROP 0= (\?) !
+
+clC	# 4339C2 45 F8 
+	mov	$0x20,%eax	# 4339C4 B8 20 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4339C9 48 8D 6D F8 
+	call	 ( WORD ) 	# 4339CD E8 90 AD FD FF 
+	call	 ( FIND ) 	# 4339D2 E8 D BA FD FF 
+	mov	0x00(%rbp),%rdx	# 4339D7 48 8B 55 0 
+	sub	$0x01,%rax	# 4339DB 48 83 E8 1 
+	sbb	%rax,%rax	# 4339DF 48 19 C0 
+	mov	%rax, ( (\?)+5  ) (%rip)	# 4339E2 48 89 5 CF FF FF FF 
+	mov	0x08(%rbp),%rax	# 4339E9 48 8B 45 8 
+	lea	0x10(%rbp),%rbp	# 4339ED 48 8D 6D 10 
+//;
+
+	ret		# 4339F1 C3 
+//
+
+//\ Test [?DEF]
+
+//T{ 0 (\?) ! [?DEF] ?DEFTEST1 (\?) @ -> -1 }T
+
+//: ?DEFTEST1 1 ;
+
+queDEFTEST1:
+	mov	%rax,-0x08(%rbp)	# 4339F2 48 89 45 F8 
+	mov	$0x1,%eax	# 4339F6 B8 1 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4339FB 48 8D 6D F8 
+	ret		# 4339FF C3 
+//T{ -1 (\?) ! [?DEF] ?DEFTEST1 (\?) @ -> 0 }T
+
+//
+
+//: [?UNDEF] [?DEF] (\?) @ 0= (\?) ! ;
+
+xcqueUNDEFyc:
+	call	 ( [?DEF] ) 	# 433A00 E8 BB FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 433A05 48 89 45 F8 
+	mov	 ( (\?)+5  ) (%rip),%rax	# 433A09 48 8B 5 A8 FF FF FF 
+	sub	$0x01,%rax	# 433A10 48 83 E8 1 
+	sbb	%rax,%rax	# 433A14 48 19 C0 
+	mov	%rax, ( (\?)+5  ) (%rip)	# 433A17 48 89 5 9A FF FF FF 
+	mov	-0x08(%rbp),%rax	# 433A1E 48 8B 45 F8 
+	ret		# 433A22 C3 
+//
+
+//\ Equivalents of [IF] [ELSE] [THEN], these must not be nested
+
+//: [?IF]  ( f -- )  (\?) ! ; IMMEDIATE
+
+xcqueIFyc:
+	mov	%rax, ( (\?)+5  ) (%rip)	# 433A23 48 89 5 8E FF FF FF 
+	mov	0x00(%rbp),%rax	# 433A2A 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 433A2E 48 8D 6D 8 
+	ret		# 433A32 C3 
+//: [?ELSE]  ( -- )  (\?) @ 0= (\?) ! ; IMMEDIATE
+
+xcqueELSEyc:
+	mov	%rax,-0x08(%rbp)	# 433A33 48 89 45 F8 
+	mov	 ( (\?)+5  ) (%rip),%rax	# 433A37 48 8B 5 7A FF FF FF 
+	sub	$0x01,%rax	# 433A3E 48 83 E8 1 
+	sbb	%rax,%rax	# 433A42 48 19 C0 
+	mov	%rax, ( (\?)+5  ) (%rip)	# 433A45 48 89 5 6C FF FF FF 
+	mov	-0x08(%rbp),%rax	# 433A4C 48 8B 45 F8 
+	ret		# 433A50 C3 
+//: [?THEN]  ( -- )  0 (\?) ! ; IMMEDIATE
+
+xcqueTHENyc:
+	movq	$0x0, ( (\?)+5  ) (%rip)	# 433A51 48 C7 5 5C FF FF FF 0 0 0 0 
+	ret		# 433A5C C3 
+//
+
+//( A conditional comment and \ will be defined. Note that these definitions )
+
+//( are inadequate for use in Forth blocks. If needed in the blocks test     )
+
+//( program they will need to be modified here or redefined there )
+
+//
+
+//( \? is a conditional comment )
+
+//: \?  ( "..." -- )  (\?) @ IF EXIT THEN SOURCE >IN ! DROP ; IMMEDIATE
+
+slque:
+	mov	%rax,-0x08(%rbp)	# 433A5D 48 89 45 F8 
+	mov	 ( (\?)+5  ) (%rip),%rax	# 433A61 48 8B 5 50 FF FF FF 
+	test	%rax,%rax	# 433A68 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 433A6B 48 8B 45 F8 
+	jz	 ( \?+19  ) 	# 433A6F F 84 1 0 0 0 
+	ret		# 433A75 C3 
+	mov	%rax,-0x08(%rbp)	# 433A76 48 89 45 F8 
+	mov	 ( TIB+5  ) (%rip),%rax	# 433A7A 48 8B 5 BD 96 FD FF 
+	mov	 ( UNLOOP+256  ) (%rip),%rax	# 433A81 48 8B 5 F1 11 FD FF 
+	mov	%rax,%rdx	# 433A88 48 89 C2 
+	mov	$0x404C49,%eax	# 433A8B B8 49 4C 40 0 
+	mov	%rdx,(%rax)	# 433A90 48 89 10 
+	mov	-0x08(%rbp),%rax	# 433A93 48 8B 45 F8 
+	ret		# 433A97 C3 
+//
+
+//\ Test \?
+
+//T{ [?DEF] ?DEFTEST1 \? : ?DEFTEST1 2 ;    \ Should not be redefined
+
+//          ?DEFTEST1 -> 1 }T
+
+//T{ [?DEF] ?DEFTEST2 \? : ?DEFTEST1 2 ;    \ Should be redefined
+
+queDEFTEST1:
+	mov	%rax,-0x08(%rbp)	# 433A98 48 89 45 F8 
+	mov	$0x2,%eax	# 433A9C B8 2 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 433AA1 48 8D 6D F8 
+	ret		# 433AA5 C3 
+//          ?DEFTEST1 -> 2 }T
+
+//
+
+//[?DEF] TRUE  \? -1 CONSTANT TRUE
+
+//[?DEF] FALSE \?  0 CONSTANT FALSE
+
+//[?DEF] NIP   \?  : NIP SWAP DROP ;
+
+//[?DEF] TUCK  \?  : TUCK SWAP OVER ;
+
+//
+
+//[?DEF] PARSE
+
+//\? : BUMP  ( caddr u n -- caddr+n u-n )
+
+//\?    TUCK - >R CHARS + R>
+
+//\? ;
+
+//
+
+//\? : PARSE  ( ch "ccc<ch>" -- caddr u )
+
+//\?    >R SOURCE >IN @ BUMP
+
+//\?    OVER R> SWAP >R >R         ( -- start u1 ) ( R: -- start ch )
+
+//\?    BEGIN
+
+//\?       DUP
+
+//\?    WHILE
+
+//\?       OVER C@ R@ = 0=
+
+//\?    WHILE
+
+//\?       1 BUMP
+
+//\?    REPEAT
+
+//\?       1-                      ( end u2 )  \ delimiter found
+
+//\?    THEN
+
+//\?    SOURCE NIP SWAP - >IN !    ( -- end )
+
+//\?    R> DROP R>                 ( -- end start )
+
+//\?    TUCK - 1 CHARS /           ( -- start u )
+
+//\? ;
+
+//
+
+//[?DEF] .(  \? : .(  [CHAR] ) PARSE TYPE ; IMMEDIATE
+
+//
+
+//\ S=  to compare (case sensitive) two strings to avoid use of COMPARE from
+
+//\ the String word set. It is defined in core.fr and conditionally defined
+
+//\ here if core.fr has not been included by the user
+
+//
+
+//[?DEF] S=
+
+//\? : S=  ( caddr1 u1 caddr2 u2 -- f )   \ f = TRUE if strings are equal
+
+//\?    ROT OVER = 0= IF DROP 2DROP FALSE EXIT THEN
+
+//\?    DUP 0= IF DROP 2DROP TRUE EXIT THEN 
+
+//\?    0 DO
+
+//\?         OVER C@ OVER C@ = 0= IF 2DROP FALSE UNLOOP EXIT THEN
+
+//\?         CHAR+ SWAP CHAR+
+
+//\?      LOOP 2DROP TRUE
+
+//\? ;
+
+//
+
+//\ Buffer for strings in interpretive mode since S" only valid in compilation
+
+//\ mode when File-Access word set is defined
+
+//
+
+//64 CONSTANT SBUF-SIZE
+
+SBUFsubSIZE:
+	call	 ( DOCONSTANT ) 	# 433AA6 E8 68 E FD FF 
+	add	%al,(%rax)	# 433AAB 40 0 0 
+	add	%al,(%rax)	# 433AAE 0 0 
+	add	%al,(%rax)	# 433AB0 0 0 
+	add	%ch,%al	# 433AB2 0 E8 
+//CREATE SBUF1 SBUF-SIZE CHARS ALLOT
+
+	push	$0x15FFFD0E	# 433AB4 68 E FD FF 15 
+	Push	%rsp	# 433AB9 54 
+	.byte	0x65	# 433ABA 65 
+	jNb	 ( SBUF2+36  ) 	# 433ABB 73 74 
+	and	%dh,0x74(%rbp)	# 433ABD 20 75 74 
+	imul	$0x65697469,0x74(%rcx,%rbp,2),%ebp	# 433AC0 69 6C 69 74 69 65 
+	jNb	 ( SBUF1+35  ) 	# 433AC6 73 20 
+	insb	(%dx),%es:(%rdi)		# 433AC8 6C 
+	outsl	%ds:(%rsi),(%dx)		# 433AC9 6F 
+	.byte	0x61	# 433ACA 61 
+	.byte	0x65	# 433ACB 64 65 
+	and	%ah,FS:(%rax)	# 433ACD 64 20 20 
+	and	%ah,(%rax)	# 433AD0 20 20 
+	and	%ah,(%rax)	# 433AD2 20 20 
+	and	%ah,(%rax)	# 433AD4 20 20 
+	and	%ah,(%rax)	# 433AD6 20 20 
+	and	%ah,(%rax)	# 433AD8 20 20 
+	and	%ah,(%rax)	# 433ADA 20 20 
+	and	%ah,(%rax)	# 433ADC 20 20 
+	and	%ah,(%rax)	# 433ADE 20 20 
+	and	%ah,(%rax)	# 433AE0 20 20 
+	and	%ah,(%rax)	# 433AE2 20 20 
+	and	%ah,(%rax)	# 433AE4 20 20 
+	and	%ah,(%rax)	# 433AE6 20 20 
+	and	%ah,(%rax)	# 433AE8 20 20 
+	and	%ah,(%rax)	# 433AEA 20 20 
+	and	%ah,(%rax)	# 433AEC 20 20 
+	and	%ah,(%rax)	# 433AEE 20 20 
+	and	%ah,(%rax)	# 433AF0 20 20 
+	and	%ah,(%rax)	# 433AF2 20 20 
+	and	%ah,(%rax)	# 433AF4 20 20 
+	and	%ah,(%rax)	# 433AF6 20 20 
+//CREATE SBUF2 SBUF-SIZE CHARS ALLOT
+
+	add	%al,(%rax)	# 433AF8 0 0 
+	add	%ch,%al	# 433AFA 0 E8 
+	and	%cl,(%rsi)	# 433AFC 20 E 
+stD	# 433AFE FD 
+	dec	 ( _STEKC+71625203  ) (%rip)	# 433AFF FF D 6E 6F 70 71 
+	jb	 ( ($")+3A  ) 	# 433B05 72 73 
+	jz	 ( ($")+3E  ) 	# 433B07 74 75 
+	jbe	 ( ($")+42  ) 	# 433B09 76 77 
+	js	 ( ($")+46  ) 	# 433B0B 78 79 
+	jp	 ( SBUF2+34  ) 	# 433B0D 7A 20 
+	and	%ah,(%rax)	# 433B0F 20 20 
+	and	%ah,(%rax)	# 433B11 20 20 
+	and	%ah,(%rax)	# 433B13 20 20 
+	and	%ah,(%rax)	# 433B15 20 20 
+	and	%ah,(%rax)	# 433B17 20 20 
+	and	%ah,(%rax)	# 433B19 20 20 
+	and	%ah,(%rax)	# 433B1B 20 20 
+	and	%ah,(%rax)	# 433B1D 20 20 
+	and	%ah,(%rax)	# 433B1F 20 20 
+	and	%ah,(%rax)	# 433B21 20 20 
+	and	%ah,(%rax)	# 433B23 20 20 
+	and	%ah,(%rax)	# 433B25 20 20 
+	and	%ah,(%rax)	# 433B27 20 20 
+	and	%ah,(%rax)	# 433B29 20 20 
+	and	%ah,(%rax)	# 433B2B 20 20 
+	and	%ah,(%rax)	# 433B2D 20 20 
+	and	%ah,(%rax)	# 433B2F 20 20 
+	and	%ah,(%rax)	# 433B31 20 20 
+	and	%ah,(%rax)	# 433B33 20 20 
+	and	%ah,(%rax)	# 433B35 20 20 
+	and	%ah,(%rax)	# 433B37 20 20 
+	and	%ah,(%rax)	# 433B39 20 20 
+	and	%ah,(%rax)	# 433B3B 20 20 
+	and	%ah,(%rax)	# 433B3D 20 20 
+	and	%cl,-0x77(%rax)	# 433B3F 20 48 89 
+//
+
+//\ ($") saves a counted string at (caddr)
+
+//: ($")  ( caddr "ccc" -- caddr' u )
+
+//   [CHAR] " PARSE ROT 2DUP C!       ( -- ca2 u2 ca)
+
+clC	# 433B42 45 F8 
+	mov	$0x22,%eax	# 433B44 B8 22 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 433B49 48 8D 6D F8 
+	call	 ( PARSE ) 	# 433B4D E8 E2 98 FD FF 
+	mov	0x00(%rbp),%rdx	# 433B52 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 433B56 48 89 45 0 
+	mov	0x08(%rbp),%rax	# 433B5A 48 8B 45 8 
+	mov	%rdx,0x08(%rbp)	# 433B5E 48 89 55 8 
+	mov	0x00(%rbp),%rdx	# 433B62 48 8B 55 0 
+	mov	%rax,-0x08(%rbp)	# 433B66 48 89 45 F8 
+	mov	%rdx,-0x10(%rbp)	# 433B6A 48 89 55 F0 
+	mov	-0x10(%rbp),%dl	# 433B6E 8A 55 F0 
+	mov	%dl,(%rax)	# 433B71 88 10 
+	mov	-0x08(%rbp),%rax	# 433B73 48 8B 45 F8 
+//   CHAR+ SWAP 2DUP 2>R CHARS MOVE   ( -- )  ( R: -- ca' u2 )
+
+	lea	0x01(%rax),%rax	# 433B77 48 8D 40 1 
+	mov	0x00(%rbp),%rdx	# 433B7B 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 433B7F 48 89 45 0 
+	mov	%rdx,-0x08(%rbp)	# 433B83 48 89 55 F8 
+	xchg	%rdx,%rax	# 433B87 48 92 
+	mov	%rdx,-0x10(%rbp)	# 433B89 48 89 55 F0 
+	lea	-0x10(%rbp),%rbp	# 433B8D 48 8D 6D F0 
+	call	 ( 2>R ) 	# 433B91 E8 8 8 FD FF 
+	call	 ( MOVE ) 	# 433B96 E8 BF 15 FD FF 
+//   2R>
+
+	call	 ( 2R> ) 	# 433B9B E8 C6 7 FD FF 
+//;
+
+	ret		# 433BA0 C3 
+//
+
+//: $"   ( "ccc" -- caddr u )  SBUF1 ($") ;
+
+doldtic:
+	mov	%rax,-0x08(%rbp)	# 433BA1 48 89 45 F8 
+	lea	 ( SBUF1+5  ) (%rip),%rax	# 433BA5 48 8D 5 C FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 433BAC 48 8D 6D F8 
+	call	 ( ($") ) 	# 433BB0 E8 8B FF FF FF 
+	ret		# 433BB5 C3 
+//: $2"  ( "ccc" -- caddr u )  SBUF2 ($") ;
+
+dol2dtic:
+	mov	%rax,-0x08(%rbp)	# 433BB6 48 89 45 F8 
+	lea	 ( SBUF2+5  ) (%rip),%rax	# 433BBA 48 8D 5 3F FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 433BC1 48 8D 6D F8 
+	call	 ( ($") ) 	# 433BC5 E8 76 FF FF FF 
+	ret		# 433BCA C3 
+//: $CLEAR  ( caddr -- ) SBUF-SIZE BL FILL ;
+
+dolCLEAR:
+	mov	%rax,-0x08(%rbp)	# 433BCB 48 89 45 F8 
+	movq	$0x40,-0x10(%rbp)	# 433BCF 48 C7 45 F0 40 0 0 0 
+	mov	$0x20,%eax	# 433BD7 B8 20 0 0 0 
+	lea	-0x10(%rbp),%rbp	# 433BDC 48 8D 6D F0 
+	call	 ( FILL ) 	# 433BE0 E8 C0 C FD FF 
+	ret		# 433BE5 C3 
+//: CLEAR-SBUFS  ( -- )  SBUF1 $CLEAR SBUF2 $CLEAR ;
+
+CLEARsubSBUFS:
+	mov	%rax,-0x08(%rbp)	# 433BE6 48 89 45 F8 
+	lea	 ( SBUF1+5  ) (%rip),%rax	# 433BEA 48 8D 5 C7 FE FF FF 
+	lea	-0x08(%rbp),%rbp	# 433BF1 48 8D 6D F8 
+	call	 ( $CLEAR ) 	# 433BF5 E8 D1 FF FF FF 
+	mov	%rax,-0x08(%rbp)	# 433BFA 48 89 45 F8 
+	lea	 ( SBUF2+5  ) (%rip),%rax	# 433BFE 48 8D 5 FB FE FF FF 
+	lea	-0x08(%rbp),%rbp	# 433C05 48 8D 6D F8 
+	call	 ( $CLEAR ) 	# 433C09 E8 BD FF FF FF 
+	ret		# 433C0E C3 
+//
+
+//\ More definitions in core.fr used in other test programs, conditionally
+
+//\ defined here if core.fr has not been loaded
+
+//
+
+//[?DEF] MAX-UINT   \? 0 INVERT                 CONSTANT MAX-UINT
+
+//[?DEF] MAX-INT    \? 0 INVERT 1 RSHIFT        CONSTANT MAX-INT
+
+//[?DEF] MIN-INT    \? 0 INVERT 1 RSHIFT INVERT CONSTANT MIN-INT
+
+//[?DEF] MID-UINT   \? 0 INVERT 1 RSHIFT        CONSTANT MID-UINT
+
+//[?DEF] MID-UINT+1 \? 0 INVERT 1 RSHIFT INVERT CONSTANT MID-UINT+1
+
+//
+
+//[?DEF] 2CONSTANT \? : 2CONSTANT  CREATE , , DOES> 2@ ;
+
+_2CONSTANT:
+	call	 ( CREATE ) 	# 433C0F E8 8C B5 FD FF 
+	call	 ( , ) 	# 433C14 E8 1 13 FD FF 
+	call	 ( , ) 	# 433C19 E8 FC 12 FD FF 
+	call	 ( (DOES>) ) 	# 433C1E E8 64 B6 FD FF 
+	mov	%rax,-0x08(%rbp)	# 433C23 48 89 45 F8 
+	pop	%rax	# 433C27 58 
+	lea	-0x08(%rbp),%rbp	# 433C28 48 8D 6D F8 
+	call	 ( 2@ ) 	# 433C2C E8 79 8 FD FF 
+	ret		# 433C31 C3 
+//
+
+//BASE @ 2 BASE ! -1 0 <# #S #> SWAP DROP CONSTANT BITS/CELL BASE !
+
+BITSrslCELL:
+	call	 ( DOCONSTANT ) 	# 433C32 E8 DC C FD FF 
+	add	%al,(%rax)	# 433C37 40 0 0 
+	add	%al,(%rax)	# 433C3A 0 0 
+	add	%al,(%rax)	# 433C3C 0 0 
+	add	%ch,%al	# 433C3E 0 E8 
+//
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Tests
+
+//
+
+//: STR1  S" abcd" ;  : STR2  S" abcde" ;
+
+	call	*(%rbx)	# 433C40 FE 13 
+stD	# 433C42 FD 
+	inc	(%rcx)	# 433C43 FF 4 61 
+	.byte	0x62	# 433C46 62 
+	movslq	-0x18(%rbx,%rax,8),%esp	# 433C47 63 64 C3 E8 
+	repz		# 433C4B F3 
+	adc	%ebp,%edi	# 433C4C 13 FD 
+	inc	 ( _STEKC+64554645  ) (%rip)	# 433C4E FF 5 61 62 63 64 
+	.byte	0x65	# 433C54 65 
+	ret		# 433C55 C3 
+//: STR3  S" abCd" ;  : STR4  S" wbcd"  ;
+
+STR3:
+	call	 ( (S") ) 	# 433C56 E8 E7 13 FD FF 
+	.byte 0x4,0x61,0x62,0x43,0x64
+	ret		# 433C60 C3 
+STR4:
+	call	 ( (S") ) 	# 433C61 E8 DC 13 FD FF 
+	.byte 0x4,0x77,0x62,0x63,0x64
+	ret		# 433C6B C3 
+//: S"" S" " ;
+
+Sdticdtic:
+	call	 ( (S") ) 	# 433C6C E8 D1 13 FD FF 
+	.byte 0x0
+	ret		# 433C72 C3 
+//
+
+//T{ STR1 2DUP S= -> TRUE }T
+
+//T{ STR2 2DUP S= -> TRUE }T
+
+//T{ S""  2DUP S= -> TRUE }T
+
+//T{ STR1 STR2 S= -> FALSE }T
+
+//T{ STR1 STR3 S= -> FALSE }T
+
+//T{ STR1 STR4 S= -> FALSE }T
+
+//
+
+//T{ CLEAR-SBUFS -> }T
+
+//T{ $" abcdefghijklm"  SBUF1 COUNT S= -> TRUE  }T
+
+//T{ $" nopqrstuvwxyz"  SBUF2 OVER  S= -> FALSE }T
+
+//T{ $2" abcdefghijklm" SBUF1 COUNT S= -> FALSE }T
+
+//T{ $2" nopqrstuvwxyz" SBUF1 COUNT S= -> TRUE  }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//CR $" Test utilities loaded" TYPE CR
+

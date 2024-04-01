@@ -1,0 +1,1040 @@
+//\ To test some of the ANS Forth Programming Tools and extension wordset
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13 31 October 2015 More tests on [ELSE] and [THEN]
+
+//\              TRAVERSE-WORDLIST etc tests made conditional on the required
+
+//\              search-order words being available
+
+//\              Calls to COMPARE replaced with S= (in utilities.fth)
+
+//\         0.11 25 April Added tests for N>R NR> SYNONYM TRAVERSE-WORDLIST
+
+//\              NAME>COMPILE NAME>INTERPRET NAME>STRING
+
+//\         0.6  1 April 2012 Tests placed in the public domain.
+
+//\              Further tests on [IF] [ELSE] [THEN]
+
+//\         0.5  30 November 2009 <TRUE> and <FALSE> replaced with TRUE and FALSE
+
+//\         0.4  6 March 2009 ENDIF changed to THEN. {...} changed to T{...}T
+
+//\         0.3  20 April 2007 ANS Forth words changed to upper case
+
+//\         0.2  30 Oct 2006 updated following GForth test to avoid
+
+//\              changing stack depth during a colon definition
+
+//\         0.1  Oct 2006 First version released
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program
+
+//
+
+//\ Words tested in this file are:
+
+//\     AHEAD [IF] [ELSE] [THEN] CS-PICK CS-ROLL [DEFINED] [UNDEFINED]
+
+//\     N>R NR> SYNONYM TRAVERSE-WORDLIST NAME>COMPILE NAME>INTERPRET
+
+//\     NAME>STRING
+
+//\
+
+//
+
+//\ Words not tested:
+
+//\     .S ? DUMP SEE WORDS
+
+//\     ;CODE ASSEMBLER BYE CODE EDITOR FORGET STATE
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions, dependencies and notes:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set is available and tested
+
+//\     - testing TRAVERSE-WORDLIST uses WORDLIST SEARCH-WORDLIST GET-CURRENT
+
+//\       SET-CURRENT and FORTH-WORDLIST from the Search-order word set. If any
+
+//\       of these are not present these tests will be ignored
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//DECIMAL
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING AHEAD
+
+//
+
+//T{ : PT1 AHEAD 1111 2222 THEN 3333 ; -> }T
+
+PT1:
+	jmp	 ( PT1+1A  ) 	# 435E96 E9 15 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 435E9B 48 89 45 F8 
+	movq	$0x457,-0x10(%rbp)	# 435E9F 48 C7 45 F0 57 4 0 0 
+	mov	$0x8AE,%eax	# 435EA7 B8 AE 8 0 0 
+	lea	-0x10(%rbp),%rbp	# 435EAC 48 8D 6D F0 
+	mov	%rax,-0x08(%rbp)	# 435EB0 48 89 45 F8 
+	mov	$0xD05,%eax	# 435EB4 B8 5 D 0 0 
+	lea	-0x08(%rbp),%rbp	# 435EB9 48 8D 6D F8 
+	ret		# 435EBD C3 
+//T{ PT1 -> 3333 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING [IF] [ELSE] [THEN]
+
+//
+
+//T{ TRUE  [IF] 111 [ELSE] 222 [THEN] -> 111 }T
+
+//T{ FALSE [IF] 111 [ELSE] 222 [THEN] -> 222 }T
+
+//
+
+//T{ TRUE  [IF] 1     \ Code spread over more than 1 line
+
+//             2
+
+//          [ELSE]
+
+//             3
+
+//             4
+
+//          [THEN] -> 1 2 }T
+
+//T{ FALSE [IF]
+
+//             1 2
+
+//          [ELSE]
+
+//             3 4
+
+//          [THEN] -> 3 4 }T
+
+//
+
+//T{ TRUE  [IF] 1 TRUE  [IF] 2 [ELSE] 3 [THEN] [ELSE] 4 [THEN] -> 1 2 }T
+
+//T{ FALSE [IF] 1 TRUE  [IF] 2 [ELSE] 3 [THEN] [ELSE] 4 [THEN] -> 4 }T
+
+//T{ TRUE  [IF] 1 FALSE [IF] 2 [ELSE] 3 [THEN] [ELSE] 4 [THEN] -> 1 3 }T
+
+//T{ FALSE [IF] 1 FALSE [IF] 2 [ELSE] 3 [THEN] [ELSE] 4 [THEN] -> 4 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING immediacy of [IF] [ELSE] [THEN]
+
+//
+
+//T{ : PT2 [  0 ] [IF] 1111 [ELSE] 2222 [THEN]  ; PT2 -> 2222 }T
+
+PT2:
+	mov	%rax,-0x08(%rbp)	# 435EBE 48 89 45 F8 
+	mov	$0x8AE,%eax	# 435EC2 B8 AE 8 0 0 
+	lea	-0x08(%rbp),%rbp	# 435EC7 48 8D 6D F8 
+	ret		# 435ECB C3 
+//T{ : PT3 [ -1 ] [IF] 3333 [ELSE] 4444 [THEN]  ; PT3 -> 3333 }T
+
+PT3:
+	mov	%rax,-0x08(%rbp)	# 435ECC 48 89 45 F8 
+	mov	$0xD05,%eax	# 435ED0 B8 5 D 0 0 
+	lea	-0x08(%rbp),%rbp	# 435ED5 48 8D 6D F8 
+	ret		# 435ED9 C3 
+//: PT9 BL WORD FIND ;
+
+PT9:
+	mov	%rax,-0x08(%rbp)	# 435EDA 48 89 45 F8 
+	mov	$0x20,%eax	# 435EDE B8 20 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435EE3 48 8D 6D F8 
+	call	 ( WORD ) 	# 435EE7 E8 76 88 FD FF 
+	call	 ( FIND ) 	# 435EEC E8 F3 94 FD FF 
+	ret		# 435EF1 C3 
+//T{ PT9 [IF]   NIP -> 1 }T
+
+//T{ PT9 [ELSE] NIP -> 1 }T
+
+//T{ PT9 [THEN] NIP -> 1 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING [IF] and [ELSE] carry out a text scan by parsing and discarding words
+
+//\ so that an [ELSE] or [THEN] in a comment or string is recognised
+
+//
+
+//: PT10 REFILL DROP REFILL DROP ;
+
+PT10:
+	call	 ( REFILL ) 	# 435EF2 E8 F2 80 FD FF 
+	mov	0x00(%rbp),%rax	# 435EF7 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435EFB 48 8D 6D 8 
+	call	 ( REFILL ) 	# 435EFF E8 E5 80 FD FF 
+	mov	0x00(%rbp),%rax	# 435F04 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435F08 48 8D 6D 8 
+	ret		# 435F0C C3 
+//
+
+//T{ 0  [IF]            \ Words ignored up to [ELSE] 2
+
+//      [THEN] -> 2 }T
+
+//T{ -1 [IF] 2 [ELSE] 3 $" [THEN] 4 PT10 IGNORED TO END OF LINE"
+
+//      [THEN]          \ A precaution in case [THEN] in string isn't recognised
+
+//   -> 2 4 }T
+
+//
+
+//\ -----------------------------------------------------------------------------
+
+//TESTING [ELSE] and [THEN] without a preceding [IF]
+
+//
+
+//((
+
+//\ [ELSE] ... [THEN] acts like a multi-line comment
+
+//T{ [ELSE]
+
+//11 12 13
+
+//[THEN] 14 -> 14 }T
+
+//
+
+//T{ [ELSE] -1 [IF] 15 [ELSE] 16 [THEN] 17 [THEN] 18 -> 18 }T
+
+//
+
+//\ A lone [THEN] is a noop
+
+//T{ 19 [THEN] 20 -> 19 20 }T
+
+//))
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING CS-PICK and CS-ROLL
+
+//
+
+//\ Test PT5 based on example in ANS document p 176.
+
+//
+
+//: ?REPEAT
+
+//   0 CS-PICK POSTPONE UNTIL
+
+queREPEAT:
+	mov	%rax,-0x08(%rbp)	# 435F0D 48 89 45 F8 
+	mov	$0x0,%eax	# 435F11 B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 435F16 48 8D 6D F8 
+	call	 ( CS-PICK ) 	# 435F1A E8 67 E8 FC FF 
+	call	 ( UNTIL ) 	# 435F1F E8 36 8B FD FF 
+//; IMMEDIATE
+
+	ret		# 435F24 C3 
+//
+
+//VARIABLE PT4
+
+	add	%al,(%rax)	# 435F25 0 0 
+	add	%al,(%rax)	# 435F27 0 0 
+	add	%al,(%rax)	# 435F29 0 0 
+PT4:
+	call	 ( DOCREATE ) 	# 435F2B E8 F0 E9 FC FF 
+	add	%eax,(%rax)	# 435F30 1 0 
+	add	%al,(%rax)	# 435F32 0 0 
+	add	%al,(%rax)	# 435F34 0 0 
+	add	%al,(%rax)	# 435F36 0 0 
+//
+
+//T{ : PT5  ( N1 -- )
+
+//      PT4 !
+
+PT5:
+	mov	%rax, ( PT4+5  ) (%rip)	# 435F38 48 89 5 F1 FF FF FF 
+	mov	0x00(%rbp),%rax	# 435F3F 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 435F43 48 8D 6D 8 
+//      BEGIN
+
+//         -1 PT4 +!
+
+	mov	%rax,-0x08(%rbp)	# 435F47 48 89 45 F8 
+	lea	 ( PT4+5  ) (%rip),%rax	# 435F4B 48 8D 5 DE FF FF FF 
+	movq	$-0x1,%rdx	# 435F52 48 C7 C2 FF FF FF FF 
+	add	%rdx,(%rax)	# 435F59 48 1 10 
+	mov	 ( PT4+5  ) (%rip),%rax	# 435F5C 48 8B 5 CD FF FF FF 
+//         PT4 @ 4 > 0= ?REPEAT \ Back TO BEGIN if FALSE
+
+	mov	%rax,-0x10(%rbp)	# 435F63 48 89 45 F0 
+	mov	$0x4,%eax	# 435F67 B8 4 0 0 0 
+	cmp	-0x10(%rbp),%rax	# 435F6C 48 3B 45 F0 
+	setl	%al	# 435F70 F 9C C0 
+		neg	%al	# 435F73 F6 D8 
+	movsbq	%al,%rax	# 435F75 48 F BE C0 
+	sub	$0x01,%rax	# 435F79 48 83 E8 1 
+	sbb	%rax,%rax	# 435F7D 48 19 C0 
+	test	%rax,%rax	# 435F80 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 435F83 48 8B 45 F8 
+	jz	 ( PT5+F  ) 	# 435F87 F 84 BA FF FF FF 
+//         111
+
+	mov	%rax,-0x08(%rbp)	# 435F8D 48 89 45 F8 
+	movq	$0x6F,-0x10(%rbp)	# 435F91 48 C7 45 F0 6F 0 0 0 
+	mov	 ( PT4+5  ) (%rip),%rax	# 435F99 48 8B 5 90 FF FF FF 
+//         PT4 @ 3 > 0= ?REPEAT
+
+	mov	%rax,-0x18(%rbp)	# 435FA0 48 89 45 E8 
+	mov	$0x3,%eax	# 435FA4 B8 3 0 0 0 
+	cmp	-0x18(%rbp),%rax	# 435FA9 48 3B 45 E8 
+	setl	%al	# 435FAD F 9C C0 
+		neg	%al	# 435FB0 F6 D8 
+	movsbq	%al,%rax	# 435FB2 48 F BE C0 
+	sub	$0x01,%rax	# 435FB6 48 83 E8 1 
+	sbb	%rax,%rax	# 435FBA 48 19 C0 
+	test	%rax,%rax	# 435FBD 48 85 C0 
+	mov	-0x10(%rbp),%rax	# 435FC0 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 435FC4 48 8D 6D F8 
+	jz	 ( PT5+F  ) 	# 435FC8 F 84 79 FF FF FF 
+//         222
+
+	mov	%rax,-0x08(%rbp)	# 435FCE 48 89 45 F8 
+	movq	$0xDE,-0x10(%rbp)	# 435FD2 48 C7 45 F0 DE 0 0 0 
+	mov	 ( PT4+5  ) (%rip),%rax	# 435FDA 48 8B 5 4F FF FF FF 
+//         PT4 @ 2 > 0= ?REPEAT
+
+	mov	%rax,-0x18(%rbp)	# 435FE1 48 89 45 E8 
+	mov	$0x2,%eax	# 435FE5 B8 2 0 0 0 
+	cmp	-0x18(%rbp),%rax	# 435FEA 48 3B 45 E8 
+	setl	%al	# 435FEE F 9C C0 
+		neg	%al	# 435FF1 F6 D8 
+	movsbq	%al,%rax	# 435FF3 48 F BE C0 
+	sub	$0x01,%rax	# 435FF7 48 83 E8 1 
+	sbb	%rax,%rax	# 435FFB 48 19 C0 
+	test	%rax,%rax	# 435FFE 48 85 C0 
+	mov	-0x10(%rbp),%rax	# 436001 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 436005 48 8D 6D F8 
+	jz	 ( PT5+F  ) 	# 436009 F 84 38 FF FF FF 
+//         333
+
+	mov	%rax,-0x08(%rbp)	# 43600F 48 89 45 F8 
+	movq	$0x14D,-0x10(%rbp)	# 436013 48 C7 45 F0 4D 1 0 0 
+	mov	 ( PT4+5  ) (%rip),%rax	# 43601B 48 8B 5 E FF FF FF 
+//         PT4 @ 1 =
+
+	xor	$0x1,%rax	# 436022 48 35 1 0 0 0 
+	sub	$0x01,%rax	# 436028 48 83 E8 1 
+	sbb	%rax,%rax	# 43602C 48 19 C0 
+	test	%rax,%rax	# 43602F 48 85 C0 
+	mov	-0x10(%rbp),%rax	# 436032 48 8B 45 F0 
+//      UNTIL
+
+	lea	-0x08(%rbp),%rbp	# 436036 48 8D 6D F8 
+	jz	 ( PT5+F  ) 	# 43603A F 84 7 FF FF FF 
+//; -> }T
+
+	ret		# 436040 C3 
+//
+
+//T{ 6 PT5 -> 111 111 222 111 222 333 111 222 333 }T
+
+//
+
+//
+
+//T{ : ?DONE POSTPONE IF 1 CS-ROLL ; IMMEDIATE -> }T  \ Same as WHILE
+
+queDONE:
+	call	 ( IF ) 	# 436041 E8 AC 8A FD FF 
+	mov	%rax,-0x08(%rbp)	# 436046 48 89 45 F8 
+	mov	$0x1,%eax	# 43604A B8 1 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 43604F 48 8D 6D F8 
+	call	 ( CS-ROLL ) 	# 436053 E8 AE F0 FC FF 
+	ret		# 436058 C3 
+//T{ : PT6
+
+//      >R
+
+PT6:
+	Push	%rax	# 436059 50 
+	mov	0x00(%rbp),%rax	# 43605A 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 43605E 48 8D 6D 8 
+//      BEGIN
+
+//         R@
+
+	mov	%rax,-0x08(%rbp)	# 436062 48 89 45 F8 
+	mov	(%rsp),%rax	# 436066 48 8B 4 24 
+	test	%rax,%rax	# 43606A 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 43606D 48 8B 45 F8 
+//      ?DONE
+
+	jz	 ( PT6+3D  ) 	# 436071 F 84 1F 0 0 0 
+//         R@
+
+	mov	%rax,-0x08(%rbp)	# 436077 48 89 45 F8 
+	mov	(%rsp),%rax	# 43607B 48 8B 4 24 
+	mov	%rax,-0x10(%rbp)	# 43607F 48 89 45 F0 
+//         R> 1- >R
+
+	pop	%rax	# 436083 58 
+	lea	-0x01(%rax),%rax	# 436084 48 8D 40 FF 
+	Push	%rax	# 436088 50 
+	mov	-0x10(%rbp),%rax	# 436089 48 8B 45 F0 
+	lea	-0x08(%rbp),%rbp	# 43608D 48 8D 6D F8 
+//      REPEAT
+
+	jmp	 ( PT6+9  ) 	# 436091 E9 CC FF FF FF 
+//      R> DROP
+
+	mov	%rax,-0x08(%rbp)	# 436096 48 89 45 F8 
+	pop	%rax	# 43609A 58 
+	mov	-0x08(%rbp),%rax	# 43609B 48 8B 45 F8 
+//   ; -> }T
+
+	ret		# 43609F C3 
+//
+
+//T{ 5 PT6 -> 5 4 3 2 1 }T
+
+//
+
+//: MIX_UP 2 CS-ROLL ; IMMEDIATE  \ CS-ROT
+
+MIX_UP:
+	mov	%rax,-0x08(%rbp)	# 4360A0 48 89 45 F8 
+	mov	$0x2,%eax	# 4360A4 B8 2 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4360A9 48 8D 6D F8 
+	call	 ( CS-ROLL ) 	# 4360AD E8 54 F0 FC FF 
+	ret		# 4360B2 C3 
+//
+
+//: PT7    ( f3 f2 f1 -- ? )
+
+//   IF 1111 ROT ROT         ( -- 1111 f3 f2 )     ( cs: -- orig1 )
+
+PT7:
+	test	%rax,%rax	# 4360B3 48 85 C0 
+	mov	0x00(%rbp),%rax	# 4360B6 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 4360BA 48 8D 6D 8 
+	jz	 ( PT7+63  ) 	# 4360BE F 84 52 0 0 0 
+	mov	%rax,%rdx	# 4360C4 48 89 C2 
+	movq	$0x457,-0x08(%rbp)	# 4360C7 48 C7 45 F8 57 4 0 0 
+	mov	0x00(%rbp),%rax	# 4360CF 48 8B 45 0 
+	mov	%rdx,0x00(%rbp)	# 4360D3 48 89 55 0 
+	mov	-0x08(%rbp),%rdx	# 4360D7 48 8B 55 F8 
+	mov	%rax,-0x08(%rbp)	# 4360DB 48 89 45 F8 
+	mov	0x00(%rbp),%rax	# 4360DF 48 8B 45 0 
+	mov	%rdx,0x00(%rbp)	# 4360E3 48 89 55 0 
+	test	%rax,%rax	# 4360E7 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4360EA 48 8B 45 F8 
+//      IF 2222 SWAP         ( -- 1111 2222 f3 )   ( cs: -- orig1 orig2 )
+
+	jz	 ( PT7+7D  ) 	# 4360EE F 84 3C 0 0 0 
+	movq	$0x8AE,-0x08(%rbp)	# 4360F4 48 C7 45 F8 AE 8 0 0 
+	test	%rax,%rax	# 4360FC 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 4360FF 48 8B 45 F8 
+//         IF                                      ( cs: -- orig1 orig2 orig3 )
+
+	jz	 ( PT7+70  ) 	# 436103 F 84 1A 0 0 0 
+//            3333 MIX_UP    ( -- 1111 2222 3333 ) ( cs: -- orig2 orig3 orig1 )
+
+	mov	%rax,-0x08(%rbp)	# 436109 48 89 45 F8 
+	mov	$0xD05,%eax	# 43610D B8 5 D 0 0 
+	lea	-0x08(%rbp),%rbp	# 436112 48 8D 6D F8 
+//         THEN                                    ( cs: -- orig2 orig3 )
+
+//         4444        \ Hence failure of first IF comes here and falls through
+
+	mov	%rax,-0x08(%rbp)	# 436116 48 89 45 F8 
+	mov	$0x115C,%eax	# 43611A B8 5C 11 0 0 
+	lea	-0x08(%rbp),%rbp	# 43611F 48 8D 6D F8 
+//      THEN                                      ( cs: -- orig2 )
+
+//      5555           \ Failure of 3rd IF comes here
+
+	mov	%rax,-0x08(%rbp)	# 436123 48 89 45 F8 
+	mov	$0x15B3,%eax	# 436127 B8 B3 15 0 0 
+	lea	-0x08(%rbp),%rbp	# 43612C 48 8D 6D F8 
+//   THEN                                         ( cs: -- )
+
+//   6666              \ Failure of 2nd IF comes here
+
+	mov	%rax,-0x08(%rbp)	# 436130 48 89 45 F8 
+	mov	$0x1A0A,%eax	# 436134 B8 A 1A 0 0 
+	lea	-0x08(%rbp),%rbp	# 436139 48 8D 6D F8 
+//;
+
+	ret		# 43613D C3 
+//
+
+//T{ -1 -1 -1 PT7 -> 1111 2222 3333 4444 5555 6666 }T
+
+//T{  0 -1 -1 PT7 -> 1111 2222 5555 6666 }T
+
+//T{  0  0 -1 PT7 -> 1111 0    6666 }T
+
+//T{  0  0  0 PT7 -> 0    0    4444 5555 6666 }T
+
+//
+
+//: [1CS-ROLL] 1 CS-ROLL ; IMMEDIATE
+
+xc1CSsubROLLyc:
+	mov	%rax,-0x08(%rbp)	# 43613E 48 89 45 F8 
+	mov	$0x1,%eax	# 436142 B8 1 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 436147 48 8D 6D F8 
+	call	 ( CS-ROLL ) 	# 43614B E8 B6 EF FC FF 
+	ret		# 436150 C3 
+//
+
+//T{ : PT8
+
+//      >R
+
+PT8:
+	Push	%rax	# 436151 50 
+	mov	0x00(%rbp),%rax	# 436152 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 436156 48 8D 6D 8 
+//      AHEAD 111
+
+	jmp	 ( PT8+28  ) 	# 43615A E9 1A 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 43615F 48 89 45 F8 
+	mov	$0x6F,%eax	# 436163 B8 6F 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 436168 48 8D 6D F8 
+//      BEGIN 222
+
+	mov	%rax,-0x08(%rbp)	# 43616C 48 89 45 F8 
+	mov	$0xDE,%eax	# 436170 B8 DE 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 436175 48 8D 6D F8 
+//         [1CS-ROLL]
+
+//         THEN
+
+//         333
+
+	mov	%rax,-0x08(%rbp)	# 436179 48 89 45 F8 
+	movq	$0x14D,-0x10(%rbp)	# 43617D 48 C7 45 F0 4D 1 0 0 
+	pop	%rax	# 436185 58 
+//         R> 1- >R
+
+	lea	-0x01(%rax),%rax	# 436186 48 8D 40 FF 
+	Push	%rax	# 43618A 50 
+	mov	-0x10(%rbp),%rax	# 43618B 48 8B 45 F0 
+	mov	(%rsp),%rax	# 43618F 48 8B 4 24 
+//         R@ 0<
+
+	sar	$0x3F,%rax	# 436193 48 C1 F8 3F 
+	mov	-0x10(%rbp),%rax	# 436197 48 8B 45 F0 
+//      UNTIL
+
+	lea	-0x08(%rbp),%rbp	# 43619B 48 8D 6D F8 
+	jz	 ( PT8+1B  ) 	# 43619F F 84 C7 FF FF FF 
+//      R> DROP
+
+	mov	%rax,-0x08(%rbp)	# 4361A5 48 89 45 F8 
+	pop	%rax	# 4361A9 58 
+	mov	-0x08(%rbp),%rax	# 4361AA 48 8B 45 F8 
+//   ; -> }T
+
+	ret		# 4361AE C3 
+//
+
+//T{ 1 PT8 -> 333 222 333 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING [DEFINED] [UNDEFINED]
+
+//
+
+//CREATE DEF1
+
+	add	%al,(%rax)	# 4361AF 0 0 
+	add	%al,(%rax)	# 4361B1 0 0 
+DEF1:
+	call	 ( DOCREATE ) 	# 4361B3 E8 68 E7 FC FF 
+//
+
+//T{ [DEFINED]   DEF1 -> TRUE  }T
+
+//T{ [UNDEFINED] DEF1 -> FALSE }T
+
+//T{ [DEFINED]   12345678901234567890 -> FALSE }T
+
+//T{ [UNDEFINED] 12345678901234567890 -> TRUE  }T
+
+//T{ : DEF2 [DEFINED]   DEF1 [IF] 1 [ELSE] 2 [THEN] ; -> }T
+
+DEF2:
+	mov	%rax,-0x08(%rbp)	# 4361B8 48 89 45 F8 
+	mov	$0x1,%eax	# 4361BC B8 1 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4361C1 48 8D 6D F8 
+	ret		# 4361C5 C3 
+//T{ : DEF3 [UNDEFINED] DEF1 [IF] 3 [ELSE] 4 [THEN] ; -> }T
+
+DEF3:
+	mov	%rax,-0x08(%rbp)	# 4361C6 48 89 45 F8 
+	mov	$0x4,%eax	# 4361CA B8 4 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 4361CF 48 8D 6D F8 
+	ret		# 4361D3 C3 
+//T{ DEF2 -> 1 }T
+
+//T{ DEF3 -> 4 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING N>R NR>
+
+//
+
+//T{ : NTR  N>R -1 NR> ; -> }T
+
+NTR:
+	call	 ( N>R ) 	# 4361D4 E8 37 AB FF FF 
+	mov	%rax,-0x08(%rbp)	# 4361D9 48 89 45 F8 
+	movq	$-0x1,%rax	# 4361DD 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 4361E4 48 8D 6D F8 
+	call	 ( NR> ) 	# 4361E8 E8 87 AB FF FF 
+	ret		# 4361ED C3 
+//T{ 1 2 3 4 5 6 7 4 NTR -> 1 2 3 -1 4 5 6 7 4 }T
+
+//T{ 1 0 NTR -> 1 -1 0 }T
+
+//T{ : NTR2 N>R N>R -1 NR> -2 NR> ;
+
+NTR2:
+	call	 ( N>R ) 	# 4361EE E8 1D AB FF FF 
+	call	 ( N>R ) 	# 4361F3 E8 18 AB FF FF 
+	mov	%rax,-0x08(%rbp)	# 4361F8 48 89 45 F8 
+	movq	$-0x1,%rax	# 4361FC 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 436203 48 8D 6D F8 
+	call	 ( NR> ) 	# 436207 E8 68 AB FF FF 
+	mov	%rax,-0x08(%rbp)	# 43620C 48 89 45 F8 
+	movq	$-0x2,%rax	# 436210 48 C7 C0 FE FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 436217 48 8D 6D F8 
+	call	 ( NR> ) 	# 43621B E8 54 AB FF FF 
+	ret		# 436220 C3 
+//T{ 1 2 2 3 4 5 3 NTR2 -> -1 1 2 2 -2 3 4 5 3 }T
+
+//T{ 1 0 0 NTR2 -> 1 -1 0 -2 0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING SYNONYM
+
+//
+
+//: SYN1 1234 ;
+
+NEWsubSYN1:
+	mov	%rax,-0x08(%rbp)	# 436221 48 89 45 F8 
+	mov	$0x4D2,%eax	# 436225 B8 D2 4 0 0 
+	lea	-0x08(%rbp),%rbp	# 43622A 48 8D 6D F8 
+	ret		# 43622E C3 
+//T{ SYNONYM NEW-SYN1 SYN1 -> }T
+
+//T{ NEW-SYN1 -> 1234 }T
+
+//: SYN2 2345 ; IMMEDIATE
+
+NEWsubSYN2:
+	mov	%rax,-0x08(%rbp)	# 43622F 48 89 45 F8 
+	mov	$0x929,%eax	# 436233 B8 29 9 0 0 
+	lea	-0x08(%rbp),%rbp	# 436238 48 8D 6D F8 
+	ret		# 43623C C3 
+//T{ SYNONYM NEW-SYN2 SYN2 -> }T
+
+//T{ NEW-SYN2 -> 2345 }T
+
+//T{ : SYN3 SYN2 LITERAL ; SYN3 -> 2345 }T
+
+SYN3:
+	mov	%rax,-0x08(%rbp)	# 43623D 48 89 45 F8 
+	mov	$0x929,%eax	# 436241 B8 29 9 0 0 
+	lea	-0x08(%rbp),%rbp	# 436246 48 8D 6D F8 
+	ret		# 43624A C3 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ These tests require GET-CURRENT SET-CURRENT WORDLIST from the optional
+
+//\ Search-Order word set. If any of these are not available the tests
+
+//\ will be ignored
+
+//[IFDEF] TRAVERSE-WORDLIST
+
+//
+
+//[?UNDEF] WORDLIST \? [?UNDEF] GET-CURRENT \? [?UNDEF] SET-CURRENT
+
+//\? [?UNDEF] FORTH-WORDLIST
+
+//
+
+//\? TESTING TRAVERSE-WORDLIST NAME>COMPILE NAME>INTERPRET NAME>STRING
+
+//
+
+//\? GET-CURRENT CONSTANT CURR-WL
+
+//\? WORDLIST CONSTANT TRAV-WL
+
+//\? : WDCT ( n nt -- n+1 f ) DROP 1+ TRUE ;
+
+//\? T{ 0 ' WDCT TRAV-WL TRAVERSE-WORDLIST -> 0 }T
+
+//
+
+//\? TRAV-WL SET-CURRENT
+
+//\? : TRAV1 1 ;
+
+//\? T{ 0 ' WDCT TRAV-WL TRAVERSE-WORDLIST -> 1 }T
+
+//\? : TRAV2 2 ; : TRAV3 3 ; : TRAV4 4 ; : TRAV5 5 ; : TRAV6 6 ; IMMEDIATE
+
+//\? CURR-WL SET-CURRENT
+
+//\? T{ 0 ' WDCT TRAV-WL TRAVERSE-WORDLIST -> 6 }T  \ Traverse whole wordlist
+
+//
+
+//\ Terminate TRAVERSE-WORDLIST after n words & check it compiles
+
+//\? : (PART-OF-WL)  ( ct n nt -- ct+1 n-1 )
+
+//\?    DROP DUP IF SWAP 1+ SWAP 1- THEN DUP
+
+//\? ;
+
+//\? : PART-OF-WL  ( n -- ct 0 | ct+1 n-1)
+
+//\?    0 SWAP ['] (PART-OF-WL) TRAV-WL TRAVERSE-WORDLIST DROP
+
+//\? ;
+
+//\? T{ 0 PART-OF-WL -> 0 }T
+
+//\? T{ 1 PART-OF-WL -> 1 }T
+
+//\? T{ 4 PART-OF-WL -> 4 }T
+
+//\? T{ 9 PART-OF-WL -> 6 }T  \ Traverse whole wordlist
+
+//
+
+//\ Testing NAME>.. words require a name token. It will be easier to test them
+
+//\ if there is a way of obtaining the name token of a given word. To get this we
+
+//\ need a definition to compare a given name with the result of NAME>STRING.
+
+//\ The output from NAME>STRING has to be copied into a buffer and converted to a
+
+//\ known case as different Forth systems may store names as lower, upper or
+
+//\ mixed case.
+
+//
+
+//\? CREATE UCBUF 32 CHARS ALLOT    \ The buffer
+
+//
+
+//\ Convert string to upper case and save in the buffer.
+
+//
+
+//\? : >UPPERCASE  ( caddr u  -- caddr2 u2 )
+
+//\?    32 MIN DUP >R UCBUF DUP 2SWAP
+
+//\?    OVER + SWAP 2DUP U>
+
+//\?    IF
+
+//\?       DO          \ ?DO can't be used, as it is a Core Extension word
+
+//\?          I C@ DUP [CHAR] a [CHAR] z 1+ WITHIN IF 32 INVERT AND THEN
+
+//\?          OVER C! CHAR+
+
+//\?       LOOP
+
+//\?    ELSE
+
+//\?       2DROP
+
+//\?    THEN
+
+//\?    DROP R>
+
+//\? ;
+
+//
+
+//\ Compare string (caddr u) with name associated with nt
+
+//\? : NAME?  ( caddr u nt -- caddr u f )   \ f = true for name = (caddr u) string
+
+//\?    NAME>STRING >UPPERCASE 2OVER S=
+
+//\? ;
+
+//
+
+//\ The word to be executed by TRAVERSE-WORDLIST
+
+//\? : GET-NT  ( caddr u 0 nt -- caddr u nt false | caddr u 0 nt ) \ nt <> 0
+
+//\?    2>R R@ NAME? IF R> R> ELSE 2R> THEN
+
+//\? ;
+
+//
+
+//\ Get name token of (caddr u) in wordlist wid, return 0 if not present
+
+//\? : GET-NAME-TOKEN  ( caddr u wid -- nt | 0 )
+
+//\?    0 ['] GET-NT ROT TRAVERSE-WORDLIST >R 2DROP R>
+
+//\? ;
+
+//
+
+//\ Test NAME>STRING via TRAVERSE-WORDLIST
+
+//\? T{ $" ABCDE" TRAV-WL GET-NAME-TOKEN 0= -> TRUE  }T \ Not in wordlist
+
+//\? T{ $" TRAV4" TRAV-WL GET-NAME-TOKEN 0= -> FALSE }T
+
+//
+
+//\ Test NAME>INTERPRET on a word with interpretation semantics
+
+//\? T{ $" TRAV3" TRAV-WL GET-NAME-TOKEN NAME>INTERPRET EXECUTE -> 3 }T
+
+//
+
+//\ Test NAME>INTERPRET on a word without interpretation semantics. It is
+
+//\ difficult to choose a suitable word because:
+
+//\    - a user cannot define one in a standard system
+
+//\    - a Forth system may choose to define interpretation semantics for a word
+
+//\      despite the standard stating they are undefined. If so the behaviour
+
+//\      cannot be tested as it is 'undefined' by the standard.
+
+//\ (October 2016) At least one major system, GForth, has defined behaviour for
+
+//\ all words with undefined interpretation semantics. It is not possible in
+
+//\ standard Forth to define a word without interpretation semantics, therefore
+
+//\ it is not possible to have a general test for NAME>INTERPRET returning 0.
+
+//\ So the following word TIF executes NAME>INTERPRET for all words with
+
+//\ undefined interpretation semantics in the Core word set, the first one to
+
+//\ return 0 causes the rest to be skipped. If none return 0 a message is
+
+//\ displayed to that effect. No system can fail this test!
+
+//
+
+//\? VARIABLE TIF-SKIP
+
+//\? : TIF  ( "name1 ... namen" -- )  \ TIF = TEST-INTERPRETATION-UNDEFINED
+
+//\?    BEGIN
+
+//\?       TIF-SKIP @ IF SOURCE >IN ! DROP EXIT THEN
+
+//\?       BL WORD COUNT DUP 0= IF 2DROP EXIT THEN  \ End of line
+
+//\?       FORTH-WORDLIST GET-NAME-TOKEN ?DUP ( -- nt nt | 0 0 )
+
+//\?       IF
+
+//\?          NAME>INTERPRET 0= TIF-SKIP ! \ Returning 0 skips further tests
+
+//\?       THEN
+
+//\?       0      \ AGAIN is a Core Ext word
+
+//\?    UNTIL
+
+//\? ;
+
+//
+
+//\? : TIF?  ( -- )
+
+//\?    TIF-SKIP @ 0=
+
+//\?    IF
+
+//\?       CR ." NAME>INTERPRET returns an execution token for all" CR
+
+//\?       ." core words with undefined interpretation semantics." CR
+
+//\?       ." So NAME>INTERPRET returning 0 is untested." CR
+
+//\?    THEN
+
+//\? ;
+
+//
+
+//\? 0 TIF-SKIP !
+
+//\? TIF DUP SWAP DROP
+
+//\? TIF >R R> R@ ." ; EXIT ['] [CHAR] RECURSE ABORT" DOES> LITERAL POSTPONE
+
+//\? TIF DO I J LOOP +LOOP UNLOOP LEAVE IF ELSE THEN BEGIN WHILE REPEAT UNTIL
+
+//\? TIF?
+
+//
+
+//\ Test NAME>COMPILE
+
+//\? : N>C  ( caddr u -- )  TRAV-WL GET-NAME-TOKEN NAME>COMPILE EXECUTE ; IMMEDIATE
+
+//\? T{ : N>C1  ( -- n )  [ $" TRAV2" ] N>C ; N>C1 -> 2 }T          \ Not immediate
+
+//\? T{ : N>C2  ( -- n )  [ $" TRAV6" ] N>C LITERAL ; N>C2 -> 6 }T  \ Immediate word
+
+//\? T{ $" TRAV6" TRAV-WL GET-NAME-TOKEN NAME>COMPILE EXECUTE -> 6 }T
+
+//
+
+//\ Test the order of finding words with the same name
+
+//\? TRAV-WL SET-CURRENT
+
+//\? : TRAV3 33 ; : TRAV3 333 ; : TRAV7 7 ; : TRAV3 3333 ;
+
+//\? CURR-WL SET-CURRENT
+
+//
+
+//\? : (GET-ALL)  ( caddr u nt -- [n] caddr u true )
+
+//\?    DUP >R NAME? IF R@ NAME>INTERPRET EXECUTE ROT ROT THEN
+
+//\?    R> DROP TRUE
+
+//\? ;
+
+//
+
+//\? : GET-ALL  ( caddr u -- i*x )
+
+//\?    ['] (GET-ALL) TRAV-WL TRAVERSE-WORDLIST 2DROP
+
+//\? ;
+
+//
+
+//\? T{ $" TRAV3" GET-ALL -> 3333 333 33 3 }T
+
+//[?ELSE]
+
+//\? CR CR
+
+//\? .( Some search-order words not present - TRAVERSE-WORDLIST etc not tested) CR
+
+//[?THEN]
+
+//[ELSE] .( TRAVERSE-WORDLIST is undefined word) CR
+
+//[THEN]
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//TOOLS-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of Programming Tools word tests) CR
+

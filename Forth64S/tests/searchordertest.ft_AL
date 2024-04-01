@@ -1,0 +1,569 @@
+//\ To test the ANS Forth search-order word set and search order extensions
+
+//
+
+//\ This program was written by Gerry Jackson in 2006, with contributions from
+
+//\ others where indicated, and is in the public domain - it can be distributed
+
+//\ and/or modified in any way but please retain this notice.
+
+//
+
+//\ This program is distributed in the hope that it will be useful,
+
+//\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+//\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//
+
+//\ The tests are not claimed to be comprehensive or correct 
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Version 0.13  Replaced 2 instances of ?DO with DO
+
+//\               Interpretive use of S" replaced by $" from utilities.fth
+
+//\         0.10 3 August 2014 Name changes to remove redefinition messages
+
+//\               "list" changed to "wordlist" in message for ORDER tests
+
+//\         0.5 1 April 2012  Tests placed in the public domain.
+
+//\         0.4 6 March 2009 { and } replaced with T{ and }T
+
+//\         0.3 20 April 2007 ANS Forth words changed to upper case
+
+//\         0.2 30 Oct 2006 updated following GForth tests to get
+
+//\             initial search order into a known state
+
+//\         0.1 Oct 2006 First version released
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ The tests are based on John Hayes test program for the core word set
+
+//
+
+//\ Words tested in this file are:
+
+//\     FORTH-WORDLIST GET-ORDER SET-ORDER ALSO ONLY FORTH GET-CURRENT
+
+//\     SET-CURRENT DEFINITIONS PREVIOUS SEARCH-WORDLIST WORDLIST FIND
+
+//\ Words not fully tested:
+
+//\     ORDER only tests that it executes, display is implementation
+
+//\           dependent and should be visually inspected
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//\ Assumptions, dependencies and notes:
+
+//\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been
+
+//\       included prior to this file
+
+//\     - the Core word set is available and tested
+
+//\     - that ONLY FORTH DEFINITIONS will work at the start of the file
+
+//\       to ensure the search order is in a known state
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//ONLY FORTH DEFINITIONS
+
+//
+
+//TESTING Search-order word set
+
+//
+
+//DECIMAL
+
+//
+
+//VARIABLE WID1  VARIABLE WID2
+
+WID1:
+	call	 ( DOCREATE ) 	# 43624B E8 D0 E6 FC FF 
+	cmp	$0x4154,%eax	# 436250 3F 54 41 0 0 
+	add	%al,(%rax)	# 436255 0 0 
+	add	%al,(%rax)	# 436257 0 0 
+	add	%al,(%rax)	# 436259 0 0 
+WID2:
+	call	 ( DOCREATE ) 	# 43625B E8 C0 E6 FC FF 
+	movslq	0x00(%rbx),%rax	# 436260 4A 63 43 0 
+	add	%al,(%rax)	# 436264 0 0 
+	add	%al,(%rax)	# 436266 0 0 
+//
+
+//\ Only execute SAVE-ORDERLIST once
+
+//: SAVE-ORDERLIST ( widn ... wid1 n -> ) DUP , ?DUP IF 0 DO , LOOP THEN ;
+
+SAVEsubORDERLIST:
+	mov	%rax,-0x08(%rbp)	# 436268 48 89 45 F8 
+	lea	-0x08(%rbp),%rbp	# 43626C 48 8D 6D F8 
+	call	 ( , ) 	# 436270 E8 A5 EC FC FF 
+	call	 ( ?DUP ) 	# 436275 E8 BA E4 FC FF 
+	test	%rax,%rax	# 43627A 48 85 C0 
+	mov	0x00(%rbp),%rax	# 43627D 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 436281 48 8D 6D 8 
+	jz	 ( SAVE-ORDERLIST+4F  ) 	# 436285 F 84 2C 0 0 0 
+	mov	%rax,-0x08(%rbp)	# 43628B 48 89 45 F8 
+	mov	$0x0,%eax	# 43628F B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 436294 48 8D 6D F8 
+	call	 ( (DO) ) 	# 436298 E8 4C E7 FC FF 
+	.quad  ( SAVE-ORDERLIST+4F  ) 
+	call	 ( , ) 	# 4362A5 E8 70 EC FC FF 
+	inc	%r14	# 4362AA 49 FF C6 
+	inc	%r15	# 4362AD 49 FF C7 
+	jNo	 ( SAVE-ORDERLIST+3D  ) 	# 4362B0 71 F3 
+	pop	%r14	# 4362B2 41 5E 
+	pop	%r15	# 4362B4 41 5F 
+	pop	%rcx	# 4362B6 59 
+	ret		# 4362B7 C3 
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING FORTH-WORDLIST GET-ORDER SET-ORDER
+
+//
+
+//T{ FORTH-WORDLIST WID1 ! -> }T
+
+//
+
+//CREATE ORDER-LIST
+
+	add	%al,(%rax)	# 4362B8 0 0 
+	add	%ch,%al	# 4362BA 0 E8 
+	.byte	0x60	# 4362BC 60 
+out	%al,$0xFC	# 4362BD E6 FC 
+	inc	(%rcx)	# 4362BF FF 1 
+//
+
+//T{ GET-ORDER SAVE-ORDERLIST -> }T
+
+	add	%al,(%rax)	# 4362C1 0 0 
+	add	%al,(%rax)	# 4362C3 0 0 
+	add	%al,(%rax)	# 4362C5 0 0 
+	add	%bh,(%rdi)	# 4362C7 0 3F 
+	Push	%rsp	# 4362C9 54 
+	add	%al,(%r8)	# 4362CA 41 0 0 
+	add	%al,(%rax)	# 4362CD 0 0 
+	add	%cl,-0x77(%rax)	# 4362CF 0 48 89 
+//
+
+//: GET-ORDERLIST  ( -- widn ... wid1 n )
+
+//   ORDER-LIST DUP @ CELLS DUP  ( -- ad n )
+
+clC	# 4362D2 45 F8 
+	lea	 ( ORDER-LIST+5  ) (%rip),%rax	# 4362D4 48 8D 5 E5 FF FF FF 
+	mov	%rax,-0x10(%rbp)	# 4362DB 48 89 45 F0 
+	mov	(%rax),%rax	# 4362DF 48 8B 0 
+	shl	$0x03,%rax	# 4362E2 48 C1 E0 3 
+	mov	%rax,-0x18(%rbp)	# 4362E6 48 89 45 E8 
+	test	%rax,%rax	# 4362EA 48 85 C0 
+	mov	-0x18(%rbp),%rax	# 4362ED 48 8B 45 E8 
+//   IF
+
+	lea	-0x10(%rbp),%rbp	# 4362F1 48 8D 6D F0 
+	jz	 ( GET-ORDERLIST+70  ) 	# 4362F5 F 84 45 0 0 0 
+//      OVER + DO I @ -1 CELLS +LOOP
+
+	add	0x00(%rbp),%rax	# 4362FB 48 3 45 0 
+	call	 ( (DO) ) 	# 4362FF E8 E5 E6 FC FF 
+	.quad  ( GET-ORDERLIST+6B  ) 
+	mov	%rax,-0x08(%rbp)	# 43630C 48 89 45 F8 
+	mov	(%r14),%rax	# 436310 49 8B 6 
+	mov	%rax,-0x10(%rbp)	# 436313 48 89 45 F0 
+	movq	$-0x1,%rax	# 436317 48 C7 C0 FF FF FF FF 
+	shl	$0x03,%rax	# 43631E 48 C1 E0 3 
+	lea	-0x10(%rbp),%rbp	# 436322 48 8D 6D F0 
+	add	%rax,%r14	# 436326 49 1 C6 
+	add	%rax,%r15	# 436329 49 1 C7 
+	mov	0x00(%rbp),%rax	# 43632C 48 8B 45 0 
+	lea	0x08(%rbp),%rbp	# 436330 48 8D 6D 8 
+	jNo	 ( GET-ORDERLIST+3C  ) 	# 436334 71 D6 
+	pop	%r14	# 436336 41 5E 
+	pop	%r15	# 436338 41 5F 
+	pop	%rcx	# 43633A 59 
+//   ELSE
+
+	jmp	 ( GET-ORDERLIST+79  ) 	# 43633B E9 9 0 0 0 
+//      2DROP 0
+
+	mov	$0x0,%eax	# 436340 B8 0 0 0 0 
+	lea	0x08(%rbp),%rbp	# 436345 48 8D 6D 8 
+//   THEN
+
+//;
+
+	ret		# 436349 C3 
+//
+
+//T{ GET-ORDER OVER -> GET-ORDER WID1 @ }T \ Forth wordlist at top
+
+//T{ GET-ORDER SET-ORDER -> }T             \ Effectively noop
+
+//T{ GET-ORDER -> GET-ORDERLIST }T         \ Check nothing changed
+
+//T{ GET-ORDERLIST DROP GET-ORDERLIST 2* SET-ORDER -> }T
+
+//T{ GET-ORDER -> GET-ORDERLIST DROP GET-ORDERLIST 2* }T
+
+//T{ GET-ORDERLIST SET-ORDER GET-ORDER -> GET-ORDERLIST }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING ALSO ONLY FORTH
+
+//
+
+//T{ ALSO GET-ORDER -> GET-ORDERLIST OVER SWAP 1+ }T
+
+//T{ ONLY FORTH GET-ORDER -> GET-ORDERLIST }T    \ See assumptions above
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING GET-CURRENT SET-CURRENT WORDLIST (simple)
+
+//
+
+//T{ GET-CURRENT -> WID1 @ }T        \ See assumptions above
+
+//T{ WORDLIST WID2 ! -> }T
+
+	and	%bl,%cl	# 43634A 20 D9 
+	add	$0x00,(%rcx)	# 43634C 80 1 0 
+	add	%al,(%rax)	# 43634F 0 0 
+	add	%al,(%rax,%rsi,4)	# 436351 0 4 B0 
+	add	%al,(%rax)	# 436354 42 0 0 
+	add	%al,(%rax)	# 436357 0 0 
+	add	%al,(%rax)	# 436359 0 0 
+	add	%al,(%rax)	# 43635B 0 0 
+	add	%al,(%rax)	# 43635D 0 0 
+	add	%al,(%rax)	# 43635F 0 0 
+	add	%ch,%al	# 436361 0 E8 
+//T{ WID2 @ SET-CURRENT -> }T
+
+//T{ GET-CURRENT -> WID2 @ }T
+
+//T{ WID1 @ SET-CURRENT -> }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING minimum search order list contains FORTH-WORDLIST and SET-ORDER
+
+//
+
+//: SO1 SET-ORDER ;    \ In case it is unavailable in the forth wordlist
+
+	rcl	$-0x70,-0x41173C01(%rbp,%rdi,8)	# 436363 C1 94 FD FF C3 E8 BE 90 
+//
+
+//T{ ONLY FORTH-WORDLIST 1 SET-ORDER GET-ORDERLIST SO1 -> }T
+
+//T{ GET-ORDER -> GET-ORDERLIST }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING GET-ORDER SET-ORDER with 0 and -1 number of wids argument
+
+//
+
+//: SO2A GET-ORDER GET-ORDERLIST SET-ORDER ; \  To recover search order
+
+stD	# 43636B FD 
+	jmpf	*%rax	# 43636C FF E8 
+	pop	%rsi	# 43636E 5E 
+	g4??	%edi	# 43636F FF FF 
+	jmpf	*%rax	# 436371 FF E8 
+	mov	$-0x6C,%cl	# 436373 B1 94 
+stD	# 436375 FD 
+	inc	%ebx	# 436376 FF C3 
+//: SO2 0 SET-ORDER SO2A ;
+
+SO2:
+	mov	%rax,-0x08(%rbp)	# 436378 48 89 45 F8 
+	mov	$0x0,%eax	# 43637C B8 0 0 0 0 
+	lea	-0x08(%rbp),%rbp	# 436381 48 8D 6D F8 
+	call	 ( SET-ORDER ) 	# 436385 E8 9E 94 FD FF 
+	call	 ( SO2A ) 	# 43638A E8 D9 FF FF FF 
+	ret		# 43638F C3 
+//
+
+//T{ SO2 -> 0 }T         \ 0 set-order leaves an empty search order
+
+//
+
+//: SO3 -1 SET-ORDER SO2A ;
+
+SO3:
+	mov	%rax,-0x08(%rbp)	# 436390 48 89 45 F8 
+	movq	$-0x1,%rax	# 436394 48 C7 C0 FF FF FF FF 
+	lea	-0x08(%rbp),%rbp	# 43639B 48 8D 6D F8 
+	call	 ( SET-ORDER ) 	# 43639F E8 84 94 FD FF 
+	call	 ( SO2A ) 	# 4363A4 E8 BF FF FF FF 
+	ret		# 4363A9 C3 
+//: SO4 ONLY SO2A ;
+
+SO4:
+	call	 ( ONLY ) 	# 4363AA E8 42 94 FD FF 
+	call	 ( SO2A ) 	# 4363AF E8 B4 FF FF FF 
+	ret		# 4363B4 C3 
+//
+
+//T{ SO3 -> SO4 }T       \ -1 SET-ORDER = ONLY
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING DEFINITIONS PREVIOUS
+
+//
+
+//T{ ONLY FORTH DEFINITIONS -> }T
+
+//T{ GET-CURRENT -> FORTH-WORDLIST }T
+
+//T{ GET-ORDER WID2 @ SWAP 1+ SET-ORDER DEFINITIONS GET-CURRENT -> WID2 @ }T
+
+//T{ GET-ORDER -> GET-ORDERLIST WID2 @ SWAP 1+ }T
+
+//T{ PREVIOUS GET-ORDER -> GET-ORDERLIST }T
+
+//T{ DEFINITIONS GET-CURRENT -> FORTH-WORDLIST }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING SEARCH-WORDLIST WORDLIST FIND
+
+//
+
+//ONLY FORTH DEFINITIONS
+
+//VARIABLE XT  ' DUP XT !
+
+	add	%al,(%rax)	# 4363B5 0 0 
+	add	%al,(%rax)	# 4363B7 0 0 
+	add	%al,(%rax)	# 4363B9 0 0 
+XT:
+	call	 ( DOCREATE ) 	# 4363BB E8 60 E5 FC FF 
+	cmp	%eax,0x40(%rdi)	# 4363C0 39 47 40 
+	add	%al,(%rax)	# 4363C3 0 0 
+	add	%al,(%rax)	# 4363C5 0 0 
+	add	%al,(%rax)	# 4363C7 0 0 
+//VARIABLE XTI ' ( XTI !    \ Immediate word
+
+	add	%al,(%rax)	# 4363C9 0 0 
+XTI:
+	call	 ( DOCREATE ) 	# 4363CB E8 50 E5 FC FF 
+	or	%esi,%ebx	# 4363D0 9 F3 
+	add	%al,(%rax)	# 4363D2 40 0 0 
+	add	%al,(%rax)	# 4363D5 0 0 
+	add	%ch,%al	# 4363D7 0 E8 
+//
+
+//\ $" is an equivalent to S" in interpreter mode. It is defined in the file
+
+//\ utilities.fth and used to avoid relying on a File-Access word set extension
+
+//
+
+//T{ $" DUP" WID1 @ SEARCH-WORDLIST -> XT  @ -1 }T
+
+//T{ $" ("   WID1 @ SEARCH-WORDLIST -> XTI @  1 }T
+
+//T{ $" DUP" WID2 @ SEARCH-WORDLIST ->        0 }T
+
+//
+
+//: C"DUP" C" DUP" ;
+
+	xchg	%esp,%ebp	# 4363D9 87 EC 
+clD	# 4363DB FC 
+	inc	(%rbx)	# 4363DC FF 3 
+	Push	%rbp	# 4363DE 44 55 
+	Push	%rax	# 4363E0 50 
+	ret		# 4363E1 C3 
+//: C"("  C" (" ;
+
+Cdticcbigdtic:
+	call	 ( (C") ) 	# 4363E2 E8 7D EC FC FF 
+	add	%ebp,(%rax)	# 4363E7 1 28 
+	ret		# 4363E9 C3 
+//: C"X" C" UNKNOWN WORD"  ;
+
+CdticXdtic:
+	call	 ( (C") ) 	# 4363EA E8 75 EC FC FF 
+	or	$0x55,%al	# 4363EF C 55 
+	Push	%r15	# 4363F1 4E 4B 4E 4F 57 
+	and	%r10lB,0x4F(%rdi)	# 4363F6 4E 20 57 4F 
+	Push	%rdx	# 4363FA 52 
+	ret		# 4363FB 44 C3 
+//
+
+//T{ C"DUP" FIND -> XT  @ -1 }T
+
+//T{ C"("  FIND -> XTI @  1 }T
+
+//T{ C"X"   FIND -> C"X"   0 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING new definitions are put into the correct wordlist
+
+//
+
+//: ALSOWID2 ALSO GET-ORDER WID2 @ ROT DROP SWAP SET-ORDER ;
+
+ALSOWID2:
+	call	 ( ALSO ) 	# 4363FD E8 B8 93 FD FF 
+	call	 ( GET-ORDER ) 	# 436402 E8 24 90 FD FF 
+	mov	%rax,-0x08(%rbp)	# 436407 48 89 45 F8 
+	mov	 ( WID2+5  ) (%rip),%rdx	# 43640B 48 8B 15 4E FE FF FF 
+	mov	%rdx,-0x08(%rbp)	# 436412 48 89 55 F8 
+	xchg	%rdx,%rax	# 436416 48 92 
+	mov	0x00(%rbp),%rax	# 436418 48 8B 45 0 
+	mov	-0x08(%rbp),%rax	# 43641C 48 8B 45 F8 
+	mov	%rax,0x00(%rbp)	# 436420 48 89 45 0 
+	mov	%rdx,%rax	# 436424 48 89 D0 
+	call	 ( SET-ORDER ) 	# 436427 E8 FC 93 FD FF 
+	ret		# 43642C C3 
+//ALSOWID2
+
+//: W2 1234  ;
+
+W2:
+	mov	%rax,-0x08(%rbp)	# 43642D 48 89 45 F8 
+	mov	$0x4D2,%eax	# 436431 B8 D2 4 0 0 
+	lea	-0x08(%rbp),%rbp	# 436436 48 8D 6D F8 
+	ret		# 43643A C3 
+//DEFINITIONS
+
+//: W2 -9876 ; IMMEDIATE
+
+W2:
+	mov	%rax,-0x08(%rbp)	# 43643B 48 89 45 F8 
+	movq	$-0x2694,%rax	# 43643F 48 C7 C0 6C D9 FF FF 
+	lea	-0x08(%rbp),%rbp	# 436446 48 8D 6D F8 
+	ret		# 43644A C3 
+//
+
+//ONLY FORTH
+
+//T{ W2 -> 1234 }T
+
+//DEFINITIONS
+
+//T{ W2 -> 1234 }T
+
+//ALSOWID2
+
+//T{ W2 -> -9876 }T
+
+//DEFINITIONS
+
+//T{ W2 -> -9876 }T
+
+//
+
+//ONLY FORTH DEFINITIONS
+
+//
+
+//: SO5  DUP IF SWAP EXECUTE THEN ;
+
+SO5:
+	mov	%rax,-0x08(%rbp)	# 43644B 48 89 45 F8 
+	test	%rax,%rax	# 43644F 48 85 C0 
+	mov	-0x08(%rbp),%rax	# 436452 48 8B 45 F8 
+	jz	 ( SO5+21  ) 	# 436456 F 84 10 0 0 0 
+	mov	0x00(%rbp),%rdx	# 43645C 48 8B 55 0 
+	mov	%rax,0x00(%rbp)	# 436460 48 89 45 0 
+	mov	%rdx,%rax	# 436464 48 89 D0 
+	call	 ( EXECUTE ) 	# 436467 E8 59 DF FC FF 
+	ret		# 43646C C3 
+//
+
+//T{ $" W2" WID1 @ SEARCH-WORDLIST SO5 -> -1  1234 }T
+
+//T{ $" W2" WID2 @ SEARCH-WORDLIST SO5 ->  1 -9876 }T
+
+//
+
+//: C"W2" C" W2" ;
+
+CdticW2dtic:
+	call	 ( (C") ) 	# 43646D E8 F2 EB FC FF 
+	add	0x32(%rdi),%dl	# 436472 2 57 32 
+	ret		# 436475 C3 
+//T{ ALSOWID2 C"W2" FIND SO5 ->  1 -9876 }T
+
+//T{ PREVIOUS C"W2" FIND SO5 -> -1  1234 }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//TESTING ORDER  \ Should display search order and compilation wordlist
+
+//
+
+//CR .( ONLY FORTH DEFINITIONS search order and compilation wordlist) CR
+
+//T{ ONLY FORTH DEFINITIONS ORDER -> }T
+
+//
+
+//CR .( Plus another unnamed wordlist at the head of the search order) CR
+
+//T{ ALSOWID2 DEFINITIONS ORDER -> }T
+
+//
+
+//\ ------------------------------------------------------------------------------
+
+//
+
+//SEARCHORDER-ERRORS SET-ERROR-COUNT
+
+//
+
+//CR .( End of Search Order word tests) CR
+
+//
+
+//ONLY FORTH DEFINITIONS      \ Leave search order in the standard state
+
