@@ -55,8 +55,17 @@ T: C, THERE C! 1 ALLOT ;
 : TAB	9  EMIT ;
 
 T: HALIGNED  1+  1 ANDC ;
-T: IALIGNED  3 + 3 ANDC ;
-T: ALIGNED   7 + 7 ANDC ;
+T: LALIGNED  3 + 3 ANDC ;
+T: QALIGNED  7 + 7 ANDC ;
+
+CREATE ALIGN-BYTES 8 ,
+
+T: ALIGNED ( addr -- a-addr ) \ 94
+\ a-addr - первый выровненный адрес, больший или равный addr.
+  ALIGN-BYTES @ DUP 0= IF 1+ DUP ALIGN-BYTES ! THEN
+  2DUP
+  MOD DUP IF - + ELSE 2DROP THEN ;
+
 
 : (S")  ( --- c-addr u )
 \ Runtime part of S"
