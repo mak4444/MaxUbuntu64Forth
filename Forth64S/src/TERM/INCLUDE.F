@@ -1,11 +1,7 @@
 
 0 VALUE R/O ( -- fam ) \ 94 FILE
-\ fam - 
-\ 
 
 1 VALUE W/O ( -- fam ) \ 94 FILE
-\ fam - 
-\ 
 
 2 VALUE R/W ( -- fam ) \ 94 FILE
 
@@ -21,10 +17,8 @@ CURFILENAME $! ;
  CURFILENAME COUNT + CURFILENAME
  CFNAME_SIZE CURFILENAME C@ - 255 +  CMOVE ;
 
-\ : VVV #H. >PF >DPF ;
 
 : INCLUDE-FILE ( i*x fileid -- j*x ) \ 94 FILE
-\	." INC"
 	>IN  @ >R
 	CURSTR @ >R CURSTR 0!
 	SOURCE-ID >R  TO SOURCE-ID
@@ -54,7 +48,6 @@ T: }VIEW
    HERE  VIEW_LINK , TO VIEW_LINK -1 ,
    CURFILENAME COUNT S",
 ?YDP><DP
-
 ;
 
 T: INCLUDED  ( c-addr u ---- )
