@@ -1,2 +1,3 @@
+sudo apt-get install libreadline-dev
 make - build
 in ./Forth64S is ./tst.sh 
